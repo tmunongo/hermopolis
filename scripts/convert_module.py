@@ -25,15 +25,18 @@ def convert_module(input_path, output_path):
     selectors_to_wrap = [
         '.frame-strip', '.frame-cell', '.film-frame', '.film-frame.active', '.film-frame canvas', '.film-frame-num',
         '.hero-deco-col', '.hero-dot', '.preset-btn', '.preset-btn.active', '.preset-btn:hover',
-        'h3', 'code', "input\[type='range'\]\.mint::-webkit-slider-thumb",
-        '.btn.active', '.btn.coral.active', '.btn.mint.active',
+        'h3', 'code', "input[type='range']", "input[type='range']::-webkit-slider-thumb",
+        '.btn', '.btn:hover', '.btn.active', '.btn.coral.active', '.btn.mint.active', '.btn.off', '.btn.off:hover', '.btn-row',
         '.spacing-chart-wrap', '.spacing-row', '.spacing-row-label', '.spacing-track', '.spacing-dot',
         '.weight-grid', '.weight-panel', '.weight-label', '.weight-label span', '.curve-mini',
         '.q-img', '.option.correct', '.option.wrong', '.option.disabled',
-        '.feedback.ok', '.feedback.bad', '.quiz-score.visible', '.graph-legend'
+        '.feedback.ok', '.feedback.bad', '.quiz-score.visible', '.graph-legend',
+        '.p-card', '.p-card:hover', '.p-card.active', '.p-card.active::after',
+        '.p-card-num', '.p-card-name', '.p-card-tag', '.p-card.active .p-card-num', '.p-card.active .p-card-name',
+        '.ctrl-row', '.ctrl-label', '.ctrl-val', '.key-insight', '.key-insight-label'
     ]
     for sel in selectors_to_wrap:
-        escaped_sel = sel.replace('.', r'\.')
+        escaped_sel = re.escape(sel)
         css = re.sub(fr'(?<!:global\(){escaped_sel}(?P<suffix>[\s{{,])', fr':global({sel})\g<suffix>', css)
 
     token_replacements = [
@@ -53,6 +56,7 @@ def convert_module(input_path, output_path):
     # Patch specific logic bugs found in modules (like profile list duplication in Module 2)
     script_js = script_js.replace("const list = document.getElementById('profileList');", "const list = document.getElementById('profileList');\n\t\tlist.innerHTML = '';")
     script_js = script_js.replace("let desc = '';", "let desc;")
+    script_js = script_js.replace("anticipateOffset = 0;", "anticipateOffset;")
     html_content = re.sub(r'<script>.*?</script>', '', body_content, flags=re.DOTALL).strip()
 
     # Generic click handler logic

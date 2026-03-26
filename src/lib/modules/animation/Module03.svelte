@@ -1,0 +1,2647 @@
+<script>
+	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		/* ═══════════════════════════════════════════
+   HERO DECO
+═══════════════════════════════════════════ */
+		(function () {
+			const el = document.getElementById('heroDeco');
+			for (let i = 0; i < 24; i++) {
+				const d = document.createElement('div');
+				d.className = 'hero-deco-cell';
+				el.appendChild(d);
+			}
+		})();
+
+		/* ═══════════════════════════════════════════
+   SHARED UTILS
+═══════════════════════════════════════════ */
+		const C = {
+			gold: '#f0a830',
+			coral: '#e8553a',
+			mint: '#4ecbb4',
+			lav: '#c4a8f0',
+			muted: '#7a6e5e',
+			border: '#28221a',
+			border2: '#3c342a',
+			raised: '#1c1812',
+			surface: '#131009',
+			bg: '#0b0906',
+			dim: '#4a4035'
+		};
+		function lerp(a, b, t) {
+			return a + (b - a) * t;
+		}
+		function clamp(v, a, b) {
+			return Math.max(a, Math.min(b, v));
+		}
+		function eio(t) {
+			return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+		}
+		function eout(t) {
+			return 1 - Math.pow(1 - t, 3);
+		}
+		function ein(t) {
+			return t * t * t;
+		}
+
+		const DC = document.getElementById('demoCanvas');
+		const dctx = DC.getContext('2d');
+
+		/* ═══════════════════════════════════════════
+   PRINCIPLE DEFINITIONS
+═══════════════════════════════════════════ */
+		const PRINCIPLES = [
+			{
+				id: 'squash',
+				num: '01',
+				name: 'Squash & Stretch',
+				tag: 'Deformation shows mass',
+				subtitle: 'The most fundamental principle — nothing rigid stays rigid under force.',
+				text: `<p>When a physical object moves at high speed and impacts a surface, it <strong>deforms</strong>. A rubber ball squashes flat on impact and stretches tall during its fastest flight. Even a rigid object like a wooden block can be subtly squashed and stretched to convey the force acting on it.</p><p>The critical rule: <strong>volume must be preserved</strong>. If you squash a ball wide, it must flatten in height by the same amount. Violating this makes objects feel like they're growing or shrinking, not deforming.</p>`,
+				insight:
+					'For educational animation, squash and stretch applies to text boxes, icons, and diagram elements — not just characters. An arrow that compresses before launching feels more dynamic than one that simply translates.',
+				controls: 'squash'
+			},
+			{
+				id: 'anticipation',
+				num: '02',
+				name: 'Anticipation',
+				tag: 'Charge before the action',
+				subtitle: 'A preparatory movement that tells the viewer what is about to happen.',
+				text: `<p>Before a character jumps, they crouch. Before they throw, they wind back. Before they run, they lean forward. This <strong>anticipatory motion</strong> does two things: it warns the audience so they can follow the action, and it makes the main move feel more powerful by contrast.</p><p>Without anticipation, fast actions are invisible — the eye can't track a movement that starts from rest instantly. Anticipation gives the viewer a chance to "lock on" before the motion begins.</p>`,
+				insight:
+					'In educational animation, anticipation is how you signal that something important is about to happen. An arrow or label that briefly pulls back before shooting into frame creates emphasis and directs attention far better than a plain tween.',
+				controls: 'anticipation'
+			},
+			{
+				id: 'staging',
+				num: '03',
+				name: 'Staging',
+				tag: 'Clarity of presentation',
+				subtitle: 'Every frame is a composition — make the important thing unmistakable.',
+				text: `<p>Staging is the principle of presenting an idea in the clearest possible way. It means choosing camera angles, positions, and timing so that the viewer sees <em>exactly what you want them to see</em> without confusion.</p><p>Good staging uses <strong>silhouette</strong> — the readable outline of a shape against its background. An action that reads in silhouette is immediately understandable. One that requires detail to decode has failed staging.</p>`,
+				insight:
+					'For educational video, staging is your most important principle. Every diagram, label, and transition should be staged so there is only one possible interpretation. If a viewer has to pause and decode what they are looking at, the staging has failed.',
+				controls: 'staging'
+			},
+			{
+				id: 'straight',
+				num: '04',
+				name: 'Straight Ahead vs Pose-to-Pose',
+				tag: 'Two creative processes',
+				subtitle: 'How you approach drawing an animation changes what kind of motion you get.',
+				text: `<p><strong>Straight ahead</strong> means drawing frame 1, then frame 2, then frame 3... in sequence. You discover the animation as you go. The result is organic and fluid but hard to control — especially for long sequences.</p><p><strong>Pose-to-pose</strong> means drawing the key poses first (frames 1, 12, 24) then filling in the in-betweens. This is how digital software works with keyframes. You get control and timing precision, but must work harder to keep fluidity.</p>`,
+				insight:
+					'Modern digital animation is fundamentally pose-to-pose. But understanding straight-ahead thinking helps you avoid "dead" in-betweens that are technically correct but feel lifeless. The best digital animators think straight-ahead in their posing.',
+				controls: 'straight'
+			},
+			{
+				id: 'followthrough',
+				num: '05',
+				name: 'Follow Through & Overlapping',
+				tag: 'Nothing stops all at once',
+				subtitle: 'Different parts of a body or object finish moving at different times.',
+				text: `<p><strong>Follow through</strong>: when the main body stops, loose parts (hair, clothing, tails) continue moving past the stopping point before settling. The body is the primary driver; appendages are secondary passengers with their own momentum.</p><p><strong>Overlapping action</strong>: different parts of an object start and finish their movements at different times — the torso leads, the arm follows, the hand follows the arm. This stagger creates a sense of weight and fluidity impossible to achieve when everything moves together.</p>`,
+				insight:
+					'Overlapping and follow-through are what separate professional animation from amateur work. Toggle the effect off in the demo — without it, the motion looks robotic even when timing and spacing are correct.',
+				controls: 'followthrough'
+			},
+			{
+				id: 'slowinout',
+				num: '06',
+				name: 'Slow In / Slow Out',
+				tag: 'Easing — the language of physics',
+				subtitle: 'Everything accelerates from rest and decelerates before stopping.',
+				text: `<p>You studied this deeply in Module 2, but it belongs in this list because it is a foundational principle. <strong>Nothing in nature moves at constant speed</strong>. Objects accelerate from rest (slow in) and decelerate to a stop (slow out). Ignoring this makes motion look mechanical and digital.</p><p>Slow in/out is encoded as the <em>curve shape</em> in your animation software's graph editor. The steepness of the curve at any point is the speed at that moment. A straight diagonal = linear. An S-shaped curve = ease in/out.</p>`,
+				insight:
+					'For diagram animation, slow in/out is what separates a polished professional result from a first attempt. Every label, arrow, and element should ease in and ease out unless you have a specific reason for it not to.',
+				controls: 'slowinout'
+			},
+			{
+				id: 'arcs',
+				num: '07',
+				name: 'Arcs',
+				tag: 'Curved paths through space',
+				subtitle: 'Living things move along arcs. Machines move in straight lines.',
+				text: `<p>Revisited from Module 2 — this principle is worth naming explicitly in the 12. Almost all living motion follows curved trajectories because bodies are systems of rotating joints. A hand raised from the side doesn't travel straight up — it follows the arc of the elbow and shoulder rotation.</p><p>Software will interpolate position linearly unless you explicitly add arc to the path. Adding intermediate keyframes or editing the motion path are the two main ways to introduce arcs in digital work.</p>`,
+				insight:
+					'The motion paths of diagram elements should arc too. An arrow entering from off-screen that curves slightly into its final position looks far more intentional than one that slides in straight. The arc carries energy.',
+				controls: 'arcs'
+			},
+			{
+				id: 'secondary',
+				num: '08',
+				name: 'Secondary Action',
+				tag: 'Supporting motion that reinforces',
+				subtitle: 'A secondary motion that supports and enriches the primary action.',
+				text: `<p>Secondary action is not the same as follow-through. Where follow-through is a physical consequence of momentum, secondary action is a <em>deliberate supporting motion</em> that adds life and reinforces the main idea.</p><p>A character walking and swinging their arms: the walk is primary, the arm swing is secondary. The secondary action should always be <strong>subordinate</strong> — if it competes with the main action for attention, it becomes a distraction rather than a support.</p>`,
+				insight:
+					'In educational animation, secondary actions include: subtle pulsing of a highlighted element, a label gently bobbing as its target is discussed, or a character nodding while a diagram appears. They tell the viewer "this is still live — pay attention."',
+				controls: 'secondary'
+			},
+			{
+				id: 'timing',
+				num: '09',
+				name: 'Timing',
+				tag: 'Frames = speed, mood, and weight',
+				subtitle: 'The number of frames an action takes changes everything about how it feels.',
+				text: `<p>Timing is one of the most powerful creative tools an animator has. The <em>same movement</em> over 4 frames versus 24 frames communicates completely different things: urgency vs calm, violence vs gentleness, comedy vs tragedy.</p><p>Fast timing (few frames): snappy, urgent, surprising, comic. Slow timing (many frames): deliberate, weighty, sad, powerful. The pace of timing also sets the emotional tone of an entire piece — a slow piece feels contemplative; a fast piece feels anxious or exciting.</p>`,
+				insight:
+					"In educational animation, timing is how you control cognitive load. Important concepts need slow timing — the viewer needs time to process. Transitions and decorative elements should be fast so they don't waste the viewer's attention budget.",
+				controls: 'timing'
+			},
+			{
+				id: 'exaggeration',
+				num: '10',
+				name: 'Exaggeration',
+				tag: 'Push beyond realism to communicate clearly',
+				subtitle: 'Reality is often too subtle. Exaggeration makes intent unmistakable.',
+				text: `<p>Animation is not a photographic medium — it doesn't need to be realistic. What it needs to be is <strong>clear</strong>. Exaggeration pushes actions, expressions, and movements beyond what would happen in reality to make sure the viewer cannot miss the intention.</p><p>The key is that exaggeration should be <em>true to itself</em>. A cartoonish exaggeration that is consistent throughout is fine. Randomly mixing realistic and exaggerated elements breaks the contract with the audience.</p>`,
+				insight:
+					'In educational animation, exaggeration is how you create visual hierarchy. An element that is slightly more animated than its neighbors immediately reads as "important." Use it deliberately — not on everything.',
+				controls: 'exaggeration'
+			},
+			{
+				id: 'soliddrawing',
+				num: '11',
+				name: 'Solid Drawing',
+				tag: 'Volume, weight, and 3D form',
+				subtitle: 'Objects must feel like they exist in three dimensions, even in 2D.',
+				text: `<p>Originally about the technical skill of drawing forms that convincingly exist in three-dimensional space — avoiding "twins" (symmetrical poses), keeping correct perspective, understanding how cylinders and spheres foreshorten. In modern 2D software, this translates to making sure your animated objects feel like they have volume and don't "flatten out" or lose their three-dimensional integrity as they move.</p><p>For educational animation, solid drawing means diagrams and objects feel <strong>grounded</strong> — they have a consistent visual logic, cast shadows where expected, and respect the implied 3D space of the scene.</p>`,
+				insight:
+					'Even flat, abstract educational diagrams benefit from solid drawing principles: consistent implied depth, elements that don\'t overlap in confusing ways, and a clear sense of which elements are "in front of" others.',
+				controls: 'soliddrawing'
+			},
+			{
+				id: 'appeal',
+				num: '12',
+				name: 'Appeal',
+				tag: 'Designs that are engaging to look at',
+				subtitle: 'An appealing design is not the same as a pretty one — it is a readable one.',
+				text: `<p>Appeal means that a character or design has a quality that makes the audience want to look at it. It is often misunderstood as "cuteness," but it really means <strong>visual clarity and interest</strong>. A villain can be appealing. A monster can be appealing. What they share is a strong, readable silhouette and a clear visual personality.</p><p>Design principles that create appeal: variety in shape sizes (avoid equal-sized elements), clear visual hierarchy, contrast between organic curves and sharp angles, and a design that reads clearly in silhouette.</p>`,
+				insight:
+					'For educational animation, appeal applies to your character or mascot design, but also to diagram layouts. A diagram that has visual variety — thick lines vs thin, large elements vs small — is more appealing and easier to read than one where every element has equal weight.',
+				controls: 'appeal'
+			}
+		];
+
+		/* ═══════════════════════════════════════════
+   BUILD GRID
+═══════════════════════════════════════════ */
+		const grid = document.getElementById('principlesGrid');
+		PRINCIPLES.forEach((p, i) => {
+			const card = document.createElement('div');
+			card.className = 'p-card';
+			card.dataset.id = p.id;
+			card.innerHTML = `<div class="p-card-num">${p.num}</div><div class="p-card-name">${p.name}</div><div class="p-card-tag">${p.tag}</div>`;
+			card.onclick = () => openPrinciple(p.id);
+			grid.appendChild(card);
+		});
+
+		/* ═══════════════════════════════════════════
+   OPEN PRINCIPLE
+═══════════════════════════════════════════ */
+		let activeRaf = null;
+		let currentPrinciple = null;
+
+		function openPrinciple(id) {
+			if (activeRaf) {
+				cancelAnimationFrame(activeRaf);
+				activeRaf = null;
+			}
+			currentPrinciple = id;
+			const p = PRINCIPLES.find((x) => x.id === id);
+
+			// Update grid active state
+			document
+				.querySelectorAll('.p-card')
+				.forEach((c) => c.classList.toggle('active', c.dataset.id === id));
+
+			// Panel
+			document.getElementById('dpTitle').textContent = p.name;
+			document.getElementById('dpSubtitle').textContent = p.subtitle;
+			document.getElementById('dpText').innerHTML = p.text;
+			document.getElementById('dpInsightText').textContent = p.insight;
+			document.getElementById('dpInsight').style.display = 'block';
+
+			// Clear controls
+			const ctrl = document.getElementById('dpControls');
+			ctrl.innerHTML = '';
+
+			const panel = document.getElementById('demoPanel');
+			panel.classList.add('visible');
+
+			// Scroll panel into view
+			setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+
+			// Load demo
+			DEMOS[id](ctrl);
+		}
+
+		/* ═══════════════════════════════════════════
+   DEMOS
+═══════════════════════════════════════════ */
+		const W = DC.width,
+			H = DC.height;
+
+		function clearCanvas() {
+			dctx.clearRect(0, 0, W, H);
+		}
+
+		function drawBall(ctx, x, y, rx, ry, col, shadow = true) {
+			if (shadow) {
+				const dist = H - 30 - y;
+				const sa = Math.max(0, 1 - dist / 200) * 0.3;
+				ctx.fillStyle = `rgba(0,0,0,${sa})`;
+				ctx.beginPath();
+				ctx.ellipse(x, H - 30, rx * 0.9, 4, 0, 0, Math.PI * 2);
+				ctx.fill();
+			}
+			const grd = ctx.createRadialGradient(x - rx * 0.3, y - ry * 0.3, 1, x, y, Math.max(rx, ry));
+			grd.addColorStop(0, '#fff');
+			grd.addColorStop(0.3, col);
+			grd.addColorStop(1, '#000');
+			ctx.fillStyle = grd;
+			ctx.beginPath();
+			ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		function makeBtn(label, cls = '') {
+			const b = document.createElement('button');
+			b.className = 'btn' + ' ' + (cls || '');
+			b.textContent = label;
+			return b;
+		}
+		function makeSliderRow(label, min, max, val, step, onInput) {
+			const d = document.createElement('div');
+			d.className = 'ctrl-row';
+			const l = document.createElement('span');
+			l.className = 'ctrl-label';
+			l.textContent = label;
+			const s = document.createElement('input');
+			s.type = 'range';
+			s.min = min;
+			s.max = max;
+			s.value = val;
+			s.step = step;
+			const v = document.createElement('span');
+			v.className = 'ctrl-val';
+			v.textContent = val;
+			s.oninput = function () {
+				v.textContent = this.value;
+				onInput(parseFloat(this.value));
+			};
+			d.appendChild(l);
+			d.appendChild(s);
+			d.appendChild(v);
+			return d;
+		}
+		function makeToggle(labelOn, labelOff, state, onChange) {
+			const b = makeBtn(state ? labelOn : labelOff, state ? 'active' : 'off');
+			b.onclick = function () {
+				state = !state;
+				this.textContent = state ? labelOn : labelOff;
+				this.className = 'btn ' + (state ? 'active' : 'off');
+				onChange(state);
+			};
+			return b;
+		}
+		function makeRow(...btns) {
+			const d = document.createElement('div');
+			d.className = 'btn-row';
+			btns.forEach((b) => d.appendChild(b));
+			return d;
+		}
+
+		const DEMOS = {
+			/* ── 1. SQUASH & STRETCH ── */
+			squash(ctrl) {
+				let enabled = true,
+					t = 0,
+					lastTs = null;
+				const GROUND = H - 28,
+					CX = W / 2,
+					STARTCY = 30;
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.7;
+					lastTs = ts;
+					if (t > 1) t = 0;
+					clearCanvas();
+
+					// Ground
+					dctx.strokeStyle = C.border2;
+					dctx.lineWidth = 1;
+					dctx.beginPath();
+					dctx.moveTo(20, GROUND);
+					dctx.lineTo(W - 20, GROUND);
+					dctx.stroke();
+
+					// Ball physics (parabolic drop + bounce)
+					const bounce = t < 0.5 ? t * 2 : 1 - (t - 0.5) * 2;
+					const rawY = STARTCY + (GROUND - 18 - STARTCY) * eout(bounce > 1 ? 1 : bounce);
+					const vy = (GROUND - 18 - STARTCY) * (bounce < 0.5 ? 2 : -2) * 0.7; // approx velocity sign
+					const atGround = rawY >= GROUND - 20;
+
+					let rx = 16,
+						ry = 16;
+					if (enabled) {
+						const speed = Math.abs(t < 0.5 ? t - 0.25 : t - 0.75) * 4;
+						if (atGround) {
+							rx = 16 + 8;
+							ry = 16 - 6;
+						} else {
+							const stretch = clamp(speed * 8, 0, 7);
+							rx = 16 - stretch * 0.4;
+							ry = 16 + stretch;
+						}
+					}
+
+					drawBall(dctx, CX, Math.min(rawY, GROUND - ry), rx, ry, C.lav);
+
+					// Labels
+					dctx.fillStyle = C.muted;
+					dctx.font = `10px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText(enabled ? 'Squash & Stretch ON' : 'Squash & Stretch OFF', W / 2, H - 6);
+
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+
+				const tog = makeToggle('Squash & Stretch ON', 'Squash & Stretch OFF', true, (v) => {
+					enabled = v;
+				});
+				ctrl.appendChild(makeRow(tog));
+			},
+
+			/* ── 2. ANTICIPATION ── */
+			anticipation(ctrl) {
+				let enabled = true,
+					t = 0,
+					lastTs = null,
+					playing = false;
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.55;
+					lastTs = ts;
+					if (t > 1) t = t % 1;
+					clearCanvas();
+
+					const cx = W * 0.22,
+						cy = H * 0.5,
+						r = 18;
+					// Main body (circle)
+					dctx.fillStyle = C.border2;
+					dctx.beginPath();
+					dctx.arc(cx, cy, r, 0, Math.PI * 2);
+					dctx.fill();
+					dctx.fillStyle = C.muted;
+					dctx.font = `10px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText('body', cx, H - 8);
+
+					// Arrow / fist position
+					let armX, anticipateOffset;
+					if (enabled) {
+						if (t < 0.25) {
+							// anticipation phase: pull back
+							const a = t / 0.25;
+							anticipateOffset = -35 * eio(a);
+							armX = cx + r + 10 + anticipateOffset;
+						} else {
+							// strike phase: fast forward
+							const a = (t - 0.25) / 0.35;
+							armX = cx + r + 10 + lerp(-35, W * 0.65, a < 1 ? eout(a) : 1);
+						}
+					} else {
+						armX = cx + r + 10 + lerp(0, W * 0.65, eio(t < 0.6 ? t / 0.6 : 1));
+					}
+
+					// Fist
+					const fistX = Math.min(armX, W - 30);
+					drawBall(dctx, fistX, cy, 20, 15, C.coral, false);
+					// Arm line
+					dctx.strokeStyle = C.border2;
+					dctx.lineWidth = 3;
+					dctx.beginPath();
+					dctx.moveTo(cx + r, cy);
+					dctx.lineTo(fistX - 18, cy);
+					dctx.stroke();
+
+					// Anticipation annotation
+					if (enabled && t < 0.25) {
+						const aProgress = t / 0.25;
+						dctx.strokeStyle = C.gold + '88';
+						dctx.lineWidth = 1;
+						dctx.setLineDash([3, 3]);
+						dctx.beginPath();
+						dctx.moveTo(cx + r + 10, cy - 30);
+						dctx.lineTo(armX, cy - 30);
+						dctx.stroke();
+						dctx.setLineDash([]);
+						dctx.fillStyle = C.gold;
+						dctx.font = `9px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('← wind up', lerp(cx + r + 10, armX, 0.5), cy - 38);
+					}
+
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				const tog = makeToggle('Anticipation ON', 'Anticipation OFF', true, (v) => {
+					enabled = v;
+				});
+				ctrl.appendChild(makeRow(tog));
+			},
+
+			/* ── 3. STAGING ── */
+			staging(ctrl) {
+				let mode = 'good'; // 'good' | 'bad'
+				let t = 0,
+					lastTs = null;
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += (ts - lastTs) / 800;
+					lastTs = ts;
+					clearCanvas();
+
+					if (mode === 'good') {
+						// Clear staging: dark bg, clear silhouette, one focal point
+						dctx.fillStyle = C.raised;
+						dctx.fillRect(0, 0, W, H);
+						// Character silhouette (running pose — clear & readable)
+						const cx = W / 2,
+							cy = H * 0.55;
+						// Body
+						dctx.fillStyle = '#fff';
+						// torso
+						dctx.beginPath();
+						dctx.ellipse(cx, cy, 14, 22, 0.2, 0, Math.PI * 2);
+						dctx.fill();
+						// head
+						dctx.beginPath();
+						dctx.arc(cx + 8, cy - 30, 12, 0, Math.PI * 2);
+						dctx.fill();
+						// leading arm (forward punch)
+						dctx.lineWidth = 8;
+						dctx.strokeStyle = '#fff';
+						dctx.lineCap = 'round';
+						dctx.beginPath();
+						dctx.moveTo(cx + 4, cy - 10);
+						dctx.lineTo(cx + 50, cy - 18 + Math.sin(t) * 3);
+						dctx.stroke();
+						// trailing arm
+						dctx.beginPath();
+						dctx.moveTo(cx - 4, cy - 5);
+						dctx.lineTo(cx - 40, cy + 5);
+						dctx.stroke();
+						// leading leg
+						dctx.beginPath();
+						dctx.moveTo(cx + 2, cy + 18);
+						dctx.lineTo(cx + 28, cy + 48);
+						dctx.stroke();
+						// trailing leg
+						dctx.beginPath();
+						dctx.moveTo(cx - 2, cy + 18);
+						dctx.lineTo(cx - 22, cy + 48);
+						dctx.stroke();
+
+						// Direction arrow
+						dctx.strokeStyle = C.gold + '99';
+						dctx.lineWidth = 1.5;
+						dctx.setLineDash([4, 4]);
+						dctx.beginPath();
+						dctx.moveTo(cx - 70, cy - 14);
+						dctx.lineTo(cx + 70, cy - 14);
+						dctx.stroke();
+						dctx.setLineDash([]);
+						dctx.fillStyle = C.gold + '99';
+						dctx.font = `9px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('action reads immediately in silhouette', W / 2, H - 10);
+						dctx.fillStyle = C.mint;
+						dctx.fillText('✓ GOOD STAGING', W / 2, 18);
+					} else {
+						// Bad staging: confusing, cluttered, buried
+						dctx.fillStyle = '#181420';
+						dctx.fillRect(0, 0, W, H);
+						// Random background elements
+						for (let i = 0; i < 6; i++) {
+							dctx.fillStyle = `rgba(100,80,60,${0.08 + i * 0.03})`;
+							dctx.fillRect(i * 55, 0, 50, H);
+						}
+						// Character buried in same-value shapes
+						const colors = ['#4a3a2a', '#5a4030', '#3a3040', '#fff', '#3a3040', '#4a3a2a'];
+						const shapes = [
+							[W * 0.3, H * 0.4, 20, 35],
+							[W * 0.5, H * 0.3, 25, 20],
+							[W * 0.7, H * 0.5, 18, 40],
+							[W * 0.5, H * 0.5, 12, 22],
+							[W * 0.4, H * 0.6, 30, 15],
+							[W * 0.6, H * 0.6, 22, 30]
+						];
+						shapes.forEach(([x, y, rx, ry], i) => {
+							dctx.fillStyle = colors[i];
+							dctx.beginPath();
+							dctx.ellipse(x + Math.sin(t + i) * 3, y, rx, ry, i * 0.3, 0, Math.PI * 2);
+							dctx.fill();
+						});
+						dctx.fillStyle = C.coral;
+						dctx.font = `9px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('where is the character? what are they doing?', W / 2, H - 10);
+						dctx.fillStyle = C.coral;
+						dctx.fillText('✗ POOR STAGING', W / 2, 18);
+					}
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+
+				const bGood = makeBtn('Good Staging', 'active');
+				const bBad = makeBtn('Poor Staging');
+				bGood.onclick = () => {
+					mode = 'good';
+					bGood.classList.add('active');
+					bBad.classList.remove('active');
+				};
+				bBad.onclick = () => {
+					mode = 'bad';
+					bBad.classList.add('active');
+					bGood.classList.remove('active');
+				};
+				ctrl.appendChild(makeRow(bGood, bBad));
+			},
+
+			/* ── 4. STRAIGHT AHEAD vs POSE-TO-POSE ── */
+			straight(ctrl) {
+				let mode = 'poseToPose',
+					t = 0,
+					lastTs = null;
+
+				// Pre-baked poses (x,y offsets for a simple stick figure)
+				const POSES = [
+					{ bodyX: 0.5, bodyY: 0.5, armAngle: -0.3, legAngle: 0.1 },
+					{ bodyX: 0.5, bodyY: 0.42, armAngle: -0.8, legAngle: 0.3 },
+					{ bodyX: 0.5, bodyY: 0.38, armAngle: 0.5, legAngle: -0.2 },
+					{ bodyX: 0.5, bodyY: 0.5, armAngle: 0.2, legAngle: 0.1 }
+				];
+
+				function drawStick(ctx, pose, alpha = 1) {
+					ctx.globalAlpha = alpha;
+					const cx = pose.bodyX * W,
+						cy = pose.bodyY * H;
+					ctx.strokeStyle = C.lav;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					// Torso
+					ctx.beginPath();
+					ctx.moveTo(cx, cy - 20);
+					ctx.lineTo(cx, cy + 20);
+					ctx.stroke();
+					// Head
+					ctx.strokeStyle = C.lav;
+					ctx.beginPath();
+					ctx.arc(cx, cy - 30, 10, 0, Math.PI * 2);
+					ctx.stroke();
+					// Arms
+					ctx.beginPath();
+					ctx.moveTo(cx, cy - 10);
+					ctx.lineTo(cx + Math.cos(pose.armAngle) * 35, cy - 10 + Math.sin(pose.armAngle) * 35);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(cx, cy - 10);
+					ctx.lineTo(cx - Math.cos(pose.armAngle) * 35, cy - 10 - Math.sin(pose.armAngle) * 35);
+					ctx.stroke();
+					// Legs
+					ctx.beginPath();
+					ctx.moveTo(cx, cy + 20);
+					ctx.lineTo(
+						cx + Math.cos(pose.legAngle + 0.5) * 35,
+						cy + 20 + Math.sin(pose.legAngle + 0.5) * 35
+					);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(cx, cy + 20);
+					ctx.lineTo(cx - Math.cos(pose.legAngle) * 35, cy + 20 + Math.sin(pose.legAngle) * 35);
+					ctx.stroke();
+					ctx.globalAlpha = 1;
+				}
+
+				function lerpPose(p1, p2, t) {
+					return Object.fromEntries(
+						Object.entries(p1).map(([k, v]) => [k, lerp(v, p2[k], eio(t))])
+					);
+				}
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.4;
+					lastTs = ts;
+					if (t > POSES.length) t = t % POSES.length;
+					clearCanvas();
+
+					const pi = Math.floor(t) % POSES.length;
+					const pj = (pi + 1) % POSES.length;
+					const frac = t - Math.floor(t);
+					const pose = lerpPose(POSES[pi], POSES[pj], frac);
+
+					if (mode === 'poseToPose') {
+						// Show key poses as ghosts + current interpolated
+						POSES.forEach((p, i) => {
+							drawStick(dctx, p, 0.12);
+						});
+						drawStick(dctx, pose, 1);
+						// Key pose markers
+						POSES.forEach((p, i) => {
+							dctx.fillStyle = C.gold + '55';
+							dctx.beginPath();
+							dctx.arc(p.bodyX * W, p.bodyY * H, 4, 0, Math.PI * 2);
+							dctx.fill();
+						});
+						dctx.fillStyle = C.mint;
+						dctx.font = `10px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('POSE-TO-POSE: key poses (dots) + interpolation', W / 2, H - 8);
+					} else {
+						// Straight ahead — show only current + very short trail
+						drawStick(
+							dctx,
+							lerpPose(
+								POSES[Math.floor(Math.max(0, t - 0.6)) % POSES.length],
+								POSES[(Math.floor(Math.max(0, t - 0.6)) + 1) % POSES.length],
+								(t - 0.6) % 1
+							),
+							0.08
+						);
+						drawStick(
+							dctx,
+							lerpPose(
+								POSES[Math.floor(Math.max(0, t - 0.3)) % POSES.length],
+								POSES[(Math.floor(Math.max(0, t - 0.3)) + 1) % POSES.length],
+								(t - 0.3) % 1
+							),
+							0.2
+						);
+						drawStick(dctx, pose, 1);
+						dctx.fillStyle = C.coral;
+						dctx.font = `10px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('STRAIGHT AHEAD: drawn frame by frame in sequence', W / 2, H - 8);
+					}
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				const bP = makeBtn('Pose-to-Pose', 'active');
+				const bS = makeBtn('Straight Ahead');
+				bP.onclick = () => {
+					mode = 'poseToPose';
+					bP.classList.add('active');
+					bS.classList.remove('active');
+				};
+				bS.onclick = () => {
+					mode = 'straightAhead';
+					bS.classList.add('active');
+					bP.classList.remove('active');
+				};
+				ctrl.appendChild(makeRow(bP, bS));
+			},
+
+			/* ── 5. FOLLOW THROUGH ── */
+			followthrough(ctrl) {
+				let enabled = true,
+					lag = 0.5,
+					t = 0,
+					lastTs = null;
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.5;
+					lastTs = ts;
+					if (t > 1) t = t % 1;
+					clearCanvas();
+
+					// Main body horizontal movement (ease in/out)
+					const bodyX = lerp(50, W - 60, eio(t));
+					const bodyY = H * 0.45;
+
+					// Tail lags behind with delay
+					const lagT = enabled ? Math.max(0, t - lag * 0.35) : t;
+					const tailAnchorX = lerp(50, W - 60, eio(lagT));
+					const tailAnchorY = bodyY;
+
+					// Draw tail segments (caterpillar)
+					const segs = 6;
+					for (let i = segs; i >= 0; i--) {
+						const segLag = enabled ? Math.max(0, t - lag * 0.35 * (1 + i * 0.15)) : t;
+						const sx = lerp(50, W - 60, eio(segLag));
+						const alpha = 0.15 + (i / segs) * 0.5;
+						dctx.globalAlpha = alpha;
+						dctx.fillStyle = C.mint;
+						dctx.beginPath();
+						dctx.arc(sx, bodyY + 8 + i * 0.5, 7 - i * 0.5, 0, Math.PI * 2);
+						dctx.fill();
+					}
+					dctx.globalAlpha = 1;
+
+					// Body / head
+					drawBall(dctx, bodyX, bodyY, 22, 20, C.lav, false);
+					// Eyes
+					dctx.fillStyle = '#fff';
+					dctx.beginPath();
+					dctx.arc(bodyX + 7, bodyY - 6, 4, 0, Math.PI * 2);
+					dctx.fill();
+					dctx.fillStyle = C.bg;
+					dctx.beginPath();
+					dctx.arc(bodyX + 8, bodyY - 6, 2, 0, Math.PI * 2);
+					dctx.fill();
+
+					dctx.fillStyle = C.muted;
+					dctx.font = `10px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText(
+						enabled
+							? 'Follow-through ON — tail lags behind'
+							: 'Follow-through OFF — everything moves together',
+						W / 2,
+						H - 8
+					);
+
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+
+				const tog = makeToggle('Follow-Through ON', 'Follow-Through OFF', true, (v) => {
+					enabled = v;
+				});
+				ctrl.appendChild(makeRow(tog));
+				ctrl.appendChild(
+					makeSliderRow('Lag', 0.1, 0.9, 0.5, 0.05, (v) => {
+						lag = v;
+					})
+				);
+			},
+
+			/* ── 6. SLOW IN/OUT ── */
+			slowinout(ctrl) {
+				let mode = 'ease',
+					t = 0,
+					lastTs = null;
+				const fnMap = {
+					linear: (t) => t,
+					ease: eio,
+					easeIn: (t) => t * t * t,
+					easeOut: (t) => 1 - Math.pow(1 - t, 3)
+				};
+				const DOTS = 20;
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.5;
+					lastTs = ts;
+					if (t > 1) t = t % 1;
+					clearCanvas();
+
+					const fn = fnMap[mode] || eio;
+					const pad = 30,
+						trackW = W - pad * 2,
+						cy = H * 0.4;
+
+					// Track
+					dctx.strokeStyle = C.border2;
+					dctx.lineWidth = 1;
+					dctx.setLineDash([3, 4]);
+					dctx.beginPath();
+					dctx.moveTo(pad, cy);
+					dctx.lineTo(W - pad, cy);
+					dctx.stroke();
+					dctx.setLineDash([]);
+
+					// Frame dots
+					for (let i = 0; i <= DOTS; i++) {
+						const v = fn(i / DOTS);
+						const x = pad + v * trackW;
+						dctx.fillStyle = C.coral;
+						dctx.globalAlpha = 0.5;
+						dctx.beginPath();
+						dctx.arc(x, cy, 2.5, 0, Math.PI * 2);
+						dctx.fill();
+					}
+					dctx.globalAlpha = 1;
+
+					// Ball
+					const bx = pad + fn(t) * trackW;
+					drawBall(dctx, bx, cy, 14, 14, C.lav, false);
+
+					// Spacing visualization below
+					const chartY = H * 0.72;
+					dctx.fillStyle = C.border2;
+					dctx.fillRect(pad, chartY, trackW, 2);
+					for (let i = 0; i <= DOTS; i++) {
+						const v = fn(i / DOTS);
+						const x = pad + v * trackW;
+						dctx.fillStyle = C.gold;
+						dctx.globalAlpha = 0.7;
+						dctx.beginPath();
+						dctx.arc(x, chartY, 3, 0, Math.PI * 2);
+						dctx.fill();
+					}
+					dctx.globalAlpha = 1;
+					dctx.fillStyle = C.muted;
+					dctx.font = `9px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText('spacing chart', W / 2, chartY + 16);
+					dctx.fillStyle = C.lav;
+					dctx.fillText(mode.toUpperCase(), W / 2, H - 8);
+
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				const btns = ['linear', 'ease', 'easeIn', 'easeOut'].map((m) => {
+					const b = makeBtn(m, m === 'ease' ? 'active' : '');
+					b.onclick = () => {
+						mode = m;
+						btns.forEach((x) => x.classList.remove('active'));
+						b.classList.add('active');
+					};
+					return b;
+				});
+				const row = document.createElement('div');
+				row.className = 'btn-row';
+				btns.forEach((b) => row.appendChild(b));
+				ctrl.appendChild(row);
+			},
+
+			/* ── 7. ARCS ── */
+			arcs(ctrl) {
+				let showArc = true,
+					t = 0,
+					lastTs = null;
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.5;
+					lastTs = ts;
+					if (t > 1) t = t % 1;
+					clearCanvas();
+
+					const sx = 40,
+						ex = W - 40,
+						midY = H * 0.2,
+						groundY = H * 0.78;
+
+					// Paths
+					const arcX = lerp(sx, ex, eio(t));
+					const arcY = groundY + (midY - groundY) * Math.sin(t * Math.PI);
+					const strX = lerp(sx, ex, eio(t));
+					const strY = groundY;
+
+					if (showArc) {
+						// Arc path ghost
+						dctx.strokeStyle = C.gold + '33';
+						dctx.lineWidth = 1.5;
+						dctx.setLineDash([3, 4]);
+						dctx.beginPath();
+						for (let i = 0; i <= 60; i++) {
+							const ti = i / 60;
+							const px = lerp(sx, ex, eio(ti)),
+								py = groundY + (midY - groundY) * Math.sin(ti * Math.PI);
+							i === 0 ? dctx.moveTo(px, py) : dctx.lineTo(px, py);
+						}
+						dctx.stroke();
+						dctx.setLineDash([]);
+
+						// Straight path ghost
+						dctx.strokeStyle = C.coral + '33';
+						dctx.lineWidth = 1.5;
+						dctx.setLineDash([3, 4]);
+						dctx.beginPath();
+						dctx.moveTo(sx, groundY);
+						dctx.lineTo(ex, groundY);
+						dctx.stroke();
+						dctx.setLineDash([]);
+
+						// Ground
+						dctx.strokeStyle = C.border2;
+						dctx.lineWidth = 1;
+						dctx.beginPath();
+						dctx.moveTo(20, groundY + 2);
+						dctx.lineTo(W - 20, groundY + 2);
+						dctx.stroke();
+					}
+
+					// Arc ball
+					drawBall(dctx, arcX, arcY, 14, 14, C.gold);
+					// Straight ball (offset slightly so they don't overlap at start/end)
+					drawBall(dctx, strX, strY - 18, 14, 14, C.coral);
+
+					dctx.fillStyle = C.muted;
+					dctx.font = `9px 'JetBrains Mono'`;
+					dctx.textAlign = 'right';
+					dctx.fillStyle = C.gold;
+					dctx.fillText('Arc', W - 10, arcY - 18);
+					dctx.fillStyle = C.coral;
+					dctx.fillText('Straight', W - 10, strY - 34);
+
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				const tog = makeToggle('Show Paths', 'Show Paths', true, (v) => {
+					showArc = v;
+				});
+				ctrl.appendChild(makeRow(tog));
+			},
+
+			/* ── 8. SECONDARY ACTION ── */
+			secondary(ctrl) {
+				let enabled = true,
+					t = 0,
+					lastTs = null;
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.6;
+					lastTs = ts;
+					if (t > 1) t = t % 1;
+					clearCanvas();
+
+					// Main: a circle moving across
+					const cx = lerp(50, W - 50, eio(t < 0.5 ? t * 2 : 1));
+					const cy = H * 0.45;
+
+					// Secondary: gentle bobbing / rotation of a secondary element
+					const secAngle = enabled ? Math.sin(t * Math.PI * 4) * 0.4 : 0;
+					const secBob = enabled ? Math.sin(t * Math.PI * 4) * 5 : 0;
+
+					// Body
+					drawBall(dctx, cx, cy, 22, 20, C.lav, false);
+
+					// Flag / antenna (secondary element)
+					const px = cx + 8,
+						py = cy - 20;
+					dctx.save();
+					dctx.translate(px, py);
+					dctx.rotate(secAngle);
+					dctx.strokeStyle = C.muted;
+					dctx.lineWidth = 2;
+					dctx.beginPath();
+					dctx.moveTo(0, 0);
+					dctx.lineTo(0, -30);
+					dctx.stroke();
+					dctx.fillStyle = C.gold;
+					dctx.beginPath();
+					dctx.moveTo(0, -30);
+					dctx.lineTo(22, -22 + secBob * 0.5);
+					dctx.lineTo(0, -14);
+					dctx.closePath();
+					dctx.fill();
+					dctx.restore();
+
+					dctx.fillStyle = C.muted;
+					dctx.font = `10px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText(
+						enabled
+							? 'Secondary action: flag waves with own rhythm'
+							: 'Secondary action OFF — flag is rigid',
+						W / 2,
+						H - 8
+					);
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				const tog = makeToggle('Secondary Action ON', 'Secondary Action OFF', true, (v) => {
+					enabled = v;
+				});
+				ctrl.appendChild(makeRow(tog));
+			},
+
+			/* ── 9. TIMING ── */
+			timing(ctrl) {
+				let fps = 6,
+					t = 0,
+					lastTs = null,
+					frameCount = 0,
+					snapT = 0,
+					acc = 0;
+				const FPSOPTS = [2, 4, 6, 12, 18, 24];
+
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					const dt = (ts - lastTs) / 1000;
+					lastTs = ts;
+					t = Math.min(1, t + dt * 0.4);
+					acc += dt;
+					const interval = 1 / fps;
+					if (acc >= interval) {
+						acc = acc % interval;
+						snapT = t;
+						frameCount++;
+					}
+					if (t >= 1) {
+						t = 0;
+						frameCount = 0;
+						acc = 0;
+					}
+					clearCanvas();
+
+					const pad = 30,
+						trackW = W - pad * 2,
+						cy = H * 0.45;
+					dctx.strokeStyle = C.border2;
+					dctx.lineWidth = 1;
+					dctx.beginPath();
+					dctx.moveTo(pad, cy);
+					dctx.lineTo(W - pad, cy);
+					dctx.stroke();
+
+					const bx = pad + eio(snapT) * trackW;
+					drawBall(dctx, bx, cy, 15, 15, C.coral, false);
+
+					// Frame markers
+					const totalFrames = Math.round(fps * 2.5);
+					for (let i = 0; i <= totalFrames; i++) {
+						const fx = pad + eio(i / totalFrames) * trackW;
+						dctx.fillStyle = C.dim;
+						dctx.globalAlpha = 0.5;
+						dctx.beginPath();
+						dctx.arc(fx, cy + 30, 2, 0, Math.PI * 2);
+						dctx.fill();
+					}
+					dctx.globalAlpha = 1;
+
+					dctx.fillStyle = C.gold;
+					dctx.font = `bold 13px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText(`${fps} fps — ${totalFrames} frames for this action`, W / 2, H - 8);
+					dctx.fillStyle = C.muted;
+					dctx.font = `9px 'JetBrains Mono'`;
+					dctx.fillText(
+						fps <= 4
+							? 'very slow — heavy, deliberate'
+							: fps <= 8
+								? 'slow — weighted'
+								: fps <= 14
+									? 'medium — natural'
+									: fps <= 20
+										? 'fast — snappy'
+										: 'very fast — impactful',
+						W / 2,
+						H - 22
+					);
+
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+
+				const row = document.createElement('div');
+				row.className = 'btn-row';
+				FPSOPTS.forEach((f) => {
+					const b = makeBtn(`${f} fps`, f === fps ? 'active' : '');
+					b.onclick = () => {
+						fps = f;
+						row.querySelectorAll('.btn').forEach((x) => x.classList.remove('active'));
+						b.classList.add('active');
+						t = 0;
+					};
+					row.appendChild(b);
+				});
+				ctrl.appendChild(row);
+			},
+
+			/* ── 10. EXAGGERATION ── */
+			exaggeration(ctrl) {
+				let amount = 1,
+					t = 0,
+					lastTs = null;
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.7;
+					lastTs = ts;
+					if (t > 1) t = t % 1;
+					clearCanvas();
+
+					const bounce = t < 0.5 ? t * 2 : 1 - (t - 0.5) * 2;
+					const cy = H * 0.75 - eout(bounce) * (H * 0.55);
+					const speed = Math.abs(bounce < 0.5 ? 1 : -0.5 + bounce);
+					const atGround = cy > H * 0.73;
+
+					// Exaggerated squash/stretch
+					const stretch = amount * speed * 18;
+					const squash = amount * 14;
+					const rx = atGround ? 14 + squash : 14 - stretch * 0.3;
+					const ry = atGround ? 14 - squash * 0.5 : 14 + stretch;
+
+					drawBall(dctx, W / 2, cy, Math.max(5, rx), Math.max(5, ry), C.lav);
+
+					// Ground
+					dctx.strokeStyle = C.border2;
+					dctx.lineWidth = 1;
+					dctx.beginPath();
+					dctx.moveTo(20, H * 0.76);
+					dctx.lineTo(W - 20, H * 0.76);
+					dctx.stroke();
+
+					const pct = Math.round(amount * 100);
+					dctx.fillStyle = C.muted;
+					dctx.font = `10px 'JetBrains Mono'`;
+					dctx.textAlign = 'center';
+					dctx.fillText(
+						pct === 0
+							? '0% — rigid, no deformation'
+							: pct <= 60
+								? `${pct}% — subtle`
+								: pct <= 100
+									? `${pct}% — naturalistic`
+									: `${pct}% — cartoon exaggeration`,
+						W / 2,
+						H - 8
+					);
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				ctrl.appendChild(
+					makeSliderRow('Amount', 0, 2, 1, 0.05, (v) => {
+						amount = v;
+					})
+				);
+			},
+
+			/* ── 11. SOLID DRAWING ── */
+			soliddrawing(ctrl) {
+				let showFlat = false,
+					t = 0,
+					lastTs = null;
+				function frame(ts) {
+					if (!lastTs) lastTs = ts;
+					t += ((ts - lastTs) / 1000) * 0.5;
+					lastTs = ts;
+					clearCanvas();
+
+					const cx = W / 2,
+						cy = H / 2,
+						a = t * 0.8;
+
+					if (showFlat) {
+						// Flat: no shading, no perspective, no volume
+						const s = 50;
+						dctx.strokeStyle = C.lav;
+						dctx.lineWidth = 2;
+						dctx.fillStyle = C.raised;
+						// Front face only — flat square
+						dctx.beginPath();
+						dctx.rect(cx - s, cy - s, s * 2, s * 2);
+						dctx.fill();
+						dctx.stroke();
+						dctx.fillStyle = C.muted;
+						dctx.font = `10px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('Flat — no volume, no 3D form', W / 2, H - 8);
+					} else {
+						// 3D: rotating box with shading
+						const s = 45,
+							d = 22;
+						const cos = Math.cos(a),
+							sin = Math.sin(a);
+
+						// Iso projection
+						function proj(x, y, z) {
+							return {
+								x: cx + cos * x - sin * z,
+								y: cy + sin * 0.5 * x + cos * 0.5 * z - y * 0.9
+							};
+						}
+
+						const v = [
+							proj(-s, -s, -s),
+							proj(s, -s, -s),
+							proj(s, s, -s),
+							proj(-s, s, -s), // back
+							proj(-s, -s, s),
+							proj(s, -s, s),
+							proj(s, s, s),
+							proj(-s, s, s) // front
+						];
+						function face(pts, col) {
+							dctx.fillStyle = col;
+							dctx.strokeStyle = C.lav + '60';
+							dctx.lineWidth = 1;
+							dctx.beginPath();
+							pts.forEach((p, i) => (i === 0 ? dctx.moveTo(p.x, p.y) : dctx.lineTo(p.x, p.y)));
+							dctx.closePath();
+							dctx.fill();
+							dctx.stroke();
+						}
+						// Back to front faces
+						face([v[4], v[5], v[6], v[7]], C.lav + 'aa'); // front
+						face([v[0], v[1], v[5], v[4]], '#6a5c88'); // top-ish
+						face([v[1], v[2], v[6], v[5]], '#3a2a5a'); // right (dark)
+
+						dctx.fillStyle = C.muted;
+						dctx.font = `10px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('Solid drawing — volume, shading, 3D form', W / 2, H - 8);
+					}
+					activeRaf = requestAnimationFrame(frame);
+				}
+				activeRaf = requestAnimationFrame(frame);
+				const bS = makeBtn('3D / Solid', 'active');
+				const bF = makeBtn('Flat');
+				bS.onclick = () => {
+					showFlat = false;
+					bS.classList.add('active');
+					bF.classList.remove('active');
+				};
+				bF.onclick = () => {
+					showFlat = true;
+					bF.classList.add('active');
+					bS.classList.remove('active');
+				};
+				ctrl.appendChild(makeRow(bS, bF));
+			},
+
+			/* ── 12. APPEAL ── */
+			appeal(ctrl) {
+				let mode = 'appealing';
+				function render() {
+					clearCanvas();
+					const half = W / 2;
+
+					function drawLeft() {
+						// Appealing: varied shapes, strong silhouette, hierarchy
+						const cx = half * 0.5,
+							cy = H * 0.45;
+						// Head — large, clear circle
+						dctx.fillStyle = C.lav + 'cc';
+						dctx.beginPath();
+						dctx.arc(cx, cy - 18, 28, 0, Math.PI * 2);
+						dctx.fill();
+						// Body — smaller, different shape
+						dctx.fillStyle = C.lav + '88';
+						dctx.beginPath();
+						dctx.ellipse(cx, cy + 22, 18, 26, 0, 0, Math.PI * 2);
+						dctx.fill();
+						// Eye — distinctive, large
+						dctx.fillStyle = '#fff';
+						dctx.beginPath();
+						dctx.ellipse(cx - 6, cy - 20, 8, 9, -0.2, 0, Math.PI * 2);
+						dctx.fill();
+						dctx.fillStyle = C.bg;
+						dctx.beginPath();
+						dctx.arc(cx - 5, cy - 20, 5, 0, Math.PI * 2);
+						dctx.fill();
+						dctx.fillStyle = '#fff';
+						dctx.beginPath();
+						dctx.arc(cx - 3, cy - 23, 2, 0, Math.PI * 2);
+						dctx.fill();
+						// Smile
+						dctx.strokeStyle = '#fff';
+						dctx.lineWidth = 2;
+						dctx.lineCap = 'round';
+						dctx.beginPath();
+						dctx.arc(cx, cy - 14, 8, 0.1, Math.PI - 0.1);
+						dctx.stroke();
+						// Labels
+						dctx.fillStyle = C.mint;
+						dctx.font = `bold 10px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('✓ APPEALING', cx, H - 22);
+						dctx.fillStyle = C.muted;
+						dctx.font = `9px 'JetBrains Mono'`;
+						dctx.fillText('varied shapes, hierarchy', cx, H - 8);
+					}
+
+					function drawRight() {
+						// Unappealing: equal sizes, symmetric, boring, weak silhouette
+						const cx = half + half * 0.5,
+							cy = H * 0.45;
+						const s = 22;
+						// Head — same size as body
+						dctx.fillStyle = C.muted + '66';
+						dctx.beginPath();
+						dctx.rect(cx - s, cy - s * 2, s * 2, s * 2);
+						dctx.fill();
+						// Body — same size
+						dctx.fillStyle = C.muted + '44';
+						dctx.beginPath();
+						dctx.rect(cx - s, cy, s * 2, s * 2);
+						dctx.fill();
+						// Eyes — tiny, identical dots
+						[cx - 8, cx + 8].forEach((ex) => {
+							dctx.fillStyle = C.dim;
+							dctx.beginPath();
+							dctx.arc(ex, cy - s - 0.5, 2, 0, Math.PI * 2);
+							dctx.fill();
+						});
+						// Flat line mouth
+						dctx.strokeStyle = C.dim;
+						dctx.lineWidth = 1;
+						dctx.beginPath();
+						dctx.moveTo(cx - 6, cy - s + 8);
+						dctx.lineTo(cx + 6, cy - s + 8);
+						dctx.stroke();
+						dctx.fillStyle = C.coral;
+						dctx.font = `bold 10px 'JetBrains Mono'`;
+						dctx.textAlign = 'center';
+						dctx.fillText('✗ UNAPPEALING', cx, H - 22);
+						dctx.fillStyle = C.muted;
+						dctx.font = `9px 'JetBrains Mono'`;
+						dctx.fillText('equal shapes, no variety', cx, H - 8);
+					}
+
+					// Divider
+					dctx.strokeStyle = C.border;
+					dctx.lineWidth = 1;
+					dctx.beginPath();
+					dctx.moveTo(half, 10);
+					dctx.lineTo(half, H - 4);
+					dctx.stroke();
+
+					drawLeft();
+					drawRight();
+				}
+				render();
+				// Static — no loop needed
+				if (activeRaf) {
+					cancelAnimationFrame(activeRaf);
+					activeRaf = null;
+				}
+
+				const info = document.createElement('div');
+				info.style.cssText =
+					'font-family:var(--ff-mono);font-size:10px;color:var(--muted);line-height:1.6;';
+				info.innerHTML =
+					'Appeal comes from <strong style="color:var(--gold)">variety</strong>: different shape sizes, organic curves vs. sharp angles, clear visual hierarchy. The appealing design reads instantly.';
+				ctrl.appendChild(info);
+			}
+		};
+
+		/* ═══════════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════════ */
+		let quizScores = {};
+		function answer(optEl, qId, result) {
+			const qEl = document.getElementById(qId);
+			if (qEl.querySelector('.option.correct') || qEl.querySelector('.option.wrong')) return;
+			const fb = document.getElementById(qId + '-feedback');
+			optEl.classList.add(result === 'correct' ? 'correct' : 'wrong');
+			qEl.querySelectorAll('.option').forEach((o) => o.classList.add('disabled'));
+			if (result === 'correct') {
+				fb.textContent = '✓ Correct.';
+				fb.className = 'feedback ok';
+				quizScores[qId] = true;
+			} else {
+				fb.textContent = '✗ Not quite — review the principle and try again.';
+				fb.className = 'feedback bad';
+				quizScores[qId] = false;
+				qEl.querySelectorAll('.option').forEach((o) => {
+					if (!o.classList.contains('wrong')) o.classList.add('correct');
+				});
+			}
+			if (Object.keys(quizScores).length === 5) {
+				const c = Object.values(quizScores).filter(Boolean).length;
+				document.getElementById('scoreNum').textContent = `${c}/5`;
+				document.getElementById('scoreLbl').textContent =
+					c === 5
+						? 'Perfect — Module 3 Complete!'
+						: c >= 4
+							? 'Strong — review any you missed.'
+							: 'Good effort — re-explore the principles.';
+				document.getElementById('quizScore').classList.add('visible');
+			}
+		}
+
+		// Open first principle by default
+		openPrinciple('squash');
+
+		/* eslint-disable no-undef */
+		if (typeof ein === 'function') window.ein = ein;
+		if (typeof drawLeft === 'function') window.drawLeft = drawLeft;
+		if (typeof drawStick === 'function') window.drawStick = drawStick;
+		if (typeof proj === 'function') window.proj = proj;
+		if (typeof face === 'function') window.face = face;
+		if (typeof makeToggle === 'function') window.makeToggle = makeToggle;
+		if (typeof frame === 'function') window.frame = frame;
+		if (typeof lerp === 'function') window.lerp = lerp;
+		if (typeof eio === 'function') window.eio = eio;
+		if (typeof makeSliderRow === 'function') window.makeSliderRow = makeSliderRow;
+		if (typeof clamp === 'function') window.clamp = clamp;
+		if (typeof drawRight === 'function') window.drawRight = drawRight;
+		if (typeof render === 'function') window.render = render;
+		if (typeof lerpPose === 'function') window.lerpPose = lerpPose;
+		if (typeof eout === 'function') window.eout = eout;
+		if (typeof drawBall === 'function') window.drawBall = drawBall;
+		if (typeof openPrinciple === 'function') window.openPrinciple = openPrinciple;
+		if (typeof makeRow === 'function') window.makeRow = makeRow;
+		if (typeof makeBtn === 'function') window.makeBtn = makeBtn;
+		if (typeof clearCanvas === 'function') window.clearCanvas = clearCanvas;
+		if (typeof answer === 'function') window.answer = answer;
+		/* eslint-enable no-undef */
+
+		return () => {};
+	});
+</script>
+
+<div class="page-wrapper">
+	<!-- ══ HERO ══ -->
+	<header class="module-hero">
+		<div class="hero-deco" id="heroDeco" aria-hidden="true"></div>
+		<div class="module-eyebrow">Animation Fundamentals · Module 03</div>
+		<h1 class="module-title">The <em>12 Principles</em><br />of Animation</h1>
+		<p class="module-subtitle">
+			The rules that make motion feel alive — codified by Disney animators, universally applicable.
+		</p>
+		<div class="objectives">
+			<div class="obj-label">Learning Objectives</div>
+			<ul>
+				<li>Name and explain all 12 principles and what each one does</li>
+				<li>Identify which principles are present or absent in a given animation</li>
+				<li>Apply principles to simple objects — not just characters</li>
+				<li>Understand which principles matter most for educational animation</li>
+			</ul>
+		</div>
+	</header>
+
+	<!-- ══ SECTION 1: CONTEXT ══ -->
+	<section class="section" id="s1">
+		<div class="section-header">
+			<span class="section-num">01</span>
+			<h2 class="section-title">Where the Principles Come From</h2>
+		</div>
+		<p>
+			In the 1930s, Disney animators Frank Thomas and Ollie Johnston — two of the legendary "Nine
+			Old Men" — distilled decades of in-house craft into a list of 12 principles. They were later
+			published in <em>The Illusion of Life</em> (1981), which remains the bible of character animation.
+		</p>
+		<p>
+			The principles were designed for <strong>character animation</strong>, but they apply just as
+			powerfully to diagrams, UI transitions, and explainer video elements. An arrow that enters
+			with anticipation, overshoots, and settles with follow-through communicates more clearly than
+			one that just pops on. The principles are a <em>perceptual language</em>, not just a drawing
+			technique.
+		</p>
+		<div class="callout gold">
+			<div class="callout-label">Important Framing</div>
+			You do not need to apply all 12 principles to every animation. You need to know them well enough
+			to choose the right ones. A diagram reveal might only need
+			<strong>staging</strong>, <strong>timing</strong>, and <strong>slow in/out</strong>. A
+			character reacting might need eight principles at once. The art is in the selection.
+		</div>
+
+		<table class="overview-table">
+			<thead>
+				<tr>
+					<th>#</th>
+					<th>Principle</th>
+					<th>Category</th>
+					<th>One-Line Summary</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>1</td>
+					<td>Squash &amp; Stretch</td>
+					<td><span class="tag tag-form">Form</span></td>
+					<td>Objects deform to show mass, speed, and impact</td>
+				</tr>
+				<tr>
+					<td>2</td>
+					<td>Anticipation</td>
+					<td><span class="tag tag-action">Action</span></td>
+					<td>Wind up before the main action to charge it</td>
+				</tr>
+				<tr>
+					<td>3</td>
+					<td>Staging</td>
+					<td><span class="tag tag-craft">Craft</span></td>
+					<td>Present ideas so the viewer sees exactly what you mean</td>
+				</tr>
+				<tr>
+					<td>4</td>
+					<td>Straight Ahead vs Pose-to-Pose</td>
+					<td><span class="tag tag-craft">Craft</span></td>
+					<td>Two different creative processes; different results</td>
+				</tr>
+				<tr>
+					<td>5</td>
+					<td>Follow Through &amp; Overlapping</td>
+					<td><span class="tag tag-motion">Motion</span></td>
+					<td>Parts that trail behind or continue after the main action stops</td>
+				</tr>
+				<tr>
+					<td>6</td>
+					<td>Slow In / Slow Out</td>
+					<td><span class="tag tag-motion">Motion</span></td>
+					<td>Easing — acceleration and deceleration feel natural</td>
+				</tr>
+				<tr>
+					<td>7</td>
+					<td>Arcs</td>
+					<td><span class="tag tag-motion">Motion</span></td>
+					<td>All natural motion follows curved paths</td>
+				</tr>
+				<tr>
+					<td>8</td>
+					<td>Secondary Action</td>
+					<td><span class="tag tag-action">Action</span></td>
+					<td>Supporting motion that reinforces the main idea</td>
+				</tr>
+				<tr>
+					<td>9</td>
+					<td>Timing</td>
+					<td><span class="tag tag-craft">Craft</span></td>
+					<td>Number of frames = speed, mood, and weight</td>
+				</tr>
+				<tr>
+					<td>10</td>
+					<td>Exaggeration</td>
+					<td><span class="tag tag-action">Action</span></td>
+					<td>Push beyond realism to clarify intention</td>
+				</tr>
+				<tr>
+					<td>11</td>
+					<td>Solid Drawing</td>
+					<td><span class="tag tag-form">Form</span></td>
+					<td>Objects have three-dimensional volume and weight</td>
+				</tr>
+				<tr>
+					<td>12</td>
+					<td>Appeal</td>
+					<td><span class="tag tag-form">Form</span></td>
+					<td>Designs feel interesting, readable, and engaging</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<!-- ══ SECTION 2: PRINCIPLE EXPLORER ══ -->
+	<section class="section" id="s2">
+		<div class="section-header">
+			<span class="section-num">02</span>
+			<h2 class="section-title">Principle Explorer</h2>
+		</div>
+		<p>
+			Click any principle to open its interactive demo. Work through them in order or jump to
+			whatever interests you — each demo is self-contained.
+		</p>
+
+		<div class="principles-grid" id="principlesGrid"></div>
+		<div class="demo-panel" id="demoPanel">
+			<div class="demo-panel-header">
+				<div>
+					<div class="demo-panel-title" id="dpTitle"></div>
+					<div class="demo-panel-subtitle" id="dpSubtitle"></div>
+				</div>
+				<span class="demo-badge" id="dpBadge">interactive</span>
+			</div>
+			<div class="demo-panel-body">
+				<div class="demo-panel-text" id="dpText"></div>
+				<div class="demo-panel-canvas-wrap">
+					<canvas
+						id="demoCanvas"
+						width="340"
+						height="200"
+						style="background: var(--raised); border: 1px solid var(--border); max-width: 100%"
+					></canvas>
+					<div class="demo-panel-controls" id="dpControls"></div>
+					<div class="key-insight" id="dpInsight" style="display: none">
+						<div class="key-insight-label">Key Insight</div>
+						<span id="dpInsightText"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ QUIZ ══ -->
+	<div class="quiz-section" id="quiz">
+		<div class="quiz-header-bar">
+			<div>
+				<div class="quiz-title">Module Check</div>
+				<div class="quiz-sub">5 questions · Identify the principles</div>
+			</div>
+			<span
+				class="demo-badge"
+				style="
+							border-color: var(--lavender);
+							color: var(--lavender);
+							background: color-mix(in srgb, var(--lavender) 10%, transparent);
+						">Assessment</span
+			>
+		</div>
+		<div class="quiz-body">
+			<div class="question" id="q1">
+				<div class="q-num">Q1 of 5</div>
+				<div class="q-text">
+					A character is about to throw a punch. Before their fist moves forward, it pulls back
+					slightly — then rockets toward the target. Which principle does the backward pull
+					demonstrate?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Follow Through
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+					>
+						Anticipation
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Exaggeration
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Secondary Action
+					</div>
+				</div>
+				<div class="feedback" id="q1-feedback"></div>
+			</div>
+
+			<div class="question" id="q2">
+				<div class="q-num">Q2 of 5</div>
+				<div class="q-text">
+					After a running character stops suddenly, their hair continues moving forward for a few
+					frames before settling. This is an example of:
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						Squash and Stretch
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						Secondary Action
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+					>
+						Follow Through and Overlapping Action
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						Anticipation
+					</div>
+				</div>
+				<div class="feedback" id="q2-feedback"></div>
+			</div>
+
+			<div class="question" id="q3">
+				<div class="q-num">Q3 of 5</div>
+				<div class="q-text">
+					An explainer video shows a diagram where five arrows all appear at exactly the same
+					moment, pointing in different directions. A reviewer says it "feels confusing and
+					unclear." Which principle is most likely being violated?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+					>
+						Staging
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Arcs
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Appeal
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Slow In / Slow Out
+					</div>
+				</div>
+				<div class="feedback" id="q3-feedback"></div>
+			</div>
+
+			<div class="question" id="q4">
+				<div class="q-num">Q4 of 5</div>
+				<div class="q-text">
+					You animate a bouncing ball that maintains a perfectly circular shape at all times — even
+					on impact with the ground. Which principle are you ignoring?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						Timing
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						Arcs
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						Appeal
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+					>
+						Squash and Stretch
+					</div>
+				</div>
+				<div class="feedback" id="q4-feedback"></div>
+			</div>
+
+			<div class="question" id="q5">
+				<div class="q-num">Q5 of 5</div>
+				<div class="q-text">
+					A walking character swings their arms as they move. The arm swing isn't just decoration —
+					it helps the viewer understand the character's energy, weight, and rhythm. This arm motion
+					is an example of:
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Follow Through
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Exaggeration
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+					>
+						Secondary Action
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Straight Ahead animation
+					</div>
+				</div>
+				<div class="feedback" id="q5-feedback"></div>
+			</div>
+		</div>
+		<div class="quiz-score" id="quizScore">
+			<div class="score-big" id="scoreNum">0/5</div>
+			<div class="score-lbl" id="scoreLbl">Module 3 Complete</div>
+		</div>
+	</div>
+
+	<!-- ══ NAV ══ -->
+	<nav class="nav-links">
+		<a href="/courses/animation/02" class="prev-link">← Module 2: Timing, Spacing &amp; Weight</a>
+		<a href="/courses/animation/04" class="next-module">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">Drawing for Animation</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</nav>
+</div>
+
+<!-- /page-wrapper -->
+
+<style>
+	.page-wrapper {
+		background: var(--anim-bg);
+		color: var(--anim-text);
+		font-family: var(--ff-body);
+		font-size: 15px;
+		line-height: 1.8;
+	}
+
+	h1,
+	h2,
+	:global(h3) {
+		font-family: var(--ff-display);
+		font-weight: 800;
+		line-height: 1.15;
+		color: #fff;
+	}
+	p {
+		margin-bottom: 1.1rem;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--anim-gold);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: italic;
+	}
+	:global(code) {
+		font-family: var(--ff-mono);
+		font-size: 12px;
+		background: var(--anim-raised);
+		border: 1px solid var(--anim-border2);
+		padding: 1px 6px;
+		color: var(--anim-mint);
+	}
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 8rem;
+	}
+
+	/* ── HERO ── */
+	.module-hero {
+		padding: 5rem 0 4rem;
+		border-bottom: 1px solid var(--anim-border);
+		margin-bottom: 4rem;
+		position: relative;
+		overflow: hidden;
+	}
+	.module-eyebrow {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-gold);
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.module-eyebrow::before,
+	.module-eyebrow::after {
+		content: '';
+		display: inline-block;
+		width: 24px;
+		height: 1px;
+		background: var(--anim-gold);
+	}
+	.module-title {
+		font-size: clamp(30px, 5.5vw, 56px);
+		color: #fff;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+	.module-title em {
+		color: var(--anim-lavender);
+		font-style: italic;
+	}
+	.module-subtitle {
+		font-size: 16px;
+		color: var(--anim-muted);
+		font-weight: 400;
+		margin-bottom: 2.5rem;
+	}
+	.objectives {
+		border: 1px solid var(--anim-border);
+		border-left: 3px solid var(--anim-lavender);
+		background: var(--anim-surface);
+		padding: 1.5rem 2rem;
+	}
+	.obj-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-lavender);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.25rem 0 0.25rem 1.5rem;
+		position: relative;
+		font-size: 14px;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--anim-gold);
+	}
+
+	/* hero deco */
+	.hero-deco {
+		position: absolute;
+		top: 0;
+		right: 0;
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 6px;
+		opacity: 0.05;
+		pointer-events: none;
+		padding: 1.5rem;
+	}
+	.hero-deco-cell {
+		width: 40px;
+		height: 30px;
+		border: 1px solid var(--anim-lavender);
+		border-radius: 2px;
+	}
+
+	/* ── SECTIONS ── */
+	.section {
+		margin: 5rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.section-num {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-coral);
+		letter-spacing: 0.1em;
+	}
+	.section-title {
+		font-family: var(--ff-display);
+		font-size: 26px;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	/* ── CALLOUT ── */
+	.callout {
+		margin: 1.75rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
+		font-size: 13.5px;
+	}
+	.callout.gold {
+		border-color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
+	}
+	.callout.coral {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
+	}
+	.callout.mint {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
+	}
+	.callout-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		margin-bottom: 0.4rem;
+		font-weight: 500;
+		color: var(--anim-lavender);
+	}
+	.callout.gold .callout-label {
+		color: var(--anim-gold);
+	}
+	.callout.coral .callout-label {
+		color: var(--anim-coral);
+	}
+	.callout.mint .callout-label {
+		color: var(--anim-mint);
+	}
+
+	/* ── PRINCIPLE GRID ── */
+	.principles-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+		margin: 2.5rem 0;
+	}
+	@media (max-width: 700px) {
+		.principles-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (max-width: 400px) {
+		.principles-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	:global(.p-card) {
+		background: var(--anim-surface);
+		padding: 1.1rem 1rem;
+		cursor: pointer;
+		transition: all 0.15s;
+		position: relative;
+		user-select: none;
+	}
+	:global(.p-card:hover) {
+		background: var(--anim-raised);
+	}
+	:global(.p-card.active) {
+		background: color-mix(in srgb, var(--anim-lavender) 8%, var(--anim-raised));
+	}
+	:global(.p-card.active::after) {
+		content: '';
+		position: absolute;
+		bottom: -1px;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--anim-lavender);
+	}
+	:global(.p-card-num) {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.15em;
+		color: var(--anim-dim);
+		margin-bottom: 0.3rem;
+	}
+	:global(.p-card-name) {
+		font-family: var(--ff-display);
+		font-size: 14px;
+		font-weight: 600;
+		color: #fff;
+		line-height: 1.25;
+		margin-bottom: 0.25rem;
+	}
+	:global(.p-card-tag) {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.08em;
+		color: var(--anim-muted);
+	}
+	:global(.p-card.active) :global(.p-card-num) {
+		color: var(--anim-lavender);
+	}
+	:global(.p-card.active) :global(.p-card-name) {
+		color: var(--anim-lavender);
+	}
+
+	/* ── DEMO PANEL ── */
+	.demo-panel {
+		border: 1px solid var(--anim-border);
+		border-top: 2px solid var(--anim-lavender);
+		background: var(--anim-raised);
+		display: none;
+	}
+	.demo-panel.visible {
+		display: block;
+	}
+	.demo-panel-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		padding: 1.25rem 1.5rem;
+		border-bottom: 1px solid var(--anim-border);
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.demo-panel-title {
+		font-family: var(--ff-display);
+		font-size: 22px;
+		font-weight: 700;
+		color: #fff;
+	}
+	.demo-panel-subtitle {
+		font-size: 13px;
+		color: var(--anim-muted);
+		margin-top: 0.2rem;
+	}
+	.demo-badge {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid var(--anim-lavender);
+		color: var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 10%, transparent);
+		flex-shrink: 0;
+	}
+	.demo-panel-body {
+		padding: 1.5rem;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+		align-items: start;
+	}
+	@media (max-width: 640px) {
+		.demo-panel-body {
+			grid-template-columns: 1fr;
+		}
+	}
+	.demo-panel-text {
+		font-size: 13.5px;
+		line-height: 1.75;
+	}
+	.demo-panel-text p {
+		color: var(--anim-text);
+	}
+	.demo-panel-canvas-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.demo-panel-controls {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	canvas {
+		display: block;
+	}
+
+	/* ── CONTROLS ── */
+	:global(.ctrl-row) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.3rem 0;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-label) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 72px;
+	}
+	:global(.ctrl-val) {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-lavender);
+		font-weight: 500;
+		min-width: 40px;
+	}
+	:global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 2px;
+		background: var(--anim-border2);
+		outline: none;
+		min-width: 80px;
+	}
+	:global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--anim-lavender);
+		cursor: pointer;
+		border: 2px solid var(--anim-bg);
+	}
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-text);
+		padding: 5px 14px;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.15s;
+		letter-spacing: 0.05em;
+	}
+	:global(.btn:hover) {
+		border-color: var(--anim-lavender);
+		color: var(--anim-lavender);
+	}
+	:global(.btn.active) {
+		border-color: var(--anim-lavender);
+		color: var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 12%, transparent);
+	}
+	:global(.btn.off) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	:global(.btn.off:hover) {
+		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	:global(.key-insight) {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-left: 2px solid var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
+		font-size: 12px;
+		line-height: 1.65;
+	}
+	:global(.key-insight-label) {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-lavender);
+		margin-bottom: 0.3rem;
+	}
+
+	/* ── OVERVIEW TABLE ── */
+	.overview-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 12px;
+		margin: 1.5rem 0;
+	}
+	.overview-table th {
+		background: var(--anim-raised);
+		color: var(--anim-lavender);
+		text-align: left;
+		padding: 0.5rem 0.85rem;
+		border: 1px solid var(--anim-border);
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		font-weight: 500;
+	}
+	.overview-table td {
+		padding: 0.45rem 0.85rem;
+		border: 1px solid var(--anim-border);
+		color: var(--anim-text);
+	}
+	.overview-table tr:nth-child(even) td {
+		background: color-mix(in srgb, var(--anim-raised) 50%, transparent);
+	}
+	.overview-table .tag {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		padding: 1px 6px;
+		border: 1px solid;
+		display: inline-block;
+	}
+	.tag-form {
+		color: var(--anim-mint);
+		border-color: var(--anim-mint);
+	}
+	.tag-motion {
+		color: var(--anim-gold);
+		border-color: var(--anim-gold);
+	}
+	.tag-action {
+		color: var(--anim-coral);
+		border-color: var(--anim-coral);
+	}
+	.tag-craft {
+		color: var(--anim-lavender);
+		border-color: var(--anim-lavender);
+	}
+
+	/* ── QUIZ ── */
+	.quiz-section {
+		margin: 5rem 0;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+	}
+	.quiz-header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 1.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.quiz-title {
+		font-family: var(--ff-display);
+		font-size: 22px;
+		font-weight: 800;
+		color: #fff;
+	}
+	.quiz-sub {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.2rem;
+	}
+	.quiz-body {
+		padding: 1.75rem;
+	}
+	.question {
+		margin: 2rem 0;
+	}
+	.question:first-child {
+		margin-top: 0;
+	}
+	.q-num {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		color: var(--anim-lavender);
+		margin-bottom: 0.4rem;
+	}
+	.q-text {
+		font-size: 14px;
+		color: #fff;
+		margin-bottom: 0.75rem;
+		line-height: 1.6;
+	}
+	.q-scene {
+		margin: 0.5rem 0;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-raised);
+	}
+	.options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.option {
+		padding: 0.65rem 1rem;
+		border: 1px solid var(--anim-border);
+		cursor: pointer;
+		font-size: 13px;
+		font-family: var(--ff-body);
+		transition: all 0.15s;
+		user-select: none;
+		background: var(--anim-bg);
+	}
+	.option:hover {
+		border-color: var(--anim-border2);
+		background: var(--anim-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+		color: var(--anim-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+		color: var(--anim-coral);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	.feedback {
+		font-size: 12px;
+		margin-top: 0.6rem;
+		min-height: 1.4em;
+		font-family: var(--ff-mono);
+		color: var(--anim-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--anim-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--anim-coral);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 2rem;
+		border: 1px solid var(--anim-border);
+		text-align: center;
+		background: var(--anim-raised);
+		display: none;
+	}
+	:global(.quiz-score.visible) {
+		display: block;
+	}
+	.score-big {
+		font-family: var(--ff-display);
+		font-size: 52px;
+		font-weight: 800;
+		color: var(--anim-gold);
+		line-height: 1;
+	}
+	.score-lbl {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.5rem;
+	}
+
+	/* ── NAV ── */
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 4rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.prev-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		color: var(--anim-muted);
+		font-family: var(--ff-mono);
+		font-size: 11px;
+	}
+	.prev-link:hover {
+		border-color: var(--anim-muted);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		min-width: 260px;
+	}
+	.next-module:hover {
+		border-color: var(--anim-gold);
+	}
+	.next-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.next-title {
+		font-family: var(--ff-display);
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.2rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--anim-gold);
+		flex-shrink: 0;
+	}
+	@media (max-width: 640px) {
+		.page-wrapper {
+			padding: 0 1.25rem 6rem;
+		}
+	}
+</style>

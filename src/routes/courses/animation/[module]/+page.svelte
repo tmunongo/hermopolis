@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Module01 from '$lib/modules/animation/Module01.svelte';
 	import Module02 from '$lib/modules/animation/Module02.svelte';
+	import Module03 from '$lib/modules/animation/Module03.svelte';
 	import ScrollProgress from '$lib/components/ScrollProgress.svelte';
 	import type { PageData } from './$types';
 
@@ -35,6 +36,8 @@
 		<Module01 />
 	{:else if mod.id === '02'}
 		<Module02 />
+	{:else if mod.id === '03'}
+		<Module03 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--anim-muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

@@ -194,7 +194,7 @@ export const animationModules: Module[] = [
 		number: 3,
 		title: 'The 12 Principles',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-mint',
 		description:
 			'Understand and apply the classical principles: squash & stretch, anticipation, follow-through, arcs, and more.'
