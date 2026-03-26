@@ -66,23 +66,6 @@
 			{/each}
 		</div>
 	</section>
-	<footer>
-		<div class="footer-content">
-			<div class="footer-logo">Hermopolis</div>
-			<!-- <div class="footer-links">
-				<a href="/courses">Courses</a>
-				<a href="/about">About</a>
-				<a href="/contact">Contact</a>
-			</div> -->
-			<div>
-				<p>All rights reserved © 2026 Hermopolis</p>
-				<p>
-					Built for <strong>learners</strong> by
-					<a class="footer-link" href="https://tawandamunongo.dev/">Tawanda Munongo</a>
-				</p>
-			</div>
-		</div>
-	</footer>
 </div>
 
 <style>

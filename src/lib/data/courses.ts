@@ -61,7 +61,7 @@ export const gameDevModules: Module[] = [
 		number: 4,
 		title: 'Shaders and the GPU Pipeline',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent',
 		description:
 			'Write vertex and fragment shaders. Understand how GPU programs compute color for every pixel.'

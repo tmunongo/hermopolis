@@ -2,6 +2,7 @@
 	import Module01 from '$lib/modules/game-dev/Module01.svelte';
 	import Module02 from '$lib/modules/game-dev/Module02.svelte';
 	import Module03 from '$lib/modules/game-dev/Module03.svelte';
+	import Module04 from '$lib/modules/game-dev/Module04.svelte';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -40,6 +41,8 @@
 		<Module02 />
 	{:else if mod.id === '03'}
 		<Module03 />
+	{:else if mod.id === '04'}
+		<Module04 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

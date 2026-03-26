@@ -33,20 +33,26 @@ def convert_module(input_path, output_path):
         '.feedback.ok', '.feedback.bad', '.quiz-score.visible', '.graph-legend',
         '.p-card', '.p-card:hover', '.p-card.active', '.p-card.active::after',
         '.p-card-num', '.p-card-name', '.p-card-tag', '.p-card.active .p-card-num', '.p-card.active .p-card-name',
-        '.ctrl-row', '.ctrl-label', '.ctrl-val', '.key-insight', '.key-insight-label'
+        '.ctrl-row', '.ctrl-label', '.ctrl-val', '.key-insight', '.key-insight-label',
+        '.buffer-row', '.buffer-cell', '.buffer-cell span', '.buffer-cell:hover', 
+        '.buffer-cell.X', '.buffer-cell.Y', '.buffer-cell.R', '.buffer-cell.G', '.buffer-cell.B',
+        '.state-val', '.state-val.none', '.state-val.bound',
+        '.log-line', '.log-line.bind', '.log-line.draw', '.log-line.gpu', '.log-line.info',
+        '.question', '.lang-tag'
     ]
     for sel in selectors_to_wrap:
         escaped_sel = re.escape(sel)
         css = re.sub(fr'(?<!:global\(){escaped_sel}(?P<suffix>[\s{{,])', fr':global({sel})\g<suffix>', css)
 
-    token_replacements = [
-        ('--bg', '--anim-bg'), ('--surface', '--anim-surface'), ('--raised', '--anim-raised'),
-        ('--border2', '--anim-border2'), ('--border', '--anim-border'), ('--gold', '--anim-gold'),
-        ('--coral', '--anim-coral'), ('--mint', '--anim-mint'), ('--lavender', '--anim-lavender'),
-        ('--text', '--anim-text'), ('--muted', '--anim-muted'), ('--dim', '--anim-dim')
-    ]
-    for old_token, new_token in token_replacements:
-        css = css.replace(old_token, new_token)
+    if 'animation' in output_path:
+        token_replacements = [
+            ('--bg', '--anim-bg'), ('--surface', '--anim-surface'), ('--raised', '--anim-raised'),
+            ('--border2', '--anim-border2'), ('--border', '--anim-border'), ('--gold', '--anim-gold'),
+            ('--coral', '--anim-coral'), ('--mint', '--anim-mint'), ('--lavender', '--anim-lavender'),
+            ('--text', '--anim-text'), ('--muted', '--anim-muted'), ('--dim', '--anim-dim')
+        ]
+        for old_token, new_token in token_replacements:
+            css = css.replace(old_token, new_token)
         
     body_match = re.search(r'<body>(.*?)</body>', text, re.DOTALL)
     body_content = body_match.group(1).strip() if body_match else text
