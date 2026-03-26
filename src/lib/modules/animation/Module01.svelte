@@ -16,7 +16,7 @@
 					cell.className = 'frame-cell';
 					row.appendChild(cell);
 				}
-				el?.appendChild(row);
+				el.appendChild(row);
 			}
 		})();
 
@@ -337,40 +337,6 @@
 			renderTS();
 		};
 
-		const pad = 40;
-		const ballR = 13;
-
-		function drawTrack(y, label, accentColor) {
-			tsCtx.strokeStyle = C.border2;
-			tsCtx.lineWidth = 1;
-			tsCtx.setLineDash([4, 4]);
-			tsCtx.beginPath();
-			tsCtx.moveTo(pad, y);
-			tsCtx.lineTo(TS_W - pad, y);
-			tsCtx.stroke();
-			tsCtx.setLineDash([]);
-
-			// Track label
-			tsCtx.fillStyle = accentColor;
-			tsCtx.font = `500 10px 'JetBrains Mono'`;
-			tsCtx.textAlign = 'left';
-			tsCtx.fillText(label, pad, y - ballR - 6);
-		}
-
-		function drawMovingBall(x, y, color) {
-			const grd = tsCtx.createRadialGradient(x - 4, y - 4, 2, x, y, ballR);
-			grd.addColorStop(0, '#fff');
-			grd.addColorStop(0.3, color);
-			grd.addColorStop(1, '#000');
-			tsCtx.fillStyle = grd;
-			tsCtx.beginPath();
-			tsCtx.arc(x, y, ballR, 0, Math.PI * 2);
-			tsCtx.fill();
-			tsCtx.strokeStyle = 'rgba(255,255,255,0.15)';
-			tsCtx.lineWidth = 1;
-			tsCtx.stroke();
-		}
-
 		function easeInOut(t) {
 			return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 		}
@@ -381,11 +347,30 @@
 		function renderTS() {
 			tsCtx.clearRect(0, 0, TS_W, TS_H);
 
+			const pad = 40;
 			const trackW = TS_W - pad * 2;
 			const yLinear = TS_H * 0.32;
 			const yEase = TS_H * 0.68;
+			const ballR = 13;
 
 			// Track lines
+			function drawTrack(y, label, accentColor) {
+				tsCtx.strokeStyle = C.border2;
+				tsCtx.lineWidth = 1;
+				tsCtx.setLineDash([4, 4]);
+				tsCtx.beginPath();
+				tsCtx.moveTo(pad, y);
+				tsCtx.lineTo(TS_W - pad, y);
+				tsCtx.stroke();
+				tsCtx.setLineDash([]);
+
+				// Track label
+				tsCtx.fillStyle = accentColor;
+				tsCtx.font = `500 10px 'JetBrains Mono'`;
+				tsCtx.textAlign = 'left';
+				tsCtx.fillText(label, pad, y - ballR - 6);
+			}
+
 			drawTrack(yLinear, 'LINEAR', C.gold);
 			drawTrack(yEase, 'EASE IN/OUT', C.coral);
 
@@ -414,6 +399,20 @@
 			// Moving balls
 			const xlBall = pad + linear(tsProgress) * trackW;
 			const xeBall = pad + easeInOut(tsProgress) * trackW;
+
+			function drawMovingBall(x, y, color) {
+				const grd = tsCtx.createRadialGradient(x - 4, y - 4, 2, x, y, ballR);
+				grd.addColorStop(0, '#fff');
+				grd.addColorStop(0.3, color);
+				grd.addColorStop(1, '#000');
+				tsCtx.fillStyle = grd;
+				tsCtx.beginPath();
+				tsCtx.arc(x, y, ballR, 0, Math.PI * 2);
+				tsCtx.fill();
+				tsCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+				tsCtx.lineWidth = 1;
+				tsCtx.stroke();
+			}
 
 			drawMovingBall(xlBall, yLinear, C.gold);
 			drawMovingBall(xeBall, yEase, C.coral);
@@ -544,22 +543,24 @@
 			}
 		}
 
-		window.linear = linear;
-		window.fpsTick = fpsTick;
-		window.drawPendulums = drawPendulums;
-		window.setFPS = setFPS;
-		window.drawMovingBall = drawMovingBall;
-		window.renderFlipbook = renderFlipbook;
-		window.startFlip = startFlip;
-		window.easeInOut = easeInOut;
-		window.drawTrack = drawTrack;
-		window.stopFlip = stopFlip;
-		window.buildFilmstrip = buildFilmstrip;
-		window.selectType = selectType;
-		window.answer = answer;
-		window.tsAnimate = tsAnimate;
-		window.renderTS = renderTS;
-		window.drawBall = drawBall;
+		/* eslint-disable no-undef */
+		if (typeof stopFlip === 'function') window.stopFlip = stopFlip;
+		if (typeof renderTS === 'function') window.renderTS = renderTS;
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof drawTrack === 'function') window.drawTrack = drawTrack;
+		if (typeof drawMovingBall === 'function') window.drawMovingBall = drawMovingBall;
+		if (typeof fpsTick === 'function') window.fpsTick = fpsTick;
+		if (typeof startFlip === 'function') window.startFlip = startFlip;
+		if (typeof selectType === 'function') window.selectType = selectType;
+		if (typeof setFPS === 'function') window.setFPS = setFPS;
+		if (typeof easeInOut === 'function') window.easeInOut = easeInOut;
+		if (typeof drawPendulums === 'function') window.drawPendulums = drawPendulums;
+		if (typeof linear === 'function') window.linear = linear;
+		if (typeof tsAnimate === 'function') window.tsAnimate = tsAnimate;
+		if (typeof renderFlipbook === 'function') window.renderFlipbook = renderFlipbook;
+		if (typeof buildFilmstrip === 'function') window.buildFilmstrip = buildFilmstrip;
+		if (typeof drawBall === 'function') window.drawBall = drawBall;
+		/* eslint-enable no-undef */
 
 		return () => {
 			if (typeof fpsRafId !== 'undefined' && fpsRafId) cancelAnimationFrame(fpsRafId);
@@ -734,12 +735,22 @@
 						class="btn"
 						onclick={(e) => {
 							window.setFPS(0);
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setFPS(0);
 						}}>4 fps</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
 							window.setFPS(1);
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setFPS(1);
 						}}>8 fps</button
 					>
 					<button
@@ -747,18 +758,33 @@
 						onclick={(e) => {
 							window.setFPS(2);
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setFPS(2);
+						}}
 						id="fps24Btn">24 fps</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
 							window.setFPS(3);
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setFPS(3);
 						}}>30 fps</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
 							window.setFPS(4);
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setFPS(4);
 						}}>60 fps</button
 					>
 				</div>
@@ -892,6 +918,11 @@
 				onclick={(e) => {
 					window.selectType(e.currentTarget);
 				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectType(e.currentTarget);
+				}}
 			>
 				<div class="type-icon">✏️</div>
 				<div class="type-name">Traditional</div>
@@ -903,6 +934,11 @@
 				data-type="tween"
 				onclick={(e) => {
 					window.selectType(e.currentTarget);
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectType(e.currentTarget);
 				}}
 			>
 				<div class="type-icon">⬦</div>
@@ -916,6 +952,11 @@
 				onclick={(e) => {
 					window.selectType(e.currentTarget);
 				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectType(e.currentTarget);
+				}}
 			>
 				<div class="type-icon">🦴</div>
 				<div class="type-name">Rig-based</div>
@@ -927,6 +968,11 @@
 				data-type="procedural"
 				onclick={(e) => {
 					window.selectType(e.currentTarget);
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectType(e.currentTarget);
 				}}
 			>
 				<div class="type-icon">⌥</div>
@@ -969,6 +1015,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q1', 'wrong');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
 					>
 						The images are actually moving on screen
 					</div>
@@ -976,6 +1027,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
 						}}
 					>
 						The brain merges quickly-displayed still images into perceived motion
@@ -985,6 +1041,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q1', 'wrong');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
 					>
 						High-resolution images blur together at fast speeds
 					</div>
@@ -992,6 +1053,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
 						}}
 					>
 						Pixels change color fast enough to simulate movement
@@ -1012,6 +1078,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q2', 'wrong');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
 					>
 						24
 					</div>
@@ -1019,6 +1090,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
 						}}
 					>
 						48
@@ -1028,6 +1104,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q2', 'correct');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+						}}
 					>
 						72
 					</div>
@@ -1035,6 +1116,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
 						}}
 					>
 						96
@@ -1056,6 +1142,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q3', 'wrong');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
 					>
 						Their timing — Ball B takes more frames
 					</div>
@@ -1063,6 +1154,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
 						}}
 					>
 						Their timing — Ball A takes more frames
@@ -1072,6 +1168,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q3', 'correct');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+						}}
 					>
 						Their spacing — Ball B has eased motion, Ball A is linear
 					</div>
@@ -1079,6 +1180,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
 						}}
 					>
 						Their size — Ball A is physically larger
@@ -1100,6 +1206,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q4', 'wrong');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
 					>
 						Traditional (hand-drawn)
 					</div>
@@ -1107,6 +1218,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
 						}}
 					>
 						Tween-based
@@ -1116,6 +1232,11 @@
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q4', 'wrong');
 						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
 					>
 						Rig-based
 					</div>
@@ -1123,6 +1244,11 @@
 						class="option"
 						onclick={(e) => {
 							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
 						}}
 					>
 						Procedural
@@ -1172,7 +1298,7 @@
 ═══════════════════════════════════════ */
 	h1,
 	h2,
-	h3 {
+	:global(h3) {
 		font-family: var(--ff-display);
 		font-weight: 800;
 		line-height: 1.15;
@@ -1192,7 +1318,7 @@
 		color: #fff;
 		font-style: italic;
 	}
-	code {
+	:global(code) {
 		font-family: var(--ff-mono);
 		font-size: 12px;
 		background: var(--anim-raised);
@@ -1425,7 +1551,7 @@
 		color: var(--anim-coral);
 		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
 	}
-	.demo-.page-wrapper {
+	.demo-body {
 		padding: 1.5rem;
 	}
 
@@ -1490,7 +1616,7 @@
 		border-color: var(--anim-gold);
 		color: var(--anim-gold);
 	}
-	.btn.active {
+	:global(.btn.active) {
 		border-color: var(--anim-gold);
 		color: var(--anim-gold);
 		background: color-mix(in srgb, var(--anim-gold) 12%, transparent);
@@ -1499,7 +1625,7 @@
 		border-color: var(--anim-coral);
 		color: var(--anim-coral);
 	}
-	.btn.coral.active {
+	:global(.btn.coral.active) {
 		border-color: var(--anim-coral);
 		color: var(--anim-coral);
 		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
@@ -1508,7 +1634,7 @@
 		border-color: var(--anim-mint);
 		color: var(--anim-mint);
 	}
-	.btn.mint.active {
+	:global(.btn.mint.active) {
 		border-color: var(--anim-mint);
 		color: var(--anim-mint);
 		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
@@ -1667,7 +1793,7 @@
 		margin-top: 0.2rem;
 	}
 
-	.quiz-.page-wrapper {
+	.quiz-body {
 		padding: 1.75rem;
 	}
 	.question {
@@ -1708,17 +1834,17 @@
 		border-color: var(--anim-border2);
 		background: var(--anim-raised);
 	}
-	.option.correct {
+	:global(.option.correct) {
 		border-color: var(--anim-mint);
 		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
 		color: var(--anim-mint);
 	}
-	.option.wrong {
+	:global(.option.wrong) {
 		border-color: var(--anim-coral);
 		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
 		color: var(--anim-coral);
 	}
-	.option.disabled {
+	:global(.option.disabled) {
 		pointer-events: none;
 	}
 	.feedback {
@@ -1728,10 +1854,10 @@
 		font-family: var(--ff-mono);
 		color: var(--anim-muted);
 	}
-	.feedback.ok {
+	:global(.feedback.ok) {
 		color: var(--anim-mint);
 	}
-	.feedback.bad {
+	:global(.feedback.bad) {
 		color: var(--anim-coral);
 	}
 
@@ -1743,7 +1869,7 @@
 		background: var(--anim-raised);
 		display: none;
 	}
-	.quiz-score.visible {
+	:global(.quiz-score.visible) {
 		display: block;
 	}
 	.score-big {

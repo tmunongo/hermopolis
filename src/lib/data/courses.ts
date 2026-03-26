@@ -184,7 +184,7 @@ export const animationModules: Module[] = [
 		number: 2,
 		title: 'Timing, Spacing & Weight',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-coral',
 		description:
 			'Produce convincing motion using slow-in/slow-out curves, arcs, and spacing charts to convey weight and gravity.'
