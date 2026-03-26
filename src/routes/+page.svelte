@@ -1,25 +1,30 @@
 <script lang="ts">
-	import { gameDevCourse, gameDevModules } from '$lib/data/courses';
+	import {
+		gameDevCourse,
+		gameDevModules,
+		animationCourse,
+		animationModules
+	} from '$lib/data/courses';
 	const course = gameDevCourse;
 	const modules = gameDevModules;
 </script>
 
 <svelte:head>
-	<title>Course Platform — Game Development Fundamentals</title>
+	<title>Hermopolis — Interactive Learning Platform</title>
 	<meta
 		name="description"
-		content="Learn game development from pixels to a complete 2D game. Interactive modules with visualizations, code, and quizzes."
+		content="Interactive courses with visualizations, code, and quizzes. Learn programming, graphics, animation, and more."
 	/>
 </svelte:head>
 
 <!-- HERO -->
 <section class="hero">
 	<div class="hero-inner">
-		<div class="hero-eyebrow">COURSE PLATFORM</div>
-		<h1 class="hero-title">Learn <span>Game Dev</span><br />from First Principles</h1>
+		<div class="hero-eyebrow">HERMOPOLIS</div>
+		<h1 class="hero-title">Interactive<br /><span>Learning</span> Platform</h1>
 		<p class="hero-desc">
-			Interactive courses that take you from the fundamentals of computer graphics all the way to
-			building complete games — with visualizations, code, and quizzes at every step.
+			Courses that take you from first principles to mastery — with visualizations, interactive
+			demos, code, and quizzes at every step.
 		</p>
 	</div>
 	<div class="hero-grid-bg" aria-hidden="true"></div>
@@ -52,6 +57,34 @@
 					>
 				</div>
 				<div class="card-cta">Start Learning →</div>
+			</div>
+		</a>
+
+		<a href="/courses/animation" class="course-card animation">
+			<div class="card-accent-bar anim-bar"></div>
+			<div class="card-body">
+				<div class="card-eyebrow" style="color: var(--anim-gold)">
+					{animationCourse.totalModules} Modules · Theory + Practice
+				</div>
+				<h2 class="card-title">{animationCourse.title}</h2>
+				<p class="card-subtitle" style="color: var(--anim-gold)">{animationCourse.subtitle}</p>
+				<p class="card-desc">{animationCourse.description}</p>
+				<div class="card-meta">
+					<div class="meta-modules">
+						{#each animationModules as mod}
+							<div
+								class="meta-dot anim"
+								class:active={mod.status === 'available'}
+								title={mod.title}
+							></div>
+						{/each}
+					</div>
+					<span class="meta-count"
+						>{animationModules.filter((m) => m.status === 'available').length} / {animationModules.length}
+						modules available</span
+					>
+				</div>
+				<div class="card-cta anim-cta">Start Learning →</div>
 			</div>
 		</a>
 
@@ -228,5 +261,22 @@
 	}
 	.course-card:not(.soon):hover .card-cta {
 		background: color-mix(in srgb, var(--accent) 15%, transparent);
+	}
+
+	.card-accent-bar.anim-bar {
+		background: linear-gradient(90deg, var(--anim-gold), var(--anim-coral), var(--anim-mint));
+	}
+	.course-card.animation:not(.soon):hover {
+		border-color: var(--anim-gold);
+	}
+	.meta-dot.anim.active {
+		background: var(--anim-gold);
+	}
+	.card-cta.anim-cta {
+		color: var(--anim-gold);
+		border-color: var(--anim-gold);
+	}
+	.course-card.animation:not(.soon):hover .card-cta.anim-cta {
+		background: color-mix(in srgb, var(--anim-gold) 15%, transparent);
 	}
 </style>

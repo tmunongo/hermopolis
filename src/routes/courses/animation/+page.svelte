@@ -1,13 +1,7 @@
 <script lang="ts">
-	import { gameDevCourse, gameDevModules } from '$lib/data/courses';
-	const course = gameDevCourse;
-	const modules = gameDevModules;
-
-	const accentColors: Record<string, string> = {
-		'--accent': '#00e5c8',
-		'--accent2': '#ff5f3a',
-		'--accent3': '#a78bfa'
-	};
+	import { animationCourse, animationModules } from '$lib/data/courses';
+	const course = animationCourse;
+	const modules = animationModules;
 </script>
 
 <svelte:head>
@@ -27,15 +21,16 @@
 
 	<!-- HERO -->
 	<div class="course-hero">
-		<div class="hero-ghost" aria-hidden="true">COURSE</div>
-		<div class="hero-label">Game Development Fundamentals</div>
-		<h1 class="hero-title">From <span>Pixels</span> to Play</h1>
+		<div class="hero-ghost" aria-hidden="true">ANIM</div>
+		<div class="hero-label">Animation Fundamentals</div>
+		<h1 class="hero-title">Motion, Characters & Visual <span>Storytelling</span></h1>
 		<p class="hero-desc">{course.description}</p>
 		<div class="hero-tags">
-			<span class="tag">Python</span>
-			<span class="tag">GPU Fundamentals</span>
+			<span class="tag" style="border-color: var(--anim-gold); color: var(--anim-gold)">Motion</span
+			>
+			<span class="tag">Rigging</span>
 			<span class="tag">Interactive</span>
-			<span class="tag">12 Modules</span>
+			<span class="tag">10 Modules</span>
 			<span class="tag free">Free</span>
 		</div>
 	</div>
@@ -46,22 +41,19 @@
 		<div class="modules-grid">
 			{#each modules as mod}
 				{#if mod.status === 'available'}
-					<a href="/courses/game-dev/{mod.id}" class="module-card available">
-						<div class="card-num" style="color: {accentColors[mod.accentVar] ?? 'var(--accent)'}">
+					<a href="/courses/animation/{mod.id}" class="module-card available">
+						<div class="card-num" style="color: var({mod.accentVar})">
 							{mod.id.padStart(2, '0')}
 						</div>
 						<div
 							class="card-tag"
-							style="color: {accentColors[mod.accentVar] ??
-								'var(--accent)'}; border-color: {accentColors[mod.accentVar] ?? 'var(--accent)'}"
+							style="color: var({mod.accentVar}); border-color: var({mod.accentVar})"
 						>
 							{mod.subtitle}
 						</div>
 						<div class="card-title">{mod.title}</div>
 						<div class="card-desc">{mod.description}</div>
-						<div class="card-go" style="color: {accentColors[mod.accentVar] ?? 'var(--accent)'}">
-							Open Module →
-						</div>
+						<div class="card-go" style="color: var({mod.accentVar})">Open Module →</div>
 					</a>
 				{:else}
 					<div class="module-card coming-soon">
@@ -93,7 +85,7 @@
 		transition: color 0.15s;
 	}
 	.back-link:hover {
-		color: var(--accent);
+		color: var(--anim-gold);
 	}
 	.course-name {
 		font-family: 'Syne', sans-serif;
@@ -118,12 +110,12 @@
 		overflow: hidden;
 	}
 	.hero-ghost {
-		font-family: 'Syne', sans-serif;
+		font-family: 'Fraunces', serif;
 		font-size: clamp(60px, 12vw, 120px);
 		font-weight: 800;
 		line-height: 1;
 		color: transparent;
-		-webkit-text-stroke: 1px var(--border2);
+		-webkit-text-stroke: 1px var(--anim-border2);
 		position: absolute;
 		right: -10px;
 		top: 50%;
@@ -135,11 +127,11 @@
 		font-size: 10px;
 		letter-spacing: 0.25em;
 		text-transform: uppercase;
-		color: var(--accent);
+		color: var(--anim-gold);
 		margin-bottom: 1rem;
 	}
 	.hero-title {
-		font-family: 'Syne', sans-serif;
+		font-family: 'Fraunces', serif;
 		font-size: clamp(36px, 6vw, 64px);
 		font-weight: 800;
 		line-height: 1.1;
@@ -147,11 +139,13 @@
 		margin-bottom: 1.5rem;
 	}
 	.hero-title span {
-		color: var(--accent);
+		color: var(--anim-gold);
+		font-style: italic;
 	}
 	.hero-desc {
-		font-size: 13px;
-		color: var(--muted);
+		font-family: 'Plus Jakarta Sans', sans-serif;
+		font-size: 14px;
+		color: var(--anim-muted);
 		max-width: 600px;
 		line-height: 1.9;
 		margin-bottom: 2rem;
@@ -162,16 +156,17 @@
 		gap: 0.5rem;
 	}
 	.tag {
+		font-family: 'JetBrains Mono', monospace;
 		font-size: 10px;
 		letter-spacing: 0.15em;
 		text-transform: uppercase;
-		border: 1px solid var(--border2);
-		color: var(--muted);
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-muted);
 		padding: 3px 10px;
 	}
 	.tag.free {
-		border-color: var(--accent);
-		color: var(--accent);
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
 	}
 
 	/* ── MODULES GRID ── */
@@ -182,18 +177,18 @@
 		font-size: 10px;
 		letter-spacing: 0.25em;
 		text-transform: uppercase;
-		color: var(--muted);
+		color: var(--anim-muted);
 		margin-bottom: 2rem;
 	}
 	.modules-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		gap: 1px;
-		background: var(--border);
+		background: var(--anim-border);
 	}
 
 	.module-card {
-		background: var(--surface);
+		background: var(--anim-surface);
 		padding: 1.75rem;
 		position: relative;
 		transition: background 0.2s;
@@ -202,7 +197,7 @@
 		display: block;
 	}
 	.module-card.available:hover {
-		background: var(--raised);
+		background: var(--anim-raised);
 	}
 	.module-card.coming-soon {
 		opacity: 0.4;
@@ -210,13 +205,14 @@
 	}
 
 	.card-num {
-		font-family: 'Syne', sans-serif;
+		font-family: 'JetBrains Mono', monospace;
 		font-size: 11px;
 		letter-spacing: 0.12em;
 		font-weight: 700;
 		margin-bottom: 0.75rem;
 	}
 	.card-tag {
+		font-family: 'JetBrains Mono', monospace;
 		font-size: 9px;
 		letter-spacing: 0.2em;
 		text-transform: uppercase;
@@ -226,30 +222,33 @@
 		margin-bottom: 1rem;
 	}
 	.card-badge {
+		font-family: 'JetBrains Mono', monospace;
 		font-size: 9px;
 		letter-spacing: 0.2em;
 		text-transform: uppercase;
-		border: 1px solid var(--border2);
-		color: var(--muted);
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-muted);
 		padding: 2px 8px;
 		display: inline-block;
 		margin-bottom: 1rem;
 	}
 	.card-title {
-		font-family: 'Syne', sans-serif;
-		font-size: 16px;
+		font-family: 'Fraunces', serif;
+		font-size: 18px;
 		font-weight: 700;
 		color: #fff;
 		margin-bottom: 0.5rem;
 		line-height: 1.3;
 	}
 	.card-desc {
-		font-size: 11px;
-		color: var(--muted);
+		font-family: 'Plus Jakarta Sans', sans-serif;
+		font-size: 13px;
+		color: var(--anim-muted);
 		line-height: 1.8;
 		margin-bottom: 1rem;
 	}
 	.card-go {
+		font-family: 'JetBrains Mono', monospace;
 		font-size: 11px;
 		letter-spacing: 0.05em;
 	}

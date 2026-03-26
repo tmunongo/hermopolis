@@ -14,6 +14,20 @@
 	--text: #d8d8f0;
 	--muted: #5a5a80;
 	--code-bg: #0a0a16;
+
+	/* Animation Course Tokens */
+	--anim-bg: #0b0906;
+	--anim-surface: #131009;
+	--anim-raised: #1c1812;
+	--anim-border: #28221a;
+	--anim-border2: #3c342a;
+	--anim-gold: #f0a830;
+	--anim-coral: #e8553a;
+	--anim-mint: #4ecbb4;
+	--anim-lavender: #c4a8f0;
+	--anim-text: #ede5d4;
+	--anim-muted: #7a6e5e;
+	--anim-dim: #4a4035;
 }
 
 /* ═══════════════════════════════════════════════════════
