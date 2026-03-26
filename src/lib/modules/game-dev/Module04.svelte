@@ -1057,27 +1057,27 @@
 				'%';
 		});
 
-		if (typeof matVec3 === 'function') window.matVec3 = matVec3;
-		if (typeof drawRot === 'function') window.drawRot = drawRot;
-		if (typeof setLayout === 'function') window.setLayout = setLayout;
-		if (typeof ndcToRot === 'function') window.ndcToRot = ndcToRot;
-		if (typeof drawFlowCanvas === 'function') window.drawFlowCanvas = drawFlowCanvas;
-		if (typeof simReset === 'function') window.simReset = simReset;
-		if (typeof showStage === 'function') window.showStage = showStage;
-		if (typeof barycentricColor === 'function') window.barycentricColor = barycentricColor;
 		if (typeof rotLoop === 'function') window.rotLoop = rotLoop;
-		if (typeof simStep === 'function') window.simStep = simStep;
-		if (typeof drawVAOCanvas === 'function') window.drawVAOCanvas = drawVAOCanvas;
-		if (typeof toggleRotAnim === 'function') window.toggleRotAnim = toggleRotAnim;
 		if (typeof ndcToCanvas === 'function') window.ndcToCanvas = ndcToCanvas;
-		if (typeof renderBufferVis === 'function') window.renderBufferVis = renderBufferVis;
-		if (typeof resetRotAnim === 'function') window.resetRotAnim = resetRotAnim;
-		if (typeof drawGpuSim === 'function') window.drawGpuSim = drawGpuSim;
-		if (typeof answer === 'function') window.answer = answer;
+		if (typeof showStage === 'function') window.showStage = showStage;
 		if (typeof drawInterp === 'function') window.drawInterp = drawInterp;
-		if (typeof buildRotMatrix === 'function') window.buildRotMatrix = buildRotMatrix;
-		if (typeof buildQuiz === 'function') window.buildQuiz = buildQuiz;
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof simReset === 'function') window.simReset = simReset;
 		if (typeof canvasToNdc === 'function') window.canvasToNdc = canvasToNdc;
+		if (typeof drawVAOCanvas === 'function') window.drawVAOCanvas = drawVAOCanvas;
+		if (typeof buildQuiz === 'function') window.buildQuiz = buildQuiz;
+		if (typeof setLayout === 'function') window.setLayout = setLayout;
+		if (typeof drawFlowCanvas === 'function') window.drawFlowCanvas = drawFlowCanvas;
+		if (typeof resetRotAnim === 'function') window.resetRotAnim = resetRotAnim;
+		if (typeof ndcToRot === 'function') window.ndcToRot = ndcToRot;
+		if (typeof renderBufferVis === 'function') window.renderBufferVis = renderBufferVis;
+		if (typeof buildRotMatrix === 'function') window.buildRotMatrix = buildRotMatrix;
+		if (typeof matVec3 === 'function') window.matVec3 = matVec3;
+		if (typeof barycentricColor === 'function') window.barycentricColor = barycentricColor;
+		if (typeof drawRot === 'function') window.drawRot = drawRot;
+		if (typeof simStep === 'function') window.simStep = simStep;
+		if (typeof drawGpuSim === 'function') window.drawGpuSim = drawGpuSim;
+		if (typeof toggleRotAnim === 'function') window.toggleRotAnim = toggleRotAnim;
 
 		return () => {};
 	});
@@ -2147,8 +2147,8 @@ angle = <span class="num">0.0</span>
 	</section>
 
 	<div class="nav-links">
-		<a href="javascript:void(0)" class="prev-link">← 03 · Coordinate Systems and Transformations</a>
-		<a class="next-module" href="javascript:void(0)">
+		<a href="." class="prev-link">← 03 · Coordinate Systems and Transformations</a>
+		<a class="next-module" href=".">
 			<div>
 				<div class="next-label">Next Module</div>
 				<div class="next-title">05 · Shaders</div>

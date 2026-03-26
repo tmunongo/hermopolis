@@ -1,42 +1,52 @@
-# sv
+# Hermopolis — Interactive Learning Platform
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A SvelteKit web app that hosts interactive, canvas-driven programming courses. Modules are ported from self-contained HTML references using an automated conversion script.
 
-## Creating a project
+## Courses
 
-If you're seeing this, you've probably already done this step. Congrats!
+### Game Development Fundamentals
+*From Pixels to Play* — 12 modules covering the full game dev stack in Python.
 
-```sh
-# create a new project
-npx sv create my-app
-```
+| # | Title | Status |
+|---|-------|--------|
+| 01 | Foundations of 2D Game Development | ✅ Available |
+| 02 | The Rendering Pipeline | ✅ Available |
+| 03 | Coordinate Systems & Transformations | ✅ Available |
+| 04 | Introduction to GPU Rendering | ✅ Available |
+| 05–12 | … | 🔒 Coming Soon |
 
-To recreate this project with the same configuration:
+### Animation Fundamentals
+*Theory + Practice* — 10 modules covering motion, principles, and visual storytelling.
 
-```sh
-# recreate this project
-npx sv@0.13.0 create --template minimal --types ts --no-install ./
-```
+| # | Title | Status |
+|---|-------|--------|
+| 01 | The Language of Motion | ✅ Available |
+| 02 | Timing & Spacing | ✅ Available |
+| 03 | The 12 Principles | ✅ Available |
+| 04–10 | … | 🔒 Coming Soon |
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
+## Development
 
 ```sh
-npm run build
+bun install
+bun run dev
 ```
 
-You can preview the production build with `npm run preview`.
+## Adding a New Module
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Use the automated converter to port a legacy HTML module into a Svelte component:
+
+```sh
+python3 scripts/convert_module.py <input.html> <src/lib/modules/<course>/ModuleXX.svelte>
+```
+
+Then:
+1. Set the module `status` to `'available'` in `src/lib/data/courses.ts`
+2. Import and register it in the course's `[module]/+page.svelte`
+
+## Tech Stack
+
+- **SvelteKit** with TypeScript
+- **Bun** as package manager / runtime
+- **Vanilla CSS** — no framework
+- **HTML Canvas** for all interactive demos

@@ -258,8 +258,4 @@
 			grid-template-columns: 1fr;
 		}
 	}
-
-	.footer-link {
-		text-decoration: underline;
-	}
 </style>

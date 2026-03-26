@@ -76,7 +76,9 @@ def convert_module(input_path, output_path):
     html_content = re.sub(r'(<pre>.*?</pre>|<code>.*?</code>)', escape_braces, html_content, flags=re.DOTALL)
 
     # Automatically patch a11y complaints
-    html_content = html_content.replace('href="#"', 'href="javascript:void(0)"')
+    # Replace bare placeholder anchors with a valid relative path so Svelte doesn't flag invalid hrefs
+    html_content = html_content.replace('href="#"', 'href="."')
+    html_content = html_content.replace('href="javascript:void(0)"', 'href="."')
     html_content = html_content.replace('<label>', '<label for="dummy">')
 
     # Generic click handler logic
