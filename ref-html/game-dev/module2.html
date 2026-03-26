@@ -1,0 +1,2180 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 2 — The Rendering Process</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--bg: #07070d;
+				--surface: #0e0e1a;
+				--raised: #13131f;
+				--border: #1c1c2e;
+				--border2: #2a2a40;
+				--accent: #00e5c8;
+				--accent2: #ff5f3a;
+				--accent3: #a78bfa;
+				--accent4: #ffd166;
+				--text: #d8d8f0;
+				--muted: #5a5a80;
+				--code-bg: #0a0a16;
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				background: var(--bg);
+				color: var(--text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--border2);
+				border-radius: 3px;
+			}
+
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+
+			/* HEADER */
+			.course-header {
+				border-bottom: 1px solid var(--border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+				font-weight: 400;
+			}
+
+			/* HERO */
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--accent2);
+				border: 1px solid var(--accent2);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 600px;
+			}
+			.module-title span {
+				color: var(--accent2);
+			}
+
+			/* NAV */
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--accent2);
+				border-color: var(--accent2);
+			}
+
+			/* OBJECTIVES */
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--accent2);
+				background: var(--surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--accent2);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--accent);
+			}
+
+			/* SECTIONS */
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--accent);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+				color: var(--text);
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--accent);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+
+			/* CODE */
+			pre {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1.5rem;
+				overflow-x: auto;
+				margin: 1.5rem 0;
+				font-size: 13px;
+				line-height: 1.6;
+				position: relative;
+			}
+			pre .lang-tag {
+				position: absolute;
+				top: 8px;
+				right: 12px;
+				font-size: 10px;
+				color: var(--muted);
+				letter-spacing: 0.1em;
+			}
+			.kw {
+				color: #ff79c6;
+			}
+			.fn {
+				color: #8be9fd;
+			}
+			.str {
+				color: #f1fa8c;
+			}
+			.cm {
+				color: #6272a4;
+			}
+			.num {
+				color: #bd93f9;
+			}
+			.op {
+				color: var(--accent2);
+			}
+			code {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--accent3);
+			}
+
+			/* CALLOUTS */
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 5%, var(--surface));
+				font-size: 13px;
+			}
+			.callout.warn {
+				border-color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 5%, var(--surface));
+			}
+			.callout.info {
+				border-color: var(--accent4);
+				background: color-mix(in srgb, var(--accent4) 5%, var(--surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--accent3);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.warn .callout-label {
+				color: var(--accent2);
+			}
+			.callout.info .callout-label {
+				color: var(--accent4);
+			}
+
+			/* DEMO BOXES */
+			.demo-box {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.interactive {
+				color: var(--accent);
+				border-color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+			}
+			.demo-badge.animated {
+				color: var(--accent4);
+				border-color: var(--accent4);
+				background: color-mix(in srgb, var(--accent4) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			canvas {
+				display: block;
+			}
+
+			/* LAYOUT */
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			@media (max-width: 640px) {
+				.two-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			/* CONTROLS */
+			.slider-row {
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+				margin: 0.6rem 0;
+			}
+			.slider-row label {
+				font-size: 12px;
+				min-width: 60px;
+			}
+			.slider-row input[type='range'] {
+				flex: 1;
+				-webkit-appearance: none;
+				height: 3px;
+				background: var(--border2);
+				outline: none;
+			}
+			.slider-row input[type='range']::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: var(--accent2);
+				cursor: pointer;
+			}
+			.slider-val {
+				font-size: 12px;
+				color: var(--accent2);
+				min-width: 30px;
+				text-align: right;
+			}
+
+			.btn {
+				background: transparent;
+				border: 1px solid var(--border2);
+				color: var(--text);
+				padding: 6px 16px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--accent2);
+				color: var(--accent2);
+			}
+			.btn.active {
+				border-color: var(--accent2);
+				color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 10%, transparent);
+			}
+			.btn.green:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.btn.green.active {
+				border-color: var(--accent);
+				color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+			}
+
+			/* PIPELINE DIAGRAM */
+			.pipeline {
+				display: flex;
+				align-items: stretch;
+				gap: 0;
+				margin: 2rem 0;
+				overflow-x: auto;
+			}
+			.pipeline-stage {
+				flex: 1;
+				min-width: 110px;
+				padding: 1rem 0.75rem;
+				border: 1px solid var(--border);
+				border-right: none;
+				text-align: center;
+				cursor: pointer;
+				transition: all 0.2s;
+				position: relative;
+			}
+			.pipeline-stage:last-child {
+				border-right: 1px solid var(--border);
+			}
+			.pipeline-stage:hover,
+			.pipeline-stage.active {
+				background: color-mix(in srgb, var(--accent2) 8%, var(--surface));
+				border-color: var(--accent2);
+				z-index: 1;
+			}
+			.pipeline-stage:hover + .pipeline-stage,
+			.pipeline-stage.active + .pipeline-stage {
+				border-left-color: var(--accent2);
+			}
+			.pipe-icon {
+				font-size: 22px;
+				margin-bottom: 0.4rem;
+			}
+			.pipe-name {
+				font-size: 10px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 0.3rem;
+			}
+			.pipe-stage-active .pipe-name {
+				color: var(--accent2);
+			}
+			.pipe-desc {
+				font-size: 11px;
+				color: var(--muted);
+				line-height: 1.5;
+			}
+			.pipe-arrow {
+				font-size: 18px;
+				color: var(--border2);
+				margin: 0 -1px;
+				align-self: center;
+			}
+			.pipeline-detail {
+				margin-top: 0;
+				padding: 1rem 1.25rem;
+				border: 1px solid var(--border2);
+				border-top: none;
+				background: color-mix(in srgb, var(--accent2) 5%, var(--surface));
+				font-size: 12px;
+				color: var(--text);
+				min-height: 60px;
+				transition: all 0.2s;
+			}
+			.pipeline-detail strong {
+				color: var(--accent2);
+			}
+
+			/* RASTERIZER DEMO */
+			#rast-canvas {
+				cursor: crosshair;
+				touch-action: none;
+			}
+			.vertex-label {
+				font-size: 11px;
+				color: var(--accent4);
+			}
+
+			/* STEP DEMO */
+			.step-controls {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+				margin-bottom: 1rem;
+				align-items: center;
+			}
+			.step-info {
+				font-size: 12px;
+				color: var(--muted);
+				margin-left: auto;
+			}
+			#step-canvas {
+				image-rendering: pixelated;
+				image-rendering: crisp-edges;
+			}
+
+			/* STATS PANEL */
+			.stats-panel {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1rem;
+				font-size: 12px;
+			}
+			.stat-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.2rem 0;
+				border-bottom: 1px solid var(--border);
+			}
+			.stat-row:last-child {
+				border-bottom: none;
+			}
+			.stat-label {
+				color: var(--muted);
+			}
+			.stat-val {
+				color: var(--accent);
+				font-weight: 600;
+			}
+
+			/* PRIMITIVE DEMO */
+			.prim-btn-row {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+				margin-bottom: 1rem;
+			}
+
+			/* TABLE */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--raised);
+				color: var(--accent2);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--border);
+				color: var(--text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--raised) 50%, transparent);
+			}
+
+			hr.divider {
+				border: none;
+				border-top: 1px solid var(--border);
+				margin: 3rem 0;
+			}
+
+			/* QUIZ / DEBUG ASSESSMENT */
+			.assessment-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.assessment-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.25rem;
+			}
+			.assessment-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+			.debug-question {
+				margin: 2.5rem 0;
+				border: 1px solid var(--border);
+			}
+			.debug-q-header {
+				padding: 0.75rem 1rem;
+				border-bottom: 1px solid var(--border);
+				background: var(--raised);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.debug-code-area {
+				position: relative;
+			}
+			.debug-options {
+				padding: 1rem;
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+				border-top: 1px solid var(--border);
+			}
+			.debug-option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				font-family: 'IBM Plex Mono', monospace;
+				user-select: none;
+			}
+			.debug-option:hover {
+				border-color: var(--border2);
+				background: var(--raised);
+			}
+			.debug-option.correct {
+				border-color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+				color: var(--accent);
+			}
+			.debug-option.wrong {
+				border-color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 10%, transparent);
+				color: var(--accent2);
+			}
+			.debug-option.disabled {
+				pointer-events: none;
+			}
+			.debug-feedback {
+				padding: 0.75rem 1rem;
+				font-size: 12px;
+				border-top: 1px solid var(--border);
+				color: var(--muted);
+				min-height: 2.5em;
+			}
+			.debug-feedback.ok {
+				color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 5%, transparent);
+			}
+			.debug-feedback.bad {
+				color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 5%, transparent);
+			}
+			.bug-highlight {
+				background: color-mix(in srgb, var(--accent2) 25%, transparent);
+				color: #fff;
+			}
+
+			/* SCORE */
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--accent2);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 0.25rem;
+			}
+
+			/* PROGRESS */
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--accent2);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			/* NEXT */
+			.next-module {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--border);
+				text-decoration: none;
+				margin-top: 4rem;
+				transition: all 0.2s;
+				background: var(--surface);
+			}
+			.next-module:hover {
+				border-color: var(--accent);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--accent);
+			}
+			.prev-link {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				margin-top: 2rem;
+				transition: color 0.15s;
+			}
+			.prev-link:hover {
+				color: var(--accent2);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<!-- HEADER -->
+			<header class="course-header">
+				<div>
+					<div class="course-label">Game Development Fundamentals</div>
+					<div class="course-title">From Pixels to Play</div>
+				</div>
+				<div style="font-size: 11px; color: var(--muted); text-align: right">Module 02 of 12</div>
+			</header>
+
+			<!-- HERO -->
+			<div class="module-hero">
+				<div class="module-number">02</div>
+				<div class="module-tag">Module 02 · Theory + Practice</div>
+				<h1 class="module-title">The <span>Rendering</span><br />Process</h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<!-- TOC -->
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#geometry-to-pixels">Geometry to Pixels</a></li>
+					<li><a href="#triangles">Triangles as Primitives</a></li>
+					<li><a href="#rasterization">The Rasterization Algorithm</a></li>
+					<li><a href="#sw-vs-hw">Software vs Hardware</a></li>
+					<li><a href="#why-gpu">Why GPUs Exist</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#assessment">Assessment</a></li>
+				</ul>
+			</nav>
+
+			<!-- OBJECTIVES -->
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Understand the conceptual stages of a rendering pipeline</li>
+					<li>Explain vertices, primitives, rasterization, and framebuffer output</li>
+					<li>Implement a software triangle rasterizer from scratch</li>
+					<li>Visualize and reason about rasterization step-by-step</li>
+				</ul>
+			</section>
+
+			<!-- SECTION 1: GEOMETRY TO PIXELS -->
+			<section id="geometry-to-pixels" class="section">
+				<div class="section-header">
+					<span class="section-num">02.01</span>
+					<h2 class="section-title">From Geometric Data to Pixels</h2>
+				</div>
+
+				<p>
+					A game scene is described geometrically: characters as meshes of triangles, positions as
+					coordinates, surfaces as mathematical relationships. None of this is directly displayable.
+					The rendering pipeline is the process that converts this abstract geometric description
+					into a concrete grid of pixel colors.
+				</p>
+				<p>
+					At the end of every pipeline, the answer to the same question is written into the
+					framebuffer: <em>what color should this pixel be?</em> Everything before that is
+					preparation.
+				</p>
+
+				<!-- PIPELINE DIAGRAM -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Rendering Pipeline Stages</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							Click any stage to learn what happens there.
+						</p>
+						<div class="pipeline" id="pipeline-stages">
+							<div class="pipeline-stage" onclick="showPipe(0, this)">
+								<div class="pipe-icon">📐</div>
+								<div class="pipe-name">Vertex Input</div>
+								<div class="pipe-desc">Positions, colors, UVs</div>
+							</div>
+							<div class="pipeline-stage" onclick="showPipe(1, this)">
+								<div class="pipe-icon">🔺</div>
+								<div class="pipe-name">Primitive Assembly</div>
+								<div class="pipe-desc">Vertices → triangles</div>
+							</div>
+							<div class="pipeline-stage" onclick="showPipe(2, this)">
+								<div class="pipe-icon">⬜</div>
+								<div class="pipe-name">Rasterization</div>
+								<div class="pipe-desc">Triangles → fragments</div>
+							</div>
+							<div class="pipeline-stage" onclick="showPipe(3, this)">
+								<div class="pipe-icon">🎨</div>
+								<div class="pipe-name">Fragment Shading</div>
+								<div class="pipe-desc">Compute pixel color</div>
+							</div>
+							<div class="pipeline-stage" onclick="showPipe(4, this)">
+								<div class="pipe-icon">🖥️</div>
+								<div class="pipe-name">Output</div>
+								<div class="pipe-desc">Write to framebuffer</div>
+							</div>
+						</div>
+						<div class="pipeline-detail" id="pipeline-detail">
+							Select a stage above to see what it does.
+						</div>
+					</div>
+				</div>
+
+				<p>
+					The pipeline is one-directional — data flows forward, one stage at a time. Each stage
+					consumes the output of the previous one. This strict ordering is what allows GPUs to
+					process many primitives simultaneously without conflict.
+				</p>
+			</section>
+
+			<!-- SECTION 2: TRIANGLES -->
+			<section id="triangles" class="section">
+				<div class="section-header">
+					<span class="section-num">02.02</span>
+					<h2 class="section-title">Triangles as the Universal Primitive</h2>
+				</div>
+
+				<p>
+					All rendering hardware works with triangles. Not squares, not circles, not arbitrary
+					polygons — specifically triangles. This is not arbitrary. A triangle is the simplest
+					polygon that defines a surface: any three non-collinear points define a unique plane, and
+					the interior of the triangle is always flat and always convex.
+				</p>
+				<p>
+					Any polygon can be decomposed into triangles (<em>tessellation</em>). Any curve can be
+					approximated by a sequence of small triangles. This universality means hardware only needs
+					to solve one problem — and it can solve it extremely fast.
+				</p>
+
+				<div class="callout info">
+					<div class="callout-label">Why Not Quads?</div>
+					A quadrilateral requires four vertices. If those four points are not coplanar (common in
+					3D), the "quad" has no well-defined surface — two of its possible triangulations produce
+					different planes. Triangles never have this ambiguity. GPUs convert quads to triangles
+					internally anyway.
+				</div>
+
+				<!-- PRIMITIVE TYPES DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Primitive Types and Triangle Construction</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							See how different sets of vertex data produce different primitive configurations.
+						</p>
+						<div class="prim-btn-row">
+							<button class="btn active" onclick="setPrim('triangles', this)">TRIANGLES</button>
+							<button class="btn" onclick="setPrim('strip', this)">TRIANGLE_STRIP</button>
+							<button class="btn" onclick="setPrim('fan', this)">TRIANGLE_FAN</button>
+							<button class="btn" onclick="setPrim('mesh', this)">Complex Mesh</button>
+						</div>
+						<canvas
+							id="prim-canvas"
+							width="860"
+							height="220"
+							style="width: 100%; border: 1px solid var(--border2); background: #0a0a16"
+						></canvas>
+						<div
+							style="margin-top: 0.75rem; font-size: 12px; color: var(--muted)"
+							id="prim-desc"
+						></div>
+					</div>
+				</div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Primitive Mode</th>
+							<th>Vertices Needed</th>
+							<th>Triangles Produced</th>
+							<th>Typical Use</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>TRIANGLES</td>
+							<td>3N</td>
+							<td>N</td>
+							<td>General geometry</td>
+						</tr>
+						<tr>
+							<td>TRIANGLE_STRIP</td>
+							<td>N+2</td>
+							<td>N</td>
+							<td>Terrain strips, ribbons</td>
+						</tr>
+						<tr>
+							<td>TRIANGLE_FAN</td>
+							<td>N+2</td>
+							<td>N</td>
+							<td>Circles, cones, radial shapes</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- SECTION 3: RASTERIZATION -->
+			<section id="rasterization" class="section">
+				<div class="section-header">
+					<span class="section-num">02.03</span>
+					<h2 class="section-title">The Rasterization Algorithm</h2>
+				</div>
+
+				<p>
+					Rasterization answers the question: <em>which pixels does this triangle cover?</em> The
+					standard approach — the same one your GPU uses — is the
+					<strong>edge function test</strong>. For each candidate pixel, three tests determine
+					whether the pixel center falls inside the triangle.
+				</p>
+				<p>Given a triangle edge from vertex A to vertex B, the edge function at point P is:</p>
+
+				<pre><code><span class="kw">def</span> <span class="fn">edge</span>(ax, ay, bx, by, px, py):
+    <span class="cm"># Signed area of the parallelogram formed by (A→B) and (A→P).</span>
+    <span class="cm"># Positive if P is to the left of A→B (counter-clockwise winding).</span>
+    <span class="kw">return</span> (bx - ax) * (py - ay) - (by - ay) * (px - ax)<span class="lang-tag">python</span></code></pre>
+
+				<p>
+					A pixel is inside the triangle if all three edge functions return the same sign. For
+					counter-clockwise vertex ordering, all three must be <strong>≥ 0</strong>.
+				</p>
+
+				<pre><code><span class="kw">def</span> <span class="fn">rasterize_triangle</span>(v0, v1, v2, framebuffer, color):
+    <span class="cm"># Bounding box — only test pixels that could possibly be inside</span>
+    min_x = <span class="fn">max</span>(<span class="num">0</span>, <span class="fn">int</span>(<span class="fn">min</span>(v0[<span class="num">0</span>], v1[<span class="num">0</span>], v2[<span class="num">0</span>])))
+    max_x = <span class="fn">min</span>(WIDTH-<span class="num">1</span>, <span class="fn">int</span>(<span class="fn">max</span>(v0[<span class="num">0</span>], v1[<span class="num">0</span>], v2[<span class="num">0</span>])))
+    min_y = <span class="fn">max</span>(<span class="num">0</span>, <span class="fn">int</span>(<span class="fn">min</span>(v0[<span class="num">1</span>], v1[<span class="num">1</span>], v2[<span class="num">1</span>])))
+    max_y = <span class="fn">min</span>(HEIGHT-<span class="num">1</span>, <span class="fn">int</span>(<span class="fn">max</span>(v0[<span class="num">1</span>], v1[<span class="num">1</span>], v2[<span class="num">1</span>])))
+
+    <span class="kw">for</span> y <span class="kw">in</span> <span class="fn">range</span>(min_y, max_y + <span class="num">1</span>):
+        <span class="kw">for</span> x <span class="kw">in</span> <span class="fn">range</span>(min_x, max_x + <span class="num">1</span>):
+            <span class="cm"># Test pixel center (x+0.5, y+0.5) against all three edges</span>
+            e0 = <span class="fn">edge</span>(*v0, *v1, x+<span class="num">0.5</span>, y+<span class="num">0.5</span>)
+            e1 = <span class="fn">edge</span>(*v1, *v2, x+<span class="num">0.5</span>, y+<span class="num">0.5</span>)
+            e2 = <span class="fn">edge</span>(*v2, *v0, x+<span class="num">0.5</span>, y+<span class="num">0.5</span>)
+            <span class="kw">if</span> e0 >= <span class="num">0</span> <span class="kw">and</span> e1 >= <span class="num">0</span> <span class="kw">and</span> e2 >= <span class="num">0</span>:
+                framebuffer[y, x] = color<span class="lang-tag">python</span></code></pre>
+
+				<div class="callout">
+					<div class="callout-label">Pixel Centers</div>
+					The test uses <code>x+0.5, y+0.5</code> rather than <code>x, y</code>. Each pixel
+					represents a unit-sized region of the screen; the center of that region is the canonical
+					sample point. This is not optional — it determines exactly which pixels a triangle's edges
+					claim.
+				</div>
+
+				<!-- STEP-BY-STEP RASTERIZER -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Animated · Step-by-Step Rasterization</span>
+						<span class="demo-badge animated">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Watch the algorithm test every pixel in the bounding box. Yellow = tested, teal =
+							inside triangle.
+						</p>
+						<div class="step-controls">
+							<button class="btn" id="btn-play" onclick="stepPlay()">▶ Play</button>
+							<button class="btn" onclick="stepOnce()">Step →</button>
+							<button class="btn" onclick="stepReset()">↺ Reset</button>
+							<div style="display: flex; gap: 0.75rem; align-items: center; margin-left: 0.5rem">
+								<span style="font-size: 11px; color: var(--muted)">Speed</span>
+								<input
+									type="range"
+									id="speed-slider"
+									min="1"
+									max="5"
+									value="3"
+									style="
+										width: 80px;
+										-webkit-appearance: none;
+										height: 3px;
+										background: var(--border2);
+										outline: none;
+									"
+								/>
+							</div>
+							<span class="step-info" id="step-info">Pixel 0 / 0</span>
+						</div>
+						<div class="two-col" style="align-items: start">
+							<div>
+								<canvas
+									id="step-canvas"
+									width="240"
+									height="240"
+									style="border: 1px solid var(--border2); width: 100%; image-rendering: pixelated"
+								></canvas>
+							</div>
+							<div style="display: flex; flex-direction: column; gap: 1rem">
+								<div class="stats-panel">
+									<div class="stat-row">
+										<span class="stat-label">Bounding box</span
+										><span class="stat-val" id="stat-bbox">—</span>
+									</div>
+									<div class="stat-row">
+										<span class="stat-label">Pixels tested</span
+										><span class="stat-val" id="stat-tested">0</span>
+									</div>
+									<div class="stat-row">
+										<span class="stat-label">Pixels inside</span
+										><span class="stat-val" id="stat-inside">0</span>
+									</div>
+									<div class="stat-row">
+										<span class="stat-label">Efficiency</span
+										><span class="stat-val" id="stat-eff">—</span>
+									</div>
+									<div class="stat-row">
+										<span class="stat-label">Current pixel</span
+										><span class="stat-val" id="stat-cur">—</span>
+									</div>
+									<div class="stat-row">
+										<span class="stat-label">e0 / e1 / e2</span
+										><span class="stat-val" id="stat-edge">—</span>
+									</div>
+								</div>
+								<div style="font-size: 11px; color: var(--muted); line-height: 1.8">
+									<span
+										style="
+											display: inline-block;
+											width: 10px;
+											height: 10px;
+											background: var(--accent4);
+											margin-right: 6px;
+											vertical-align: middle;
+										"
+									></span
+									>Bounding box<br />
+									<span
+										style="
+											display: inline-block;
+											width: 10px;
+											height: 10px;
+											background: #333355;
+											margin-right: 6px;
+											vertical-align: middle;
+										"
+									></span
+									>Tested, outside<br />
+									<span
+										style="
+											display: inline-block;
+											width: 10px;
+											height: 10px;
+											background: var(--accent);
+											margin-right: 6px;
+											vertical-align: middle;
+										"
+									></span
+									>Inside triangle<br />
+									<span
+										style="
+											display: inline-block;
+											width: 10px;
+											height: 10px;
+											background: #fff;
+											margin-right: 6px;
+											vertical-align: middle;
+										"
+									></span
+									>Current test
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<p>
+					The efficiency insight: a thin diagonal triangle has a large bounding box but few covered
+					pixels. The algorithm tests all pixels in the box regardless. This is why
+					<em>triangle area relative to bounding box area</em> matters for performance — and why
+					games avoid very thin, long triangles (slivers).
+				</p>
+			</section>
+
+			<!-- SECTION 4: SW VS HW -->
+			<section id="sw-vs-hw" class="section">
+				<div class="section-header">
+					<span class="section-num">02.04</span>
+					<h2 class="section-title">Software vs Hardware Rendering</h2>
+				</div>
+
+				<p>
+					The rasterizer you just saw running step-by-step is a <em>software rasterizer</em>. It
+					executes on the CPU, one pixel at a time, in a Python loop. This is instructive — but it
+					is also orders of magnitude too slow for real games.
+				</p>
+				<p>
+					A 1920×1080 frame contains over two million pixels. A game scene might contain hundreds of
+					triangles, each covering thousands of pixels. A CPU core processes operations sequentially
+					— it can execute billions of operations per second, but those operations happen one after
+					another.
+				</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th></th>
+							<th>Software Renderer (CPU)</th>
+							<th>Hardware Renderer (GPU)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Pixel processing</td>
+							<td>Sequential</td>
+							<td>Massively parallel</td>
+						</tr>
+						<tr>
+							<td>Cores available</td>
+							<td>4–32</td>
+							<td>Thousands to tens of thousands</td>
+						</tr>
+						<tr>
+							<td>Programming model</td>
+							<td>Arbitrary code</td>
+							<td>Constrained shader programs</td>
+						</tr>
+						<tr>
+							<td>Memory bandwidth</td>
+							<td>General RAM</td>
+							<td>Dedicated VRAM (much faster)</td>
+						</tr>
+						<tr>
+							<td>Flexibility</td>
+							<td>Very high</td>
+							<td>High within pipeline structure</td>
+						</tr>
+						<tr>
+							<td>Frame rate at 1080p</td>
+							<td>Often &lt;1 FPS</td>
+							<td>60–240+ FPS</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<p>
+					A software rasterizer remains useful for: understanding how rendering works at the
+					mathematical level, platforms without GPU access, offline rendering tools, and procedural
+					image generation. In this course, we start in software and move to hardware in Module 4.
+				</p>
+			</section>
+
+			<!-- SECTION 5: WHY GPUs -->
+			<section id="why-gpu" class="section">
+				<div class="section-header">
+					<span class="section-num">02.05</span>
+					<h2 class="section-title">Why GPUs Exist</h2>
+				</div>
+
+				<p>
+					The key observation behind GPUs is that computing the color of pixel (100, 200) is
+					entirely independent of computing the color of pixel (101, 200). There is no dependency
+					between them. Both can be computed at exactly the same time on different hardware units.
+				</p>
+				<p>
+					This is called <strong>data parallelism</strong>. CPUs are built to execute a single
+					stream of instructions as quickly as possible, with complex branch prediction, caching,
+					and out-of-order execution. GPUs trade most of that complexity for sheer number of
+					arithmetic units — they run <em>many simple programs simultaneously</em>.
+				</p>
+
+				<div class="callout warn">
+					<div class="callout-label">The Trade-off</div>
+					GPU cores are much simpler than CPU cores. They cannot make independent decisions
+					efficiently — if one thread in a group of 32 takes a different code path than the others,
+					all 32 threads wait. This is called <em>warp divergence</em>, and writing GPU-friendly
+					code means understanding it.
+				</div>
+
+				<p>
+					From a game development perspective: the rendering pipeline is structured specifically to
+					exploit GPU parallelism. Vertices are processed in parallel, fragments are shaded in
+					parallel. Shaders are programs that express what to do to <em>one</em> vertex or
+					<em>one</em> pixel — the GPU runs them on all of them simultaneously.
+				</p>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- PRACTICAL WORK -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">02.06</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<p>
+					The exercises below build a complete software rasterizer. The final version handles
+					arbitrary triangle positions, computes bounding boxes, applies the edge function test, and
+					writes to a NumPy framebuffer.
+				</p>
+
+				<!-- INTERACTIVE RASTERIZER -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Draggable Triangle Rasterizer</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Drag the three vertices. The software rasterizer recomputes in real time. Toggle
+							overlays to inspect internals.
+						</p>
+						<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem">
+							<button class="btn green active" id="tog-bbox" onclick="toggleOverlay('bbox', this)">
+								Bounding Box
+							</button>
+							<button class="btn green active" id="tog-grid" onclick="toggleOverlay('grid', this)">
+								Pixel Grid
+							</button>
+							<button
+								class="btn green active"
+								id="tog-verts"
+								onclick="toggleOverlay('verts', this)"
+							>
+								Vertices
+							</button>
+							<button class="btn green" id="tog-edges" onclick="toggleOverlay('edges', this)">
+								Edge Normals
+							</button>
+						</div>
+						<div style="position: relative; display: inline-block; width: 100%">
+							<canvas
+								id="rast-canvas"
+								width="860"
+								height="400"
+								style="
+									width: 100%;
+									border: 1px solid var(--border2);
+									background: #08080f;
+									touch-action: none;
+									display: block;
+								"
+							></canvas>
+						</div>
+						<div class="two-col" style="margin-top: 1rem">
+							<div class="stats-panel">
+								<div class="stat-row">
+									<span class="stat-label">Bounding box</span
+									><span class="stat-val" id="rast-bbox">—</span>
+								</div>
+								<div class="stat-row">
+									<span class="stat-label">Total pixels tested</span
+									><span class="stat-val" id="rast-tested">—</span>
+								</div>
+								<div class="stat-row">
+									<span class="stat-label">Pixels filled</span
+									><span class="stat-val" id="rast-filled">—</span>
+								</div>
+								<div class="stat-row">
+									<span class="stat-label">Bounding box area</span
+									><span class="stat-val" id="rast-bbarea">—</span>
+								</div>
+								<div class="stat-row">
+									<span class="stat-label">Triangle area</span
+									><span class="stat-val" id="rast-tarea">—</span>
+								</div>
+								<div class="stat-row">
+									<span class="stat-label">Fill efficiency</span
+									><span class="stat-val" id="rast-eff">—</span>
+								</div>
+							</div>
+							<div>
+								<pre
+									id="rast-code"
+									style="
+										font-size: 11px;
+										height: 100%;
+										max-height: 160px;
+										overflow: auto;
+										margin: 0;
+									"
+								></pre>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Exercise: Full Software Renderer -->
+				<div style="margin: 2.5rem 0">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.2em;
+							text-transform: uppercase;
+							color: var(--accent2);
+							margin-bottom: 0.75rem;
+						"
+					>
+						Exercise · Complete Software Renderer
+					</div>
+					<p>Putting it all together: a framebuffer, a rasterizer, and PIL for display output.</p>
+					<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> PIL <span class="kw">import</span> Image
+
+WIDTH, HEIGHT = <span class="num">320</span>, <span class="num">240</span>
+
+<span class="kw">def</span> <span class="fn">edge_fn</span>(ax, ay, bx, by, px, py):
+    <span class="kw">return</span> (bx - ax) * (py - ay) - (by - ay) * (px - ax)
+
+<span class="kw">def</span> <span class="fn">draw_triangle</span>(fb, v0, v1, v2, color):
+    <span class="cm"># Compute bounding box, clipped to framebuffer</span>
+    min_x = <span class="fn">max</span>(<span class="num">0</span>, <span class="fn">int</span>(<span class="fn">min</span>(v0[<span class="num">0</span>], v1[<span class="num">0</span>], v2[<span class="num">0</span>])))
+    max_x = <span class="fn">min</span>(WIDTH-<span class="num">1</span>, <span class="fn">int</span>(<span class="fn">max</span>(v0[<span class="num">0</span>], v1[<span class="num">0</span>], v2[<span class="num">0</span>])))
+    min_y = <span class="fn">max</span>(<span class="num">0</span>, <span class="fn">int</span>(<span class="fn">min</span>(v0[<span class="num">1</span>], v1[<span class="num">1</span>], v2[<span class="num">1</span>])))
+    max_y = <span class="fn">min</span>(HEIGHT-<span class="num">1</span>, <span class="fn">int</span>(<span class="fn">max</span>(v0[<span class="num">1</span>], v1[<span class="num">1</span>], v2[<span class="num">1</span>])))
+    <span class="kw">for</span> y <span class="kw">in</span> <span class="fn">range</span>(min_y, max_y + <span class="num">1</span>):
+        <span class="kw">for</span> x <span class="kw">in</span> <span class="fn">range</span>(min_x, max_x + <span class="num">1</span>):
+            e0 = <span class="fn">edge_fn</span>(*v0, *v1, x+<span class="num">.5</span>, y+<span class="num">.5</span>)
+            e1 = <span class="fn">edge_fn</span>(*v1, *v2, x+<span class="num">.5</span>, y+<span class="num">.5</span>)
+            e2 = <span class="fn">edge_fn</span>(*v2, *v0, x+<span class="num">.5</span>, y+<span class="num">.5</span>)
+            <span class="kw">if</span> e0 >= <span class="num">0</span> <span class="kw">and</span> e1 >= <span class="num">0</span> <span class="kw">and</span> e2 >= <span class="num">0</span>:
+                fb[y, x] = color
+
+<span class="cm"># Create framebuffer and clear to dark</span>
+framebuffer = np.<span class="fn">full</span>((HEIGHT, WIDTH, <span class="num">3</span>), [<span class="num">15</span>, <span class="num">15</span>, <span class="num">25</span>], dtype=np.uint8)
+
+<span class="cm"># Draw three overlapping triangles</span>
+<span class="fn">draw_triangle</span>(framebuffer,
+    (<span class="num">40</span>, <span class="num">200</span>), (<span class="num">160</span>, <span class="num">40</span>), (<span class="num">280</span>, <span class="num">200</span>),
+    [<span class="num">0</span>, <span class="num">229</span>, <span class="num">200</span>])
+<span class="fn">draw_triangle</span>(framebuffer,
+    (<span class="num">80</span>, <span class="num">40</span>),  (<span class="num">200</span>, <span class="num">200</span>), (<span class="num">310</span>, <span class="num">40</span>),
+    [<span class="num">255</span>, <span class="num">95</span>, <span class="num">58</span>])
+
+Image.<span class="fn">fromarray</span>(framebuffer).<span class="fn">save</span>(<span class="str">"render.png"</span>)<span class="lang-tag">python</span></code></pre>
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ASSESSMENT -->
+			<section id="assessment" class="assessment-section">
+				<div class="assessment-header">Assessment · Debug the Rasterizer</div>
+				<div class="assessment-sub">3 broken implementations. Identify the bug in each.</div>
+				<div id="debug-container"></div>
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-num">0/3</div>
+					<div class="score-label">Assessment complete. Proceed to Module 03 when ready.</div>
+				</div>
+			</section>
+
+			<!-- PREV / NEXT -->
+			<a href="#" class="prev-link">← Module 01 · Pixels and the Structure of Images</a>
+			<a class="next-module" href="#">
+				<div>
+					<div class="next-label">Next Module</div>
+					<div class="next-title">03 · Coordinate Systems and Transformations</div>
+				</div>
+				<div class="next-arrow">→</div>
+			</a>
+		</div>
+		<!-- /page-wrapper -->
+
+		<script>
+			/* ══════════════════════════════════════════════════
+   PIPELINE DIAGRAM
+══════════════════════════════════════════════════ */
+			const pipeDetails = [
+				`<strong>Vertex Input</strong> — Raw geometry data is uploaded to the GPU as a buffer of numbers. Each vertex carries a position (x, y, z) and optionally: a color, a texture coordinate (UV), a normal vector, or any custom attribute. This data sits in GPU memory until needed.`,
+				`<strong>Primitive Assembly</strong> — Individual vertices are grouped into primitives according to the draw mode (TRIANGLES, TRIANGLE_STRIP, etc). Three vertices become one triangle. The hardware now knows what shape it is working with.`,
+				`<strong>Rasterization</strong> — Each triangle is converted into a set of <em>fragments</em> — candidate pixels that the triangle covers. The edge function test determines which pixel centers fall inside the triangle boundary. The bounding box limits the search. This is the stage visualized in the step-by-step demo above.`,
+				`<strong>Fragment Shading</strong> — For each fragment generated by rasterization, a shader program computes the final color. The shader can read textures, interpolate vertex attributes, apply lighting, and produce any color value. This is where most visual effects live.`,
+				`<strong>Output Merge</strong> — The computed color is written to the framebuffer. Depth testing (is this fragment closer than what's already there?), blending (transparency), and stenciling all happen here. Only fragments that pass all tests write to the final image.`
+			];
+
+			function showPipe(i, el) {
+				document.querySelectorAll('.pipeline-stage').forEach((s) => s.classList.remove('active'));
+				el.classList.add('active');
+				document.getElementById('pipeline-detail').innerHTML = pipeDetails[i];
+			}
+
+			/* ══════════════════════════════════════════════════
+   PRIMITIVE TYPES DEMO
+══════════════════════════════════════════════════ */
+			const primCanvas = document.getElementById('prim-canvas');
+			const primCtx = primCanvas.getContext('2d');
+			let primType = 'triangles';
+
+			const primDescs = {
+				triangles:
+					'TRIANGLES: Every 3 vertices form one independent triangle. 9 vertices → 3 triangles. No vertex is shared between primitives.',
+				strip:
+					'TRIANGLE_STRIP: Each new vertex (after the first two) adds one triangle by reusing the previous two vertices. 7 vertices → 5 triangles. Efficient for connected surfaces.',
+				fan: 'TRIANGLE_FAN: All triangles share a common center vertex (v0). Each new vertex adds a triangle connecting back to v0. 8 vertices → 6 triangles. Perfect for circular shapes.',
+				mesh: 'Complex mesh: any polygon can be tessellated into triangles. This pentagon (5 vertices) becomes 3 triangles, a hexagon becomes 4, and so on.'
+			};
+
+			function drawPrimitives() {
+				const W = primCanvas.width,
+					H = primCanvas.height;
+				primCtx.clearRect(0, 0, W, H);
+				primCtx.fillStyle = '#08080f';
+				primCtx.fillRect(0, 0, W, H);
+				const colors = ['#00e5c8', '#ff5f3a', '#a78bfa', '#ffd166', '#5f9fff', '#ff79c6'];
+
+				if (primType === 'triangles') {
+					const tris = [
+						[
+							[80, 180],
+							[140, 60],
+							[200, 180]
+						],
+						[
+							[240, 180],
+							[300, 60],
+							[360, 180]
+						],
+						[
+							[400, 180],
+							[460, 60],
+							[520, 180]
+						]
+					];
+					tris.forEach((tri, i) => {
+						drawTri(primCtx, tri[0], tri[1], tri[2], colors[i], true);
+						tri.forEach((v, j) =>
+							drawVertex(primCtx, v[0], v[1], String.fromCharCode(65 + i * 3 + j), '#fff')
+						);
+					});
+				} else if (primType === 'strip') {
+					const verts = [
+						[60, 180],
+						[110, 60],
+						[180, 180],
+						[250, 60],
+						[320, 180],
+						[390, 60],
+						[460, 180]
+					];
+					for (let i = 0; i < verts.length - 2; i++) {
+						const a = verts[i],
+							b = verts[i + 1],
+							c = verts[i + 2];
+						drawTri(
+							primCtx,
+							i % 2 === 0 ? a : b,
+							i % 2 === 0 ? b : a,
+							c,
+							colors[i % colors.length],
+							true
+						);
+					}
+					verts.forEach((v, i) => drawVertex(primCtx, v[0], v[1], 'v' + i, '#fff'));
+				} else if (primType === 'fan') {
+					const cx = 250,
+						cy = 130,
+						r = 100;
+					const verts = [[cx, cy]];
+					for (let a = 0; a <= 360; a += 60) {
+						verts.push([
+							cx + r * Math.cos((a * Math.PI) / 180),
+							cy + r * Math.sin((a * Math.PI) / 180)
+						]);
+					}
+					for (let i = 1; i < verts.length - 1; i++) {
+						drawTri(
+							primCtx,
+							verts[0],
+							verts[i],
+							verts[i + 1],
+							colors[(i - 1) % colors.length],
+							true
+						);
+					}
+					verts.forEach((v, i) =>
+						drawVertex(primCtx, v[0], v[1], i === 0 ? 'v0' : 'v' + i, i === 0 ? '#ffd166' : '#fff')
+					);
+				} else {
+					// Pentagon tessellated
+					const cx = 200,
+						cy = 120,
+						r = 90;
+					const pts = [];
+					for (let a = -90; a < 270; a += 72)
+						pts.push([
+							cx + r * Math.cos((a * Math.PI) / 180),
+							cy + r * Math.sin((a * Math.PI) / 180)
+						]);
+					for (let i = 1; i < pts.length - 1; i++)
+						drawTri(primCtx, pts[0], pts[i], pts[i + 1], colors[i - 1], true);
+					pts.forEach((v, i) => drawVertex(primCtx, v[0], v[1], String(i), '#fff'));
+
+					// Arrow
+					primCtx.fillStyle = '#5a5a80';
+					primCtx.font = '14px IBM Plex Mono';
+					primCtx.textAlign = 'center';
+					primCtx.fillText('tessellated into', 430, 80);
+
+					// Three triangles of pentagon listed
+					const ox = 520,
+						oy = 100,
+						sr = 65;
+					const sPts = [];
+					for (let a = -90; a < 270; a += 72)
+						sPts.push([
+							ox + sr * Math.cos((a * Math.PI) / 180),
+							oy + sr * Math.sin((a * Math.PI) / 180)
+						]);
+					for (let i = 1; i < sPts.length - 1; i++)
+						drawTri(primCtx, sPts[0], sPts[i], sPts[i + 1], colors[i - 1], false);
+					// dashed edges
+					primCtx.setLineDash([4, 4]);
+					primCtx.strokeStyle = '#2a2a40';
+					for (let i = 1; i < sPts.length - 1; i++) {
+						primCtx.beginPath();
+						primCtx.moveTo(sPts[0][0], sPts[0][1]);
+						primCtx.lineTo(sPts[i][0], sPts[i][1]);
+						primCtx.stroke();
+					}
+					primCtx.setLineDash([]);
+				}
+				document.getElementById('prim-desc').textContent = primDescs[primType];
+			}
+
+			function drawTri(ctx, a, b, c, color, labeled) {
+				ctx.beginPath();
+				ctx.moveTo(a[0], a[1]);
+				ctx.lineTo(b[0], b[1]);
+				ctx.lineTo(c[0], c[1]);
+				ctx.closePath();
+				ctx.fillStyle = color + '40';
+				ctx.fill();
+				ctx.strokeStyle = color;
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+			}
+
+			function drawVertex(ctx, x, y, label, color) {
+				ctx.beginPath();
+				ctx.arc(x, y, 5, 0, Math.PI * 2);
+				ctx.fillStyle = color || '#fff';
+				ctx.fill();
+				ctx.font = '11px IBM Plex Mono';
+				ctx.fillStyle = '#aaa';
+				ctx.textAlign = 'center';
+				ctx.fillText(label, x, y - 10);
+			}
+
+			function setPrim(type, btn) {
+				primType = type;
+				document
+					.querySelectorAll('.prim-btn-row .btn')
+					.forEach((b) => b.classList.remove('active'));
+				btn.classList.add('active');
+				drawPrimitives();
+			}
+			drawPrimitives();
+
+			/* ══════════════════════════════════════════════════
+   STEP-BY-STEP RASTERIZER
+══════════════════════════════════════════════════ */
+			const STEP_GRID = 15;
+			const STEP_PX = 16; // pixels per cell
+			const SC = document.getElementById('step-canvas');
+			const SX = SC.getContext('2d');
+
+			const stepTri = { v0: [2, 12], v1: [7, 2], v2: [13, 11] };
+			let stepPixels = [];
+			let stepIdx = 0;
+			let stepTimer = null;
+			let stepCounts = { tested: 0, inside: 0 };
+
+			function edgeFn(ax, ay, bx, by, px, py) {
+				return (bx - ax) * (py - ay) - (by - ay) * (px - ax);
+			}
+
+			function buildStepPixels() {
+				const { v0, v1, v2 } = stepTri;
+				stepPixels = [];
+				const minX = Math.max(0, Math.floor(Math.min(v0[0], v1[0], v2[0])));
+				const maxX = Math.min(STEP_GRID - 1, Math.floor(Math.max(v0[0], v1[0], v2[0])));
+				const minY = Math.max(0, Math.floor(Math.min(v0[1], v1[1], v2[1])));
+				const maxY = Math.min(STEP_GRID - 1, Math.floor(Math.max(v0[1], v1[1], v2[1])));
+				document.getElementById('stat-bbox').textContent = `(${minX},${minY})→(${maxX},${maxY})`;
+				for (let y = minY; y <= maxY; y++) {
+					for (let x = minX; x <= maxX; x++) {
+						const e0 = edgeFn(v0[0], v0[1], v1[0], v1[1], x + 0.5, y + 0.5);
+						const e1 = edgeFn(v1[0], v1[1], v2[0], v2[1], x + 0.5, y + 0.5);
+						const e2 = edgeFn(v2[0], v2[1], v0[0], v0[1], x + 0.5, y + 0.5);
+						stepPixels.push({ x, y, e0, e1, e2, inside: e0 >= 0 && e1 >= 0 && e2 >= 0 });
+					}
+				}
+			}
+
+			// State: null=untouched, 'tested'=checked outside, 'inside'=inside
+			let stepState = [];
+			function stepReset() {
+				if (stepTimer) {
+					clearInterval(stepTimer);
+					stepTimer = null;
+				}
+				document.getElementById('btn-play').textContent = '▶ Play';
+				buildStepPixels();
+				stepIdx = 0;
+				stepCounts = { tested: 0, inside: 0 };
+				stepState = new Array(STEP_GRID * STEP_GRID).fill(null);
+				drawStepCanvas(-1);
+				updateStepStats(-1);
+			}
+
+			function drawStepCanvas(cur) {
+				const { v0, v1, v2 } = stepTri;
+				const W = SC.width,
+					H = SC.height;
+				SX.clearRect(0, 0, W, H);
+				SX.fillStyle = '#08080f';
+				SX.fillRect(0, 0, W, H);
+
+				// Grid background
+				for (let y = 0; y < STEP_GRID; y++) {
+					for (let x = 0; x < STEP_GRID; x++) {
+						const s = stepState[y * STEP_GRID + x];
+						let bg = '#0e0e1a';
+						if (s === 'inside') bg = '#00e5c820';
+						else if (s === 'tested') bg = '#33335540';
+						SX.fillStyle = bg;
+						SX.fillRect(x * STEP_PX, y * STEP_PX, STEP_PX, STEP_PX);
+						SX.strokeStyle = '#1a1a2e';
+						SX.lineWidth = 0.5;
+						SX.strokeRect(x * STEP_PX, y * STEP_PX, STEP_PX, STEP_PX);
+					}
+				}
+
+				// Bounding box
+				if (stepPixels.length > 0) {
+					const minX = Math.min(...stepPixels.map((p) => p.x));
+					const maxX = Math.max(...stepPixels.map((p) => p.x));
+					const minY = Math.min(...stepPixels.map((p) => p.y));
+					const maxY = Math.max(...stepPixels.map((p) => p.y));
+					SX.strokeStyle = '#ffd16660';
+					SX.lineWidth = 1.5;
+					SX.setLineDash([3, 3]);
+					SX.strokeRect(
+						minX * STEP_PX,
+						minY * STEP_PX,
+						(maxX - minX + 1) * STEP_PX,
+						(maxY - minY + 1) * STEP_PX
+					);
+					SX.setLineDash([]);
+				}
+
+				// Inside pixels solid
+				for (let i = 0; i < stepState.length; i++) {
+					if (stepState[i] === 'inside') {
+						const x = i % STEP_GRID,
+							y = Math.floor(i / STEP_GRID);
+						SX.fillStyle = '#00e5c8';
+						SX.fillRect(x * STEP_PX + 1, y * STEP_PX + 1, STEP_PX - 2, STEP_PX - 2);
+					}
+				}
+
+				// Current pixel highlight
+				if (cur >= 0 && cur < stepPixels.length) {
+					const { x, y } = stepPixels[cur];
+					SX.fillStyle = 'rgba(255,255,255,0.85)';
+					SX.fillRect(x * STEP_PX + 2, y * STEP_PX + 2, STEP_PX - 4, STEP_PX - 4);
+				}
+
+				// Triangle outline
+				SX.beginPath();
+				SX.moveTo(v0[0] * STEP_PX + STEP_PX / 2, v0[1] * STEP_PX + STEP_PX / 2);
+				SX.lineTo(v1[0] * STEP_PX + STEP_PX / 2, v1[1] * STEP_PX + STEP_PX / 2);
+				SX.lineTo(v2[0] * STEP_PX + STEP_PX / 2, v2[1] * STEP_PX + STEP_PX / 2);
+				SX.closePath();
+				SX.strokeStyle = '#ff5f3a';
+				SX.lineWidth = 1.5;
+				SX.stroke();
+			}
+
+			function updateStepStats(cur) {
+				document.getElementById('stat-tested').textContent = stepCounts.tested;
+				document.getElementById('stat-inside').textContent = stepCounts.inside;
+				const total = stepPixels.length || 1;
+				document.getElementById('stat-eff').textContent = stepPixels.length
+					? ((stepCounts.inside / total) * 100).toFixed(1) + '%'
+					: '—';
+				document.getElementById('step-info').textContent =
+					`Pixel ${Math.min(stepIdx, stepPixels.length)} / ${stepPixels.length}`;
+				if (cur >= 0 && cur < stepPixels.length) {
+					const p = stepPixels[cur];
+					document.getElementById('stat-cur').textContent = `(${p.x}, ${p.y})`;
+					document.getElementById('stat-edge').textContent =
+						`${p.e0.toFixed(1)} / ${p.e1.toFixed(1)} / ${p.e2.toFixed(1)}`;
+				} else {
+					document.getElementById('stat-cur').textContent = '—';
+					document.getElementById('stat-edge').textContent = '—';
+				}
+			}
+
+			function stepOnce() {
+				if (stepIdx >= stepPixels.length) return;
+				const p = stepPixels[stepIdx];
+				stepState[p.y * STEP_GRID + p.x] = p.inside ? 'inside' : 'tested';
+				stepCounts.tested++;
+				if (p.inside) stepCounts.inside++;
+				drawStepCanvas(stepIdx + 1 < stepPixels.length ? stepIdx + 1 : -1);
+				updateStepStats(stepIdx);
+				stepIdx++;
+			}
+
+			function stepPlay() {
+				if (stepTimer) {
+					clearInterval(stepTimer);
+					stepTimer = null;
+					document.getElementById('btn-play').textContent = '▶ Play';
+					return;
+				}
+				if (stepIdx >= stepPixels.length) stepReset();
+				document.getElementById('btn-play').textContent = '⏸ Pause';
+				const speeds = [250, 120, 60, 25, 8];
+				const spd = speeds[parseInt(document.getElementById('speed-slider').value) - 1];
+				stepTimer = setInterval(() => {
+					stepOnce();
+					if (stepIdx >= stepPixels.length) {
+						clearInterval(stepTimer);
+						stepTimer = null;
+						document.getElementById('btn-play').textContent = '▶ Play';
+					}
+				}, spd);
+			}
+
+			stepReset();
+
+			/* ══════════════════════════════════════════════════
+   DRAGGABLE TRIANGLE RASTERIZER
+══════════════════════════════════════════════════ */
+			const RC = document.getElementById('rast-canvas');
+			const RX = RC.getContext('2d');
+			const CELL = 20;
+
+			let overlays = { bbox: true, grid: true, verts: true, edges: false };
+			let verts = [
+				{ x: 120, y: 340 },
+				{ x: 430, y: 60 },
+				{ x: 740, y: 340 }
+			];
+			let dragging = null;
+
+			function toggleOverlay(name, btn) {
+				overlays[name] = !overlays[name];
+				btn.classList.toggle('active', overlays[name]);
+				renderRast();
+			}
+
+			function getCanvasPos(e) {
+				const rect = RC.getBoundingClientRect();
+				const scaleX = RC.width / rect.width;
+				const scaleY = RC.height / rect.height;
+				const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+				const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+				return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+			}
+
+			RC.addEventListener('pointerdown', (e) => {
+				const { x, y } = getCanvasPos(e);
+				for (let i = 0; i < verts.length; i++) {
+					if (Math.hypot(verts[i].x - x, verts[i].y - y) < 18) {
+						dragging = i;
+						e.preventDefault();
+						return;
+					}
+				}
+			});
+			RC.addEventListener('pointermove', (e) => {
+				if (dragging === null) return;
+				const { x, y } = getCanvasPos(e);
+				verts[dragging] = {
+					x: Math.max(0, Math.min(RC.width, x)),
+					y: Math.max(0, Math.min(RC.height, y))
+				};
+				renderRast();
+				e.preventDefault();
+			});
+			RC.addEventListener('pointerup', () => {
+				dragging = null;
+			});
+
+			function edgeFnR(ax, ay, bx, by, px, py) {
+				return (bx - ax) * (py - ay) - (by - ay) * (px - ax);
+			}
+
+			function renderRast() {
+				const W = RC.width,
+					H = RC.height;
+				RX.clearRect(0, 0, W, H);
+				RX.fillStyle = '#08080f';
+				RX.fillRect(0, 0, W, H);
+
+				const v0 = verts[0],
+					v1 = verts[1],
+					v2 = verts[2];
+
+				// Grid
+				if (overlays.grid) {
+					RX.strokeStyle = '#12122a';
+					RX.lineWidth = 0.5;
+					for (let x = 0; x < W; x += CELL) {
+						RX.beginPath();
+						RX.moveTo(x, 0);
+						RX.lineTo(x, H);
+						RX.stroke();
+					}
+					for (let y = 0; y < H; y += CELL) {
+						RX.beginPath();
+						RX.moveTo(0, y);
+						RX.lineTo(W, y);
+						RX.stroke();
+					}
+				}
+
+				// Rasterize
+				const minX = Math.max(0, Math.floor(Math.min(v0.x, v1.x, v2.x) / CELL) * CELL);
+				const maxX = Math.min(W, Math.ceil(Math.max(v0.x, v1.x, v2.x) / CELL) * CELL);
+				const minY = Math.max(0, Math.floor(Math.min(v0.y, v1.y, v2.y) / CELL) * CELL);
+				const maxY = Math.min(H, Math.ceil(Math.max(v0.y, v1.y, v2.y) / CELL) * CELL);
+
+				let tested = 0,
+					filled = 0;
+				for (let y = minY; y < maxY; y += CELL) {
+					for (let x = minX; x < maxX; x += CELL) {
+						const cx = x + CELL / 2,
+							cy = y + CELL / 2;
+						const e0 = edgeFnR(v0.x, v0.y, v1.x, v1.y, cx, cy);
+						const e1 = edgeFnR(v1.x, v1.y, v2.x, v2.y, cx, cy);
+						const e2 = edgeFnR(v2.x, v2.y, v0.x, v0.y, cx, cy);
+						tested++;
+						if (e0 >= 0 && e1 >= 0 && e2 >= 0) {
+							RX.fillStyle = '#00e5c8';
+							RX.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+							filled++;
+						}
+					}
+				}
+
+				// Bounding box
+				if (overlays.bbox) {
+					RX.strokeStyle = '#ffd166aa';
+					RX.lineWidth = 1.5;
+					RX.setLineDash([5, 4]);
+					RX.strokeRect(minX, minY, maxX - minX, maxY - minY);
+					RX.setLineDash([]);
+				}
+
+				// Triangle outline
+				RX.beginPath();
+				RX.moveTo(v0.x, v0.y);
+				RX.lineTo(v1.x, v1.y);
+				RX.lineTo(v2.x, v2.y);
+				RX.closePath();
+				RX.strokeStyle = '#ff5f3aee';
+				RX.lineWidth = 2;
+				RX.stroke();
+				RX.fillStyle = '#ff5f3a08';
+				RX.fill();
+
+				// Edge normals
+				if (overlays.edges) {
+					const edgePairs = [
+						[v0, v1],
+						[v1, v2],
+						[v2, v0]
+					];
+					edgePairs.forEach(([a, b]) => {
+						const mx = (a.x + b.x) / 2,
+							my = (a.y + b.y) / 2;
+						const dx = b.x - a.x,
+							dy = b.y - a.y;
+						const len = Math.sqrt(dx * dx + dy * dy);
+						const nx = (-dy / len) * 25,
+							ny = (dx / len) * 25;
+						RX.beginPath();
+						RX.moveTo(mx, my);
+						RX.lineTo(mx + nx, my + ny);
+						RX.strokeStyle = '#a78bfa';
+						RX.lineWidth = 1.5;
+						RX.stroke();
+						RX.beginPath();
+						RX.arc(mx + nx, my + ny, 3, 0, Math.PI * 2);
+						RX.fillStyle = '#a78bfa';
+						RX.fill();
+					});
+				}
+
+				// Vertices
+				if (overlays.verts) {
+					const labels = ['v0', 'v1', 'v2'];
+					const colors = ['#ffd166', '#00e5c8', '#ff5f3a'];
+					verts.forEach((v, i) => {
+						RX.beginPath();
+						RX.arc(v.x, v.y, dragging === i ? 10 : 7, 0, Math.PI * 2);
+						RX.fillStyle = colors[i];
+						RX.fill();
+						RX.strokeStyle = '#fff';
+						RX.lineWidth = 1.5;
+						RX.stroke();
+						RX.fillStyle = '#fff';
+						RX.font = 'bold 12px IBM Plex Mono';
+						RX.textAlign = 'center';
+						RX.fillText(labels[i], v.x, v.y - 15);
+						RX.fillStyle = '#aaa';
+						RX.font = '10px IBM Plex Mono';
+						RX.fillText(`(${Math.round(v.x / CELL)},${Math.round(v.y / CELL)})`, v.x, v.y - 3);
+					});
+				}
+
+				// Stats
+				const bbW = Math.ceil((maxX - minX) / CELL),
+					bbH = Math.ceil((maxY - minY) / CELL);
+				document.getElementById('rast-bbox').textContent =
+					`(${Math.round(minX / CELL)},${Math.round(minY / CELL)}) → (${Math.round(maxX / CELL)},${Math.round(maxY / CELL)})`;
+				document.getElementById('rast-tested').textContent = tested;
+				document.getElementById('rast-filled').textContent = filled;
+				document.getElementById('rast-bbarea').textContent = `${bbW} × ${bbH} = ${bbW * bbH} px`;
+				const triArea = Math.abs(edgeFnR(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y)) / (2 * CELL * CELL);
+				document.getElementById('rast-tarea').textContent = `~${triArea.toFixed(1)} px`;
+				document.getElementById('rast-eff').textContent = tested
+					? ((filled / tested) * 100).toFixed(1) + '%'
+					: '—';
+
+				// Live code
+				document.getElementById('rast-code').innerHTML =
+					`<span class="lang-tag">vertices</span>` +
+					`v0 = (${Math.round(v0.x / CELL)}, ${Math.round(v0.y / CELL)})\n` +
+					`v1 = (${Math.round(v1.x / CELL)}, ${Math.round(v1.y / CELL)})\n` +
+					`v2 = (${Math.round(v2.x / CELL)}, ${Math.round(v2.y / CELL)})\n\n` +
+					`<span class="cm"># bounding box</span>\n` +
+					`min = (${Math.round(minX / CELL)}, ${Math.round(minY / CELL)})\n` +
+					`max = (${Math.round(maxX / CELL)}, ${Math.round(maxY / CELL)})\n\n` +
+					`tested = ${tested}\nfilled = ${filled}`;
+			}
+			renderRast();
+
+			/* ══════════════════════════════════════════════════
+   DEBUG ASSESSMENT
+══════════════════════════════════════════════════ */
+			const debugQuestions = [
+				{
+					title: 'Bug 01 · No pixels drawn',
+					code: [
+						`def edge_fn(ax, ay, bx, by, px, py):`,
+						`    return (bx - ax) * (py - ay) - (by - ay) * (px - ax)`,
+						``,
+						`def rasterize(fb, v0, v1, v2, color):`,
+						`    min_x = int(min(v0[0], v1[0], v2[0]))`,
+						`    max_x = int(max(v0[0], v1[0], v2[0]))`,
+						`    min_y = int(min(v0[1], v1[1], v2[1]))`,
+						`    max_y = int(max(v0[1], v1[1], v2[1]))`,
+						`    for y in range(min_y, max_y + 1):`,
+						`        for x in range(min_x, max_x + 1):`,
+						`            e0 = edge_fn(*v0, *v1, x, y)`, // BUG: missing +0.5
+						`            e1 = edge_fn(*v1, *v2, x, y)`,
+						`            e2 = edge_fn(*v2, *v0, x, y)`,
+						`            if e0 >= 0 and e1 >= 0 and e2 >= 0:`,
+						`                fb[y, x] = color`
+					],
+					bugLine: 10,
+					options: [
+						'The bounding box is computed incorrectly — it should use float() not int()',
+						'The edge function is called with x, y instead of x+0.5, y+0.5 — pixels on exact edges test as zero',
+						'The range should be range(min_y, max_y) without the + 1',
+						'The winding order is wrong — the conditions should be e0 <= 0'
+					],
+					correct: 1,
+					explanation:
+						'Pixel centers are at (x+0.5, y+0.5), not (x, y). Using integer coordinates means pixels sitting exactly on a triangle edge evaluate to e=0, which still passes the >= 0 test — but many internal pixels get wrong values. For very small triangles, all pixel centers may be rejected. Always test pixel centers.'
+				},
+				{
+					title: 'Bug 02 · Triangle flickers — only visible sometimes',
+					code: [
+						`def rasterize(fb, v0, v1, v2, color):`,
+						`    min_x = max(0, int(min(v0[0], v1[0], v2[0])))`,
+						`    max_x = min(WIDTH, int(max(v0[0], v1[0], v2[0])))`, // BUG: should be WIDTH-1
+						`    min_y = max(0, int(min(v0[1], v1[1], v2[1])))`,
+						`    max_y = min(HEIGHT-1, int(max(v0[1], v1[1], v2[1])))`,
+						`    for y in range(min_y, max_y + 1):`,
+						`        for x in range(min_x, max_x + 1):`,
+						`            e0 = edge_fn(*v0, *v1, x+0.5, y+0.5)`,
+						`            e1 = edge_fn(*v1, *v2, x+0.5, y+0.5)`,
+						`            e2 = edge_fn(*v2, *v0, x+0.5, y+0.5)`,
+						`            if e0 >= 0 and e1 >= 0 and e2 >= 0:`,
+						`                fb[y, x] = color` // BUG: when x = WIDTH, this writes out of bounds
+					],
+					bugLine: 2,
+					options: [
+						'The edge functions are called with the wrong vertex order — e0 should use v0, v2',
+						'max_x clips to WIDTH instead of WIDTH-1, causing an out-of-bounds write when the triangle reaches the right edge',
+						'The framebuffer index is wrong — it should be fb[x, y] not fb[y, x]',
+						'The condition should use > 0, not >= 0, to avoid shared edges being drawn twice'
+					],
+					correct: 1,
+					explanation:
+						'Valid framebuffer column indices are 0 to WIDTH-1. Clamping max_x to WIDTH allows x to reach WIDTH inside the loop, then fb[y, WIDTH] writes past the end of the row array. This only triggers when a triangle vertex reaches the right edge — hence the intermittent flicker. Always clamp to WIDTH-1 and HEIGHT-1.'
+				},
+				{
+					title: 'Bug 03 · Overlapping triangles show wrong colors',
+					code: [
+						`framebuffer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)`,
+						``,
+						`# Draw triangle A (background, should appear behind B)`,
+						`rasterize(framebuffer,`,
+						`    (50, 200), (200, 50), (350, 200),`,
+						`    [0, 229, 200])`,
+						``,
+						`# Draw triangle B (foreground)`,
+						`rasterize(framebuffer,`,
+						`    (100, 200), (250, 50), (400, 200),`,
+						`    [255, 95, 58])`,
+						``,
+						`# This function clears and re-draws in a random order each frame`,
+						`def draw_frame():`,
+						`    triangles = get_scene_triangles()`,
+						`    random.shuffle(triangles)`, // BUG: shuffle = no defined ordering
+						`    for tri in triangles:`,
+						`        rasterize(framebuffer, *tri)`
+					],
+					bugLine: 15,
+					options: [
+						'The framebuffer is not cleared before drawing — old pixels remain',
+						'rasterize() is missing the color argument inside draw_frame()',
+						'Triangles are shuffled before drawing — in a software rasterizer, draw order determines visibility. Without a depth buffer, later draws always overwrite earlier ones.',
+						'The bounding boxes of the two triangles overlap, which the rasterizer does not handle'
+					],
+					correct: 2,
+					explanation:
+						'A software rasterizer with no depth buffer uses "painter\'s algorithm" — later drawn triangles always overwrite earlier ones. Shuffling the draw order randomizes which triangle wins at overlapping pixels. The fix is either: (1) sort triangles back-to-front before drawing (painter\'s algorithm), or (2) implement a depth buffer that tracks the closest z-value per pixel. GPU pipelines use a depth buffer by default.'
+				}
+			];
+
+			let dbAnswered = 0,
+				dbCorrect = 0;
+
+			function buildDebug() {
+				const c = document.getElementById('debug-container');
+				c.innerHTML = '';
+				debugQuestions.forEach((q, qi) => {
+					const div = document.createElement('div');
+					div.className = 'debug-question';
+					const codeHtml = q.code
+						.map((line, li) => {
+							const isComment = line.trim().startsWith('//') || line.trim().startsWith('#');
+							const isBug = li === q.bugLine;
+							const cls = isBug ? ' class="bug-highlight"' : '';
+							// syntax color keywords/strings
+							let hl = line
+								.replace(/&/g, '&amp;')
+								.replace(/</g, '&lt;')
+								.replace(/>/g, '&gt;')
+								.replace(
+									/(def |return |for |in |if |and |import |from )/g,
+									'<span class="kw">$1</span>'
+								)
+								.replace(/(\d+\.?\d*)/g, '<span class="num">$1</span>')
+								.replace(/(#[^\n<]*)/g, '<span class="cm">$1</span>')
+								.replace(/(\/\/[^\n<]*)/g, '<span class="cm">$1</span>');
+							return `<div${cls}>${hl}</div>`;
+						})
+						.join('');
+					div.innerHTML = `
+      <div class="debug-q-header">Question ${qi + 1} · ${q.title}</div>
+      <div class="debug-code-area">
+        <pre style="margin:0;padding:1rem 1.25rem;font-size:12px;line-height:1.7;overflow-x:auto;">${codeHtml}<span class="lang-tag">python</span></pre>
+      </div>
+      <div class="debug-options" id="dbg-opts-${qi}">
+        ${q.options.map((o, oi) => `<div class="debug-option" onclick="dbgAnswer(${qi},${oi})" id="dbg-opt-${qi}-${oi}">${o}</div>`).join('')}
+      </div>
+      <div class="debug-feedback" id="dbg-fb-${qi}">Select the line containing the bug, then choose the explanation that matches.</div>
+    `;
+					c.appendChild(div);
+				});
+			}
+
+			function dbgAnswer(qi, oi) {
+				const q = debugQuestions[qi];
+				document
+					.querySelectorAll(`#dbg-opts-${qi} .debug-option`)
+					.forEach((o) => o.classList.add('disabled'));
+				const fb = document.getElementById(`dbg-fb-${qi}`);
+				if (oi === q.correct) {
+					document.getElementById(`dbg-opt-${qi}-${oi}`).classList.add('correct');
+					fb.textContent = '✓ ' + q.explanation;
+					fb.className = 'debug-feedback ok';
+					dbCorrect++;
+				} else {
+					document.getElementById(`dbg-opt-${qi}-${oi}`).classList.add('wrong');
+					document.getElementById(`dbg-opt-${qi}-${q.correct}`).classList.add('correct');
+					fb.textContent = '✗ ' + q.explanation;
+					fb.className = 'debug-feedback bad';
+				}
+				dbAnswered++;
+				if (dbAnswered === debugQuestions.length) {
+					const s = document.getElementById('quiz-score');
+					s.style.display = 'block';
+					document.getElementById('score-num').textContent =
+						`${dbCorrect}/${debugQuestions.length}`;
+					s.style.borderColor =
+						dbCorrect === debugQuestions.length
+							? 'var(--accent)'
+							: dbCorrect >= 2
+								? 'var(--accent3)'
+								: 'var(--accent2)';
+				}
+			}
+
+			buildDebug();
+
+			/* ══════════════════════════════════════════════════
+   READING PROGRESS
+══════════════════════════════════════════════════ */
+			window.addEventListener('scroll', () => {
+				const pct = Math.min(
+					100,
+					(window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100
+				);
+				document.getElementById('reading-progress').style.width = pct + '%';
+			});
+		</script>
+	</body>
+</html>

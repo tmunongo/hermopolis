@@ -1,0 +1,2601 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 3 — Coordinate Systems and Transformations</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--bg: #070b0d;
+				--surface: #0d1215;
+				--raised: #121a1e;
+				--border: #1a2228;
+				--border2: #253038;
+				--accent: #a78bfa;
+				--accent2: #34d399;
+				--accent3: #fb923c;
+				--accent4: #f472b6;
+				--text: #cdd8e0;
+				--muted: #4a606c;
+				--code-bg: #090d10;
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				background: var(--bg);
+				color: var(--text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--border2);
+				border-radius: 3px;
+			}
+
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+
+			.course-header {
+				border-bottom: 1px solid var(--border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+				font-weight: 400;
+			}
+
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--accent);
+				border: 1px solid var(--accent);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 620px;
+			}
+			.module-title span {
+				color: var(--accent);
+			}
+
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+			}
+
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--accent);
+				background: var(--surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--accent);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--accent2);
+			}
+
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--accent2);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--accent);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+
+			pre {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1.5rem;
+				overflow-x: auto;
+				margin: 1.5rem 0;
+				font-size: 13px;
+				line-height: 1.6;
+				position: relative;
+			}
+			pre .lang-tag {
+				position: absolute;
+				top: 8px;
+				right: 12px;
+				font-size: 10px;
+				color: var(--muted);
+				letter-spacing: 0.1em;
+			}
+			.kw {
+				color: #c084fc;
+			}
+			.fn {
+				color: #67e8f9;
+			}
+			.str {
+				color: #fde68a;
+			}
+			.cm {
+				color: #4a5568;
+			}
+			.num {
+				color: #f9a8d4;
+			}
+			.op {
+				color: var(--accent3);
+			}
+			code {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--accent);
+			}
+
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--accent);
+				background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+				font-size: 13px;
+			}
+			.callout.green {
+				border-color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 6%, var(--surface));
+			}
+			.callout.orange {
+				border-color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 6%, var(--surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--accent);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.green .callout-label {
+				color: var(--accent2);
+			}
+			.callout.orange .callout-label {
+				color: var(--accent3);
+			}
+
+			.demo-box {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.i {
+				color: var(--accent);
+				border-color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+			}
+			.demo-badge.a {
+				color: var(--accent3);
+				border-color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			canvas {
+				display: block;
+			}
+
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			.three-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 1rem;
+			}
+			@media (max-width: 640px) {
+				.two-col,
+				.three-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.slider-row {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				margin: 0.5rem 0;
+			}
+			.slider-row label {
+				font-size: 11px;
+				min-width: 70px;
+				color: var(--muted);
+			}
+			.slider-row input[type='range'] {
+				flex: 1;
+				-webkit-appearance: none;
+				height: 3px;
+				background: var(--border2);
+				outline: none;
+			}
+			.slider-row input[type='range']::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: var(--accent);
+				cursor: pointer;
+			}
+			.slider-val {
+				font-size: 12px;
+				color: var(--accent);
+				min-width: 44px;
+				text-align: right;
+				font-weight: 600;
+			}
+
+			.btn {
+				background: transparent;
+				border: 1px solid var(--border2);
+				color: var(--text);
+				padding: 6px 14px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.btn.active {
+				border-color: var(--accent);
+				color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+			}
+			.btn.g:hover,
+			.btn.g.active {
+				border-color: var(--accent2);
+				color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 10%, transparent);
+			}
+
+			/* MATRIX DISPLAY */
+			.mat-display {
+				display: inline-grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 2px;
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 0.75rem;
+				font-size: 12px;
+				position: relative;
+			}
+			.mat-display::before,
+			.mat-display::after {
+				content: '';
+				position: absolute;
+				top: 6px;
+				bottom: 6px;
+				width: 3px;
+				border: 1px solid var(--border2);
+			}
+			.mat-display::before {
+				left: -4px;
+				border-right: none;
+			}
+			.mat-display::after {
+				right: -4px;
+				border-left: none;
+			}
+			.mat-cell {
+				padding: 2px 8px;
+				text-align: right;
+				min-width: 52px;
+				color: var(--text);
+				transition:
+					color 0.2s,
+					background 0.2s;
+			}
+			.mat-cell.hi {
+				color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 12%, transparent);
+			}
+			.mat-label {
+				font-size: 10px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 0.4rem;
+			}
+
+			/* COORD CANVAS */
+			#transform-canvas {
+				border: 1px solid var(--border2);
+				background: #08080f;
+				cursor: default;
+			}
+			#matrix-canvas {
+				border: 1px solid var(--border2);
+				background: #08080f;
+			}
+			#spaces-canvas {
+				border: 1px solid var(--border2);
+				background: #08080f;
+			}
+			#hier-canvas {
+				border: 1px solid var(--border2);
+				background: #08080f;
+				cursor: pointer;
+			}
+			#anim-canvas {
+				border: 1px solid var(--border2);
+				background: #08080f;
+			}
+
+			/* STATS PANEL */
+			.info-panel {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1rem;
+				font-size: 12px;
+			}
+			.info-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.2rem 0;
+				border-bottom: 1px solid var(--border);
+			}
+			.info-row:last-child {
+				border-bottom: none;
+			}
+			.info-label {
+				color: var(--muted);
+			}
+			.info-val {
+				color: var(--accent2);
+				font-weight: 600;
+			}
+
+			/* TABLES */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--raised);
+				color: var(--accent);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--border);
+				color: var(--text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--raised) 50%, transparent);
+			}
+
+			hr.divider {
+				border: none;
+				border-top: 1px solid var(--border);
+				margin: 3rem 0;
+			}
+
+			/* QUIZ */
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.25rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--accent3);
+				margin-right: 0.5rem;
+			}
+			.q-pre {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 0.75rem 1rem;
+				font-size: 12px;
+				margin-bottom: 1rem;
+				overflow-x: auto;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--border2);
+				background: var(--raised);
+			}
+			.option.correct {
+				border-color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 10%, transparent);
+				color: var(--accent2);
+			}
+			.option.wrong {
+				border-color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 10%, transparent);
+				color: var(--accent3);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--muted);
+			}
+			.feedback.ok {
+				color: var(--accent2);
+			}
+			.feedback.bad {
+				color: var(--accent3);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--accent);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 0.25rem;
+			}
+
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--accent);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			.nav-links {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 4rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+			.prev-link {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 0.75rem 1.25rem;
+				transition: all 0.2s;
+			}
+			.prev-link:hover {
+				border-color: var(--accent3);
+				color: var(--accent3);
+			}
+			.next-module {
+				display: flex;
+				align-items: center;
+				gap: 2rem;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--border);
+				text-decoration: none;
+				transition: all 0.2s;
+				background: var(--surface);
+			}
+			.next-module:hover {
+				border-color: var(--accent2);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--accent2);
+			}
+
+			/* transform operation pill */
+			.op-pill {
+				display: inline-block;
+				padding: 3px 10px;
+				border: 1px solid;
+				font-size: 11px;
+				letter-spacing: 0.05em;
+				margin: 2px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.op-pill.T {
+				border-color: var(--accent2);
+				color: var(--accent2);
+			}
+			.op-pill.R {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.op-pill.S {
+				border-color: var(--accent3);
+				color: var(--accent3);
+			}
+			.op-pill.T.on {
+				background: color-mix(in srgb, var(--accent2) 20%, transparent);
+			}
+			.op-pill.R.on {
+				background: color-mix(in srgb, var(--accent) 20%, transparent);
+			}
+			.op-pill.S.on {
+				background: color-mix(in srgb, var(--accent3) 20%, transparent);
+			}
+
+			.chain-display {
+				display: flex;
+				align-items: center;
+				gap: 0.4rem;
+				flex-wrap: wrap;
+				margin: 0.75rem 0;
+				min-height: 32px;
+			}
+			.chain-op {
+				font-size: 11px;
+				padding: 3px 10px;
+				border: 1px solid;
+			}
+			.chain-op.T {
+				border-color: var(--accent2);
+				color: var(--accent2);
+			}
+			.chain-op.R {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.chain-op.S {
+				border-color: var(--accent3);
+				color: var(--accent3);
+			}
+			.chain-arrow {
+				color: var(--muted);
+				font-size: 14px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<header class="course-header">
+				<div>
+					<div class="course-label">Game Development Fundamentals</div>
+					<div class="course-title">From Pixels to Play</div>
+				</div>
+				<div style="font-size: 11px; color: var(--muted); text-align: right">Module 03 of 12</div>
+			</header>
+
+			<div class="module-hero">
+				<div class="module-number">03</div>
+				<div class="module-tag">Module 03 · Theory + Practice</div>
+				<h1 class="module-title">Coordinate Systems<br />and <span>Transformations</span></h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#coords">Coordinate Spaces</a></li>
+					<li><a href="#affine">Affine Transformations</a></li>
+					<li><a href="#matrices">Matrix Math</a></li>
+					<li><a href="#combining">Combining Transforms</a></li>
+					<li><a href="#hierarchy">Hierarchical Transforms</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+				</ul>
+			</nav>
+
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Use matrices to perform translation, rotation, and scaling</li>
+					<li>Understand local, world, and screen coordinate spaces</li>
+					<li>Combine transforms correctly through matrix multiplication</li>
+					<li>Implement hierarchical transforms for scene organization</li>
+				</ul>
+			</section>
+
+			<!-- ══ 03.01 COORDINATE SPACES ══ -->
+			<section id="coords" class="section">
+				<div class="section-header">
+					<span class="section-num">03.01</span>
+					<h2 class="section-title">Coordinate Spaces</h2>
+				</div>
+
+				<p>
+					Every position in a game scene is expressed relative to some
+					<em>frame of reference</em>. That frame is called a coordinate space. There is no single
+					"correct" space — positions only have meaning when you know which space they are measured
+					in.
+				</p>
+				<p>Three spaces appear everywhere in game development:</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Space</th>
+							<th>Origin</th>
+							<th>Axes</th>
+							<th>Used for</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								<strong style="color: var(--accent2)">Local / Object</strong>
+							</td>
+							<td>Object center</td>
+							<td>Aligned to object</td>
+							<td>Vertex positions in mesh data</td>
+						</tr>
+						<tr>
+							<td><strong style="color: var(--accent)">World</strong></td>
+							<td>Scene origin</td>
+							<td>Fixed, global</td>
+							<td>Object placement in scene</td>
+						</tr>
+						<tr>
+							<td>
+								<strong style="color: var(--accent3)">Screen / NDC</strong>
+							</td>
+							<td>Center or top-left</td>
+							<td>Pixel or [-1,1]</td>
+							<td>Final rasterization</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<p>
+					A 2D character mesh is stored in <em>local space</em> — vertices positioned around (0,0).
+					When you place that character at position (300, 200) in the scene, you are expressing a
+					transform from local space to <em>world space</em>. The camera then maps world space to
+					<em>screen space</em> for rasterization.
+				</p>
+
+				<!-- COORDINATE SPACES DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Three Coordinate Spaces</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Click each space to see where the same shape lives relative to different origins. The
+							axes and origin move; the screen pixels do not.
+						</p>
+						<div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap">
+							<button class="btn active" id="sp-btn-local" onclick="setSpace('local', this)">
+								Local Space
+							</button>
+							<button class="btn" id="sp-btn-world" onclick="setSpace('world', this)">
+								World Space
+							</button>
+							<button class="btn" id="sp-btn-screen" onclick="setSpace('screen', this)">
+								Screen Space
+							</button>
+						</div>
+						<canvas id="spaces-canvas" width="860" height="320" style="width: 100%"></canvas>
+						<div
+							id="spaces-desc"
+							style="font-size: 12px; color: var(--muted); margin-top: 0.75rem; min-height: 1.4em"
+						></div>
+					</div>
+				</div>
+
+				<div class="callout green">
+					<div class="callout-label">Practical Rule</div>
+					If a number feels wrong — a position that should be (0,0) appearing somewhere else, or a
+					rotation that seems off-center — the first question to ask is:
+					<em>which coordinate space am I in?</em> Most transform bugs are space confusion.
+				</div>
+			</section>
+
+			<!-- ══ 03.02 AFFINE TRANSFORMS ══ -->
+			<section id="affine" class="section">
+				<div class="section-header">
+					<span class="section-num">03.02</span>
+					<h2 class="section-title">Affine Transformations</h2>
+				</div>
+
+				<p>
+					An <strong>affine transformation</strong> is any transformation that preserves straight
+					lines and the ratio of distances along those lines. The three fundamental affine
+					transforms are translation, rotation, and scale. Their defining property: parallel lines
+					remain parallel after the transform.
+				</p>
+
+				<p>
+					In 2D, each transform operates on a point (x, y). The
+					<em>homogeneous coordinate</em> trick adds a third component (w = 1) so that all three
+					operations — including translation — can be expressed as matrix multiplication. Without
+					homogeneous coordinates, translation cannot be a matrix operation.
+				</p>
+
+				<pre><code><span class="cm"># 2D homogeneous point: [x, y, 1]
+# All transforms become 3×3 matrix multiplications</span>
+
+<span class="cm"># Translation by (tx, ty)</span>
+T = [[<span class="num">1</span>, <span class="num">0</span>, tx],
+     [<span class="num">0</span>, <span class="num">1</span>, ty],
+     [<span class="num">0</span>, <span class="num">0</span>,  <span class="num">1</span>]]
+
+<span class="cm"># Rotation by angle θ (counter-clockwise)</span>
+R = [[<span class="fn">cos</span>(θ), -<span class="fn">sin</span>(θ), <span class="num">0</span>],
+     [<span class="fn">sin</span>(θ),  <span class="fn">cos</span>(θ), <span class="num">0</span>],
+     [      <span class="num">0</span>,        <span class="num">0</span>, <span class="num">1</span>]]
+
+<span class="cm"># Scale by (sx, sy)</span>
+S = [[sx,  <span class="num">0</span>, <span class="num">0</span>],
+     [ <span class="num">0</span>, sy, <span class="num">0</span>],
+     [ <span class="num">0</span>,  <span class="num">0</span>, <span class="num">1</span>]]<span class="lang-tag">python</span></code></pre>
+
+				<!-- TRANSFORM PLAYGROUND -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Transform Playground</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							Adjust the sliders to apply each transform. The matrix updates in real time, and the
+							resulting point is computed below.
+						</p>
+						<div class="two-col" style="align-items: start">
+							<div>
+								<canvas id="transform-canvas" width="380" height="360" style="width: 100%"></canvas>
+							</div>
+							<div>
+								<div style="margin-bottom: 1.25rem">
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--accent2);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Translation
+									</div>
+									<div class="slider-row">
+										<label>tx</label
+										><input type="range" id="sl-tx" min="-150" max="150" value="0" /><span
+											class="slider-val"
+											id="vl-tx"
+											>0</span
+										>
+									</div>
+									<div class="slider-row">
+										<label>ty</label
+										><input type="range" id="sl-ty" min="-150" max="150" value="0" /><span
+											class="slider-val"
+											id="vl-ty"
+											>0</span
+										>
+									</div>
+								</div>
+								<div style="margin-bottom: 1.25rem">
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--accent);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Rotation
+									</div>
+									<div class="slider-row">
+										<label>θ (deg)</label
+										><input type="range" id="sl-rot" min="-180" max="180" value="0" /><span
+											class="slider-val"
+											id="vl-rot"
+											>0°</span
+										>
+									</div>
+								</div>
+								<div style="margin-bottom: 1.25rem">
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--accent3);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Scale
+									</div>
+									<div class="slider-row">
+										<label>sx</label
+										><input type="range" id="sl-sx" min="10" max="300" value="100" /><span
+											class="slider-val"
+											id="vl-sx"
+											>1.0</span
+										>
+									</div>
+									<div class="slider-row">
+										<label>sy</label
+										><input type="range" id="sl-sy" min="10" max="300" value="100" /><span
+											class="slider-val"
+											id="vl-sy"
+											>1.0</span
+										>
+									</div>
+								</div>
+								<button
+									class="btn"
+									onclick="resetTransform()"
+									style="margin-bottom: 1rem; width: 100%"
+								>
+									↺ Reset
+								</button>
+								<!-- Live matrix -->
+								<div class="mat-label">Combined Matrix M = T × R × S</div>
+								<div style="display: flex; justify-content: center; margin-top: 0.5rem">
+									<div class="mat-display" id="mat-combined">
+										<div class="mat-cell" id="mc00">1</div>
+										<div class="mat-cell" id="mc01">0</div>
+										<div class="mat-cell" id="mc02">0</div>
+										<div class="mat-cell" id="mc10">0</div>
+										<div class="mat-cell" id="mc11">1</div>
+										<div class="mat-cell" id="mc12">0</div>
+										<div class="mat-cell" id="mc20">0</div>
+										<div class="mat-cell" id="mc21">0</div>
+										<div class="mat-cell" id="mc22">1</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ══ 03.03 MATRIX MATH ══ -->
+			<section id="matrices" class="section">
+				<div class="section-header">
+					<span class="section-num">03.03</span>
+					<h2 class="section-title">Matrix Multiplication</h2>
+				</div>
+
+				<p>
+					Applying a transform to a point means multiplying a 3×3 matrix by a 3×1 column vector.
+					Each output component is the
+					<em>dot product</em> of a row of the matrix with the input vector.
+				</p>
+
+				<pre><code><span class="cm"># Matrix-vector multiply: M @ point</span>
+<span class="kw">def</span> <span class="fn">mat_vec</span>(M, p):
+    x = M[<span class="num">0</span>][<span class="num">0</span>]*p[<span class="num">0</span>] + M[<span class="num">0</span>][<span class="num">1</span>]*p[<span class="num">1</span>] + M[<span class="num">0</span>][<span class="num">2</span>]*p[<span class="num">2</span>]
+    y = M[<span class="num">1</span>][<span class="num">0</span>]*p[<span class="num">0</span>] + M[<span class="num">1</span>][<span class="num">1</span>]*p[<span class="num">1</span>] + M[<span class="num">1</span>][<span class="num">2</span>]*p[<span class="num">2</span>]
+    w = M[<span class="num">2</span>][<span class="num">0</span>]*p[<span class="num">0</span>] + M[<span class="num">2</span>][<span class="num">1</span>]*p[<span class="num">1</span>] + M[<span class="num">2</span>][<span class="num">2</span>]*p[<span class="num">2</span>]
+    <span class="kw">return</span> [x, y, w]
+
+<span class="cm"># In practice, use numpy:</span>
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+result = M @ np.<span class="fn">array</span>([x, y, <span class="num">1.0</span>])<span class="lang-tag">python</span></code></pre>
+
+				<!-- MATRIX MULTIPLY VISUALIZER -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Matrix × Vector Step-by-Step</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Hover over an output cell to see which row and column contribute to it.
+						</p>
+						<canvas id="matrix-canvas" width="860" height="280" style="width: 100%"></canvas>
+						<div
+							id="mat-formula"
+							style="
+								font-size: 12px;
+								color: var(--muted);
+								margin-top: 0.75rem;
+								min-height: 1.4em;
+								text-align: center;
+							"
+						></div>
+						<div
+							style="
+								display: flex;
+								gap: 0.5rem;
+								flex-wrap: wrap;
+								margin-top: 1rem;
+								justify-content: center;
+							"
+							id="mat-preset-btns"
+						>
+							<button class="btn active" onclick="setMatPreset('translate', this)">
+								Translation
+							</button>
+							<button class="btn" onclick="setMatPreset('rotate', this)">Rotation 45°</button>
+							<button class="btn" onclick="setMatPreset('scale', this)">Scale 2×</button>
+							<button class="btn" onclick="setMatPreset('combined', this)">T × R × S</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="callout orange">
+					<div class="callout-label">Order Matters</div>
+					Matrix multiplication is not commutative. <code>T × R ≠ R × T</code>. Rotating first then
+					translating gives a different result than translating first then rotating. In game
+					engines, the convention is almost always Scale → Rotate → Translate (applied right to
+					left). The demos below make this concrete.
+				</div>
+			</section>
+
+			<!-- ══ 03.04 COMBINING ══ -->
+			<section id="combining" class="section">
+				<div class="section-header">
+					<span class="section-num">03.04</span>
+					<h2 class="section-title">Combining Transforms</h2>
+				</div>
+
+				<p>
+					The power of matrix representation: applying ten transforms to a thousand vertices
+					requires multiplying the ten matrices together once to produce a single combined matrix,
+					then multiplying each vertex by that one matrix. The cost is ten matrix multiplications
+					plus one thousand matrix-vector multiplications, instead of ten million.
+				</p>
+
+				<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">translation</span>(tx, ty):
+    <span class="kw">return</span> np.<span class="fn">array</span>([[<span class="num">1</span>,<span class="num">0</span>,tx],[<span class="num">0</span>,<span class="num">1</span>,ty],[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype=float)
+
+<span class="kw">def</span> <span class="fn">rotation</span>(angle_deg):
+    t = np.<span class="fn">radians</span>(angle_deg)
+    c, s = np.<span class="fn">cos</span>(t), np.<span class="fn">sin</span>(t)
+    <span class="kw">return</span> np.<span class="fn">array</span>([[c,-s,<span class="num">0</span>],[s,c,<span class="num">0</span>],[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype=float)
+
+<span class="kw">def</span> <span class="fn">scale</span>(sx, sy):
+    <span class="kw">return</span> np.<span class="fn">array</span>([[sx,<span class="num">0</span>,<span class="num">0</span>],[<span class="num">0</span>,sy,<span class="num">0</span>],[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype=float)
+
+<span class="cm"># Combine: S, then R, then T  (applied right-to-left)</span>
+M = <span class="fn">translation</span>(<span class="num">100</span>, <span class="num">50</span>) @ <span class="fn">rotation</span>(<span class="num">45</span>) @ <span class="fn">scale</span>(<span class="num">2</span>, <span class="num">2</span>)
+
+<span class="cm"># Apply to all vertices at once (each row is a homogeneous point)</span>
+verts = np.<span class="fn">array</span>([[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>],[<span class="num">1</span>,<span class="num">0</span>,<span class="num">1</span>],[<span class="num">0</span>,<span class="num">1</span>,<span class="num">1</span>]], dtype=float)
+transformed = (M @ verts.T).T<span class="lang-tag">python</span></code></pre>
+
+				<!-- ORDER OF OPS DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Transform Order Explorer</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Drag operations to reorder them. See how the same transforms produce different results
+							depending on sequence.
+						</p>
+						<div style="margin-bottom: 0.75rem">
+							<div style="font-size: 11px; color: var(--muted); margin-bottom: 0.5rem">
+								Click to toggle which transforms are active:
+							</div>
+							<div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+								<span class="op-pill T on" id="pill-T" onclick="toggleOp('T', this)"
+									>T Translate (+80, +40)</span
+								>
+								<span class="op-pill R on" id="pill-R" onclick="toggleOp('R', this)"
+									>R Rotate 45°</span
+								>
+								<span class="op-pill S on" id="pill-S" onclick="toggleOp('S', this)"
+									>S Scale 1.8×</span
+								>
+							</div>
+							<div style="font-size: 11px; color: var(--muted); margin: 0.75rem 0 0.4rem">
+								Current order (left = first applied):
+							</div>
+							<div
+								style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap"
+								id="order-btns"
+							>
+								<button class="btn" id="ord-TRS" onclick="setOrder('TRS', this)">T→R→S</button>
+								<button class="btn active" id="ord-SRT" onclick="setOrder('SRT', this)">
+									S→R→T
+								</button>
+								<button class="btn" id="ord-RST" onclick="setOrder('RST', this)">R→S→T</button>
+								<button class="btn" id="ord-TSR" onclick="setOrder('TSR', this)">T→S→R</button>
+							</div>
+							<div class="chain-display" id="chain-display"></div>
+						</div>
+						<canvas
+							id="order-canvas"
+							width="860"
+							height="300"
+							style="width: 100%; border: 1px solid var(--border2); background: #08080f"
+						></canvas>
+						<div
+							id="order-desc"
+							style="font-size: 12px; color: var(--muted); margin-top: 0.75rem; min-height: 1.4em"
+						></div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ══ 03.05 HIERARCHY ══ -->
+			<section id="hierarchy" class="section">
+				<div class="section-header">
+					<span class="section-num">03.05</span>
+					<h2 class="section-title">Hierarchical Transforms</h2>
+				</div>
+
+				<p>
+					A parent-child relationship means: the child's world transform is the parent's world
+					transform multiplied by the child's local transform. Moving or rotating the parent
+					automatically moves and rotates everything attached to it.
+				</p>
+				<p>
+					This is how all game engines organize scenes: a character's hand is a child of the
+					forearm, which is a child of the upper arm, which is a child of the torso. Animating the
+					shoulder moves the entire arm. The math is just matrix multiplication down the chain.
+				</p>
+
+				<pre><code><span class="cm"># Traverse a scene graph, accumulating transforms</span>
+<span class="kw">def</span> <span class="fn">get_world_transform</span>(node, parent_world=None):
+    <span class="kw">if</span> parent_world <span class="kw">is None</span>:
+        parent_world = np.<span class="fn">eye</span>(<span class="num">3</span>)
+    world = parent_world @ node.local_transform
+    <span class="kw">for</span> child <span class="kw">in</span> node.children:
+        <span class="fn">get_world_transform</span>(child, world)
+    node.world_transform = world<span class="lang-tag">python</span></code></pre>
+
+				<!-- HIERARCHY DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Scene Hierarchy</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Adjust each node's local rotation. Child nodes inherit and accumulate their parent's
+							transform.
+						</p>
+						<div class="two-col" style="align-items: start">
+							<div>
+								<canvas id="hier-canvas" width="380" height="360" style="width: 100%"></canvas>
+							</div>
+							<div>
+								<div style="margin-bottom: 1.25rem">
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--accent2);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Root (Body)
+									</div>
+									<div class="slider-row">
+										<label>Rotate</label
+										><input
+											type="range"
+											id="h-root-rot"
+											min="-180"
+											max="180"
+											value="0"
+											oninput="updateHier()"
+										/><span class="slider-val" id="hv-root-rot">0°</span>
+									</div>
+									<div class="slider-row">
+										<label>Tx</label
+										><input
+											type="range"
+											id="h-root-tx"
+											min="-80"
+											max="80"
+											value="0"
+											oninput="updateHier()"
+										/><span class="slider-val" id="hv-root-tx">0</span>
+									</div>
+								</div>
+								<div style="margin-bottom: 1.25rem">
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--accent);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Child A (Arm) — local to Root
+									</div>
+									<div class="slider-row">
+										<label>Rotate</label
+										><input
+											type="range"
+											id="h-arm-rot"
+											min="-180"
+											max="180"
+											value="-40"
+											oninput="updateHier()"
+										/><span class="slider-val" id="hv-arm-rot">-40°</span>
+									</div>
+								</div>
+								<div style="margin-bottom: 1.25rem">
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--accent3);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Child B (Hand) — local to Arm
+									</div>
+									<div class="slider-row">
+										<label>Rotate</label
+										><input
+											type="range"
+											id="h-hand-rot"
+											min="-180"
+											max="180"
+											value="30"
+											oninput="updateHier()"
+										/><span class="slider-val" id="hv-hand-rot">30°</span>
+									</div>
+								</div>
+								<div class="info-panel">
+									<div class="info-row">
+										<span class="info-label">Root world angle</span
+										><span class="info-val" id="hi-root">0°</span>
+									</div>
+									<div class="info-row">
+										<span class="info-label">Arm world angle</span
+										><span class="info-val" id="hi-arm">0°</span>
+									</div>
+									<div class="info-row">
+										<span class="info-label">Hand world angle</span
+										><span class="info-val" id="hi-hand">0°</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="callout">
+					<div class="callout-label">Scene Graphs vs ECS</div>
+					The hierarchical approach above is called a <em>scene graph</em>. It is intuitive but has
+					performance costs as scenes grow. Module 10 introduces the Entity-Component-System (ECS)
+					architecture, which separates data from hierarchy and is used by most modern engines.
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ══ 03.06 PRACTICAL ══ -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">03.06</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<p>
+					Build a small matrix math library, then use it to animate a shape through a sequence of
+					transforms.
+				</p>
+
+				<div style="margin: 2rem 0">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.2em;
+							text-transform: uppercase;
+							color: var(--accent3);
+							margin-bottom: 0.75rem;
+						"
+					>
+						Exercise 1 · Matrix Library
+					</div>
+					<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> math
+
+<span class="kw">class</span> <span class="fn">Transform2D</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.m = np.<span class="fn">eye</span>(<span class="num">3</span>, dtype=float)  <span class="cm"># identity</span>
+
+    <span class="kw">def</span> <span class="fn">translate</span>(self, tx, ty):
+        T = np.<span class="fn">array</span>([[<span class="num">1</span>,<span class="num">0</span>,tx],[<span class="num">0</span>,<span class="num">1</span>,ty],[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype=float)
+        self.m = self.m @ T
+        <span class="kw">return</span> self  <span class="cm"># fluent API</span>
+
+    <span class="kw">def</span> <span class="fn">rotate</span>(self, degrees):
+        r = math.<span class="fn">radians</span>(degrees)
+        c, s = math.<span class="fn">cos</span>(r), math.<span class="fn">sin</span>(r)
+        R = np.<span class="fn">array</span>([[c,-s,<span class="num">0</span>],[s,c,<span class="num">0</span>],[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype=float)
+        self.m = self.m @ R
+        <span class="kw">return</span> self
+
+    <span class="kw">def</span> <span class="fn">scale</span>(self, sx, sy=None):
+        sy = sy <span class="kw">if</span> sy <span class="kw">is not None</span> <span class="kw">else</span> sx
+        S = np.<span class="fn">array</span>([[sx,<span class="num">0</span>,<span class="num">0</span>],[<span class="num">0</span>,sy,<span class="num">0</span>],[<span class="num">0</span>,<span class="num">0</span>,<span class="num">1</span>]], dtype=float)
+        self.m = self.m @ S
+        <span class="kw">return</span> self
+
+    <span class="kw">def</span> <span class="fn">apply</span>(self, points):
+        <span class="cm"># points: (N, 2) array → returns (N, 2)</span>
+        h = np.<span class="fn">hstack</span>([points, np.<span class="fn">ones</span>((len(points),<span class="num">1</span>))])
+        out = (self.m @ h.T).T
+        <span class="kw">return</span> out[:, :<span class="num">2</span>]
+
+<span class="cm"># Usage:</span>
+t = <span class="fn">Transform2D</span>().<span class="fn">scale</span>(<span class="num">2</span>).<span class="fn">rotate</span>(<span class="num">45</span>).<span class="fn">translate</span>(<span class="num">100</span>, <span class="num">50</span>)
+transformed_verts = t.<span class="fn">apply</span>(original_verts)<span class="lang-tag">python</span></code></pre>
+				</div>
+
+				<!-- ANIMATION DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Animated · Transforms Over Time</span>
+						<span class="demo-badge a">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Each shape applies a different combination of animated transforms. All use the same
+							matrix library.
+						</p>
+						<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem">
+							<button class="btn g active" id="anim-play-btn" onclick="toggleAnim()">
+								⏸ Pause
+							</button>
+							<button class="btn g" onclick="resetAnim()">↺ Reset</button>
+							<div
+								style="
+									display: flex;
+									gap: 0.5rem;
+									margin-left: 0.5rem;
+									align-items: center;
+									flex-wrap: wrap;
+								"
+								id="anim-toggle-btns"
+							>
+								<button class="btn g active" id="at-orbit" onclick="toggleAnimShape('orbit', this)">
+									Orbit
+								</button>
+								<button class="btn g active" id="at-spin" onclick="toggleAnimShape('spin', this)">
+									Spin+Scale
+								</button>
+								<button class="btn g active" id="at-wave" onclick="toggleAnimShape('wave', this)">
+									Wave
+								</button>
+							</div>
+						</div>
+						<canvas id="anim-canvas" width="860" height="300" style="width: 100%"></canvas>
+						<div
+							id="anim-info"
+							style="
+								font-size: 12px;
+								color: var(--muted);
+								margin-top: 0.75rem;
+								display: flex;
+								gap: 2rem;
+								flex-wrap: wrap;
+							"
+						></div>
+					</div>
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ══ QUIZ ══ -->
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module Quiz</div>
+				<div class="quiz-sub">5 questions · Transforms, matrices, and coordinate spaces</div>
+				<div id="quiz-container"></div>
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-num">0/5</div>
+					<div class="score-label">Module 03 complete. Proceed to Module 04 when ready.</div>
+				</div>
+			</section>
+
+			<div class="nav-links">
+				<a href="#" class="prev-link">← 02 · The Rendering Process</a>
+				<a class="next-module" href="#">
+					<div>
+						<div class="next-label">Next Module</div>
+						<div class="next-title">04 · GPU Rendering in Python</div>
+					</div>
+					<div class="next-arrow">→</div>
+				</a>
+			</div>
+		</div>
+
+		<script>
+			/* ═══════════════════════════ MATH UTILS ═════════════════════════════ */
+			function mat3() {
+				return [
+					[1, 0, 0],
+					[0, 1, 0],
+					[0, 0, 1]
+				];
+			}
+			function matMul(A, B) {
+				const R = [
+					[0, 0, 0],
+					[0, 0, 0],
+					[0, 0, 0]
+				];
+				for (let i = 0; i < 3; i++)
+					for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) R[i][j] += A[i][k] * B[k][j];
+				return R;
+			}
+			function matVec(M, v) {
+				return [
+					M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2],
+					M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2],
+					M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2]
+				];
+			}
+			function transMat(tx, ty) {
+				return [
+					[1, 0, tx],
+					[0, 1, ty],
+					[0, 0, 1]
+				];
+			}
+			function rotMat(deg) {
+				const r = (deg * Math.PI) / 180,
+					c = Math.cos(r),
+					s = Math.sin(r);
+				return [
+					[c, -s, 0],
+					[s, c, 0],
+					[0, 0, 1]
+				];
+			}
+			function scaleMat(sx, sy) {
+				return [
+					[sx, 0, 0],
+					[0, sy, 0],
+					[0, 0, 1]
+				];
+			}
+			function applyMat(M, pts) {
+				return pts.map((p) => {
+					const t = matVec(M, [p[0], p[1], 1]);
+					return [t[0], t[1]];
+				});
+			}
+			function fmt(n) {
+				return (n >= 0 ? ' ' : '') + n.toFixed(2);
+			}
+
+			/* star/arrow shape in local space */
+			const ARROW_PTS = [
+				[-30, -10],
+				[-30, 10],
+				[0, 10],
+				[0, 25],
+				[30, 0],
+				[0, -25],
+				[0, -10]
+			];
+			const HOUSE_PTS = [
+				[-25, 20],
+				[25, 20],
+				[25, -5],
+				[0, -30],
+				[-25, -5]
+			];
+			const DIAMOND_PTS = [
+				[0, -30],
+				[20, 0],
+				[0, 30],
+				[-20, 0]
+			];
+
+			function drawShape(ctx, pts, fill, stroke, lw = 1.5) {
+				if (pts.length < 2) return;
+				ctx.beginPath();
+				ctx.moveTo(pts[0][0], pts[0][1]);
+				pts.slice(1).forEach((p) => ctx.lineTo(p[0], p[1]));
+				ctx.closePath();
+				ctx.fillStyle = fill;
+				ctx.fill();
+				ctx.strokeStyle = stroke;
+				ctx.lineWidth = lw;
+				ctx.stroke();
+			}
+			function drawAxes(ctx, M, len = 40, label = '') {
+				// x axis
+				const ox = matVec(M, [0, 0, 1]),
+					xx = matVec(M, [len, 0, 1]),
+					yx = matVec(M, [0, -len, 1]);
+				ctx.beginPath();
+				ctx.moveTo(ox[0], ox[1]);
+				ctx.lineTo(xx[0], xx[1]);
+				ctx.strokeStyle = '#ef4444';
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(ox[0], ox[1]);
+				ctx.lineTo(yx[0], yx[1]);
+				ctx.strokeStyle = '#22c55e';
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+				if (label) {
+					ctx.font = '11px IBM Plex Mono';
+					ctx.fillStyle = '#aaa';
+					ctx.textAlign = 'center';
+					ctx.fillText(label, ox[0], ox[1] + 16);
+				}
+			}
+
+			/* ═══════════════════════════ SPACES DEMO ═════════════════════════════ */
+			const spC = document.getElementById('spaces-canvas');
+			const spX = spC.getContext('2d');
+			let spaceMode = 'local';
+
+			const spaceDescs = {
+				local:
+					'Local space: The arrow is defined around (0,0) — its own center. Axes are aligned to the object. Vertex coordinates in a mesh file are always in local space.',
+				world:
+					'World space: The arrow has been placed at position (200, 120) in the scene and rotated 30°. The world origin (0,0) is fixed at top-left. The local axes have rotated with the object.',
+				screen:
+					'Screen space: After the camera transform, coordinates are mapped to pixel positions. (0,0) is top-left, y increases downward. This is what the rasterizer works with.'
+			};
+
+			function setSpace(mode, btn) {
+				spaceMode = mode;
+				['local', 'world', 'screen'].forEach((m) =>
+					document.getElementById('sp-btn-' + m).classList.remove('active')
+				);
+				btn.classList.add('active');
+				drawSpaces();
+			}
+
+			function drawSpaces() {
+				const W = spC.width,
+					H = spC.height;
+				spX.clearRect(0, 0, W, H);
+				spX.fillStyle = '#08080f';
+				spX.fillRect(0, 0, W, H);
+
+				const grid = 40;
+				spX.strokeStyle = '#111922';
+				spX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					spX.beginPath();
+					spX.moveTo(x, 0);
+					spX.lineTo(x, H);
+					spX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					spX.beginPath();
+					spX.moveTo(0, y);
+					spX.lineTo(W, y);
+					spX.stroke();
+				}
+
+				if (spaceMode === 'local') {
+					const cx = W / 2,
+						cy = H / 2;
+					// world axes (faded)
+					spX.strokeStyle = '#1a2228';
+					spX.lineWidth = 1;
+					spX.beginPath();
+					spX.moveTo(0, cy);
+					spX.lineTo(W, cy);
+					spX.stroke();
+					spX.beginPath();
+					spX.moveTo(cx, 0);
+					spX.lineTo(cx, H);
+					spX.stroke();
+					// object at center, no transform
+					const M = transMat(cx, cy);
+					const tpts = applyMat(M, ARROW_PTS);
+					drawShape(spX, tpts, '#a78bfa30', '#a78bfa', 2);
+					drawAxes(spX, M, 50, 'local (0,0)');
+					// label vertices
+					spX.font = '10px IBM Plex Mono';
+					spX.fillStyle = '#a78bfa';
+					spX.textAlign = 'center';
+					ARROW_PTS.forEach((p) => {
+						const wp = matVec(M, [p[0], p[1], 1]);
+						spX.fillText(`(${p[0]},${p[1]})`, wp[0], wp[1] - 6);
+					});
+				} else if (spaceMode === 'world') {
+					const cx = W / 2,
+						cy = H / 2;
+					// world origin
+					spX.strokeStyle = '#253038';
+					spX.lineWidth = 1;
+					spX.beginPath();
+					spX.moveTo(0, cy);
+					spX.lineTo(W, cy);
+					spX.stroke();
+					spX.beginPath();
+					spX.moveTo(0, 0);
+					spX.lineTo(0, H);
+					spX.stroke();
+					spX.font = '11px IBM Plex Mono';
+					spX.fillStyle = '#4a606c';
+					spX.textAlign = 'left';
+					spX.fillText('world (0,0)', 6, 14);
+
+					// object placed at (cx-60, cy-40), rotated 30°
+					const ox = cx - 60,
+						oy = cy - 40;
+					let M = matMul(transMat(ox, oy), rotMat(-30));
+					const tpts = applyMat(M, ARROW_PTS);
+					drawShape(spX, tpts, '#a78bfa30', '#a78bfa', 2);
+					drawAxes(spX, M, 50, '');
+					spX.font = '11px IBM Plex Mono';
+					spX.fillStyle = '#a78bfa';
+					spX.textAlign = 'center';
+					spX.fillText(`world pos (${Math.round(ox)}, ${Math.round(oy)})`, ox, oy - 40);
+					spX.fillStyle = '#4a606c';
+					spX.textAlign = 'left';
+					spX.fillText('world (0,0)', 6, H - 8);
+					// world origin marker
+					spX.beginPath();
+					spX.arc(0, H, 6, 0, Math.PI * 2);
+					spX.fillStyle = '#34d39960';
+					spX.fill();
+				} else {
+					// screen space: origin top-left, y down, pixel grid overlaid
+					spX.strokeStyle = '#1c2c38';
+					spX.lineWidth = 1;
+					spX.beginPath();
+					spX.moveTo(0, 0);
+					spX.lineTo(W, 0);
+					spX.stroke();
+					spX.beginPath();
+					spX.moveTo(0, 0);
+					spX.lineTo(0, H);
+					spX.stroke();
+					spX.font = '11px IBM Plex Mono';
+					spX.fillStyle = '#4a606c';
+					spX.textAlign = 'left';
+					spX.fillText('(0, 0)', 6, 14);
+					spX.fillText(`(${W}, ${H})`, W - 70, H - 6);
+
+					// NDC overlay [-1,1]
+					const cx = W / 2,
+						cy = H / 2;
+					spX.strokeStyle = '#253038';
+					spX.lineWidth = 1;
+					spX.setLineDash([4, 4]);
+					spX.beginPath();
+					spX.moveTo(0, cy);
+					spX.lineTo(W, cy);
+					spX.stroke();
+					spX.beginPath();
+					spX.moveTo(cx, 0);
+					spX.lineTo(cx, H);
+					spX.stroke();
+					spX.setLineDash([]);
+					spX.fillStyle = '#253038';
+					spX.textAlign = 'center';
+					['(-1,1)', '(1,1)', '(-1,-1)', '(1,-1)'].forEach((lbl, i) => {
+						const x = i % 2 === 0 ? 10 : W - 10,
+							y = i < 2 ? 14 : H - 6;
+						spX.fillText(lbl, x, y);
+					});
+					spX.fillText('NDC center (0,0)', cx, cy - 8);
+
+					// object in screen coords
+					let M = matMul(transMat(cx + 80, cy - 30), matMul(rotMat(-15), scaleMat(0.9, 0.9)));
+					const tpts = applyMat(M, ARROW_PTS);
+					drawShape(spX, tpts, '#a78bfa30', '#a78bfa', 2);
+					// pixel grid around it
+					const ps = 12;
+					tpts.forEach((p) => {
+						const px = Math.round(p[0] / ps) * ps,
+							py = Math.round(p[1] / ps) * ps;
+						spX.fillStyle = '#a78bfa15';
+						spX.fillRect(px, py, ps, ps);
+						spX.strokeStyle = '#a78bfa30';
+						spX.lineWidth = 0.5;
+						spX.strokeRect(px, py, ps, ps);
+					});
+					spX.font = '11px IBM Plex Mono';
+					spX.fillStyle = '#a78bfa';
+					spX.textAlign = 'center';
+					const c = matVec(M, [0, 0, 1]);
+					spX.fillText(`pixel (${Math.round(c[0])}, ${Math.round(c[1])})`, c[0], c[1] - 36);
+				}
+
+				document.getElementById('spaces-desc').textContent = spaceDescs[spaceMode];
+			}
+			drawSpaces();
+
+			/* ═══════════════════════════ TRANSFORM PLAYGROUND ═══════════════════ */
+			const tfC = document.getElementById('transform-canvas');
+			const tfX = tfC.getContext('2d');
+
+			function getTfVals() {
+				return {
+					tx: parseInt(document.getElementById('sl-tx').value),
+					ty: parseInt(document.getElementById('sl-ty').value),
+					rot: parseInt(document.getElementById('sl-rot').value),
+					sx: parseInt(document.getElementById('sl-sx').value) / 100,
+					sy: parseInt(document.getElementById('sl-sy').value) / 100
+				};
+			}
+			function updateTfLabels(v) {
+				document.getElementById('vl-tx').textContent = v.tx;
+				document.getElementById('vl-ty').textContent = v.ty;
+				document.getElementById('vl-rot').textContent = v.rot + '°';
+				document.getElementById('vl-sx').textContent = v.sx.toFixed(2);
+				document.getElementById('vl-sy').textContent = v.sy.toFixed(2);
+			}
+			function updateMatDisplay(M) {
+				[
+					[0, 0],
+					[0, 1],
+					[0, 2],
+					[1, 0],
+					[1, 1],
+					[1, 2],
+					[2, 0],
+					[2, 1],
+					[2, 2]
+				].forEach(([r, c]) => {
+					const el = document.getElementById(`mc${r}${c}`);
+					el.textContent = fmt(M[r][c]);
+					const isIdentity =
+						(r === c && Math.abs(M[r][c] - 1) < 0.001) || (r !== c && Math.abs(M[r][c]) < 0.001);
+					el.classList.toggle('hi', !isIdentity);
+				});
+			}
+			function drawTransformCanvas() {
+				const v = getTfVals();
+				updateTfLabels(v);
+				const W = tfC.width,
+					H = tfC.height;
+				const cx = W / 2,
+					cy = H / 2;
+				tfX.clearRect(0, 0, W, H);
+				tfX.fillStyle = '#08080f';
+				tfX.fillRect(0, 0, W, H);
+
+				// grid
+				const grid = 40;
+				tfX.strokeStyle = '#111922';
+				tfX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					tfX.beginPath();
+					tfX.moveTo(x, 0);
+					tfX.lineTo(x, H);
+					tfX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					tfX.beginPath();
+					tfX.moveTo(0, y);
+					tfX.lineTo(W, y);
+					tfX.stroke();
+				}
+				// axes
+				tfX.strokeStyle = '#1e3040';
+				tfX.lineWidth = 1;
+				tfX.beginPath();
+				tfX.moveTo(0, cy);
+				tfX.lineTo(W, cy);
+				tfX.stroke();
+				tfX.beginPath();
+				tfX.moveTo(cx, 0);
+				tfX.lineTo(cx, H);
+				tfX.stroke();
+
+				// build matrix: T * R * S
+				const T = transMat(v.tx, -v.ty); // flip y for screen
+				const R = rotMat(-v.rot);
+				const S = scaleMat(v.sx, v.sy);
+				const M = matMul(matMul(T, R), S);
+				updateMatDisplay(M);
+
+				// original shape (grey ghost)
+				const origM = transMat(cx, cy);
+				const origPts = applyMat(origM, ARROW_PTS);
+				drawShape(tfX, origPts, '#ffffff08', '#253038', 1);
+
+				// transformed shape
+				const fullM = matMul(transMat(cx, cy), M);
+				const tPts = applyMat(fullM, ARROW_PTS);
+				drawShape(tfX, tPts, '#a78bfa25', '#a78bfa', 2);
+
+				// axes at transformed origin
+				drawAxes(tfX, fullM, 44);
+
+				// origin dot
+				const o = matVec(fullM, [0, 0, 1]);
+				tfX.beginPath();
+				tfX.arc(o[0], o[1], 5, 0, Math.PI * 2);
+				tfX.fillStyle = '#a78bfa';
+				tfX.fill();
+			}
+
+			function resetTransform() {
+				['sl-tx', 'sl-ty', 'sl-rot'].forEach((id) => (document.getElementById(id).value = 0));
+				document.getElementById('sl-sx').value = 100;
+				document.getElementById('sl-sy').value = 100;
+				drawTransformCanvas();
+			}
+			['sl-tx', 'sl-ty', 'sl-rot', 'sl-sx', 'sl-sy'].forEach((id) =>
+				document.getElementById(id).addEventListener('input', drawTransformCanvas)
+			);
+			drawTransformCanvas();
+
+			/* ═══════════════════════════ MATRIX MULTIPLY VIZ ════════════════════ */
+			const mC = document.getElementById('matrix-canvas');
+			const mX = mC.getContext('2d');
+			let matPreset = 'translate';
+			let matHover = -1; // which output row
+
+			const matPresets = {
+				translate: {
+					M: [
+						[1, 0, 80],
+						[0, 1, 40],
+						[0, 0, 1]
+					],
+					v: [30, 20, 1],
+					label: 'Translation (+80,+40)'
+				},
+				rotate: { M: null, v: [60, 0, 1], label: 'Rotation 45°' },
+				scale: {
+					M: [
+						[2, 0, 0],
+						[0, 2, 0],
+						[0, 0, 1]
+					],
+					v: [30, 20, 1],
+					label: 'Scale 2×'
+				},
+				combined: { M: null, v: [30, 20, 1], label: 'T × R × S combined' }
+			};
+			(() => {
+				const r = (45 * Math.PI) / 180,
+					c = Math.cos(r),
+					s = Math.sin(r);
+				matPresets.rotate.M = [
+					[c, -s, 0],
+					[s, c, 0],
+					[0, 0, 1]
+				];
+				const T = [
+					[1, 0, 50],
+					[0, 1, 30],
+					[0, 0, 1]
+				];
+				const R = [
+					[c, -s, 0],
+					[s, c, 0],
+					[0, 0, 1]
+				];
+				const S = [
+					[1.5, 0, 0],
+					[0, 1.5, 0],
+					[0, 0, 1]
+				];
+				matPresets.combined.M = matMul(matMul(T, R), S);
+			})();
+
+			function setMatPreset(p, btn) {
+				matPreset = p;
+				document
+					.querySelectorAll('#mat-preset-btns .btn')
+					.forEach((b) => b.classList.remove('active'));
+				btn.classList.add('active');
+				drawMatCanvas();
+			}
+
+			function drawMatCanvas(highlightRow = -1) {
+				const W = mC.width,
+					H = mC.height;
+				mX.clearRect(0, 0, W, H);
+				mX.fillStyle = '#08080f';
+				mX.fillRect(0, 0, W, H);
+
+				const { M, v, label } = matPresets[matPreset];
+				const result = matVec(M, v);
+
+				const cellW = 70,
+					cellH = 52,
+					pad = 14;
+				const matX = 80,
+					vecX = matX + 3 * cellW + 80,
+					eqX = vecX + cellW + 60,
+					resX = eqX + cellW + 60;
+				const startY = 40;
+
+				// Draw matrix
+				mX.font = 'bold 13px IBM Plex Mono';
+				M.forEach((row, ri) => {
+					row.forEach((val, ci) => {
+						const x = matX + ci * cellW,
+							y = startY + ri * cellH;
+						const hiRow = highlightRow === ri;
+						mX.fillStyle = hiRow ? '#a78bfa20' : '#0d1215';
+						mX.fillRect(x, y, cellW - 3, cellH - 3);
+						mX.strokeStyle = hiRow ? '#a78bfa' : '#1a2228';
+						mX.lineWidth = 1;
+						mX.strokeRect(x, y, cellW - 3, cellH - 3);
+						mX.fillStyle = hiRow ? '#a78bfa' : '#cdd8e0';
+						mX.textAlign = 'right';
+						mX.fillText(val.toFixed(2), x + cellW - 10, y + cellH / 2 + 5);
+					});
+				});
+				// brackets for matrix
+				mX.strokeStyle = '#253038';
+				mX.lineWidth = 2;
+				mX.beginPath();
+				mX.moveTo(matX - 8, startY);
+				mX.lineTo(matX - 14, startY);
+				mX.lineTo(matX - 14, startY + 3 * cellH - 3);
+				mX.lineTo(matX - 8, startY + 3 * cellH - 3);
+				mX.stroke();
+				mX.beginPath();
+				mX.moveTo(matX + 3 * cellW - 3 + 8, startY);
+				mX.lineTo(matX + 3 * cellW - 3 + 14, startY);
+				mX.lineTo(matX + 3 * cellW - 3 + 14, startY + 3 * cellH - 3);
+				mX.lineTo(matX + 3 * cellW - 3 + 8, startY + 3 * cellH - 3);
+				mX.stroke();
+
+				// Draw input vector
+				mX.font = '11px IBM Plex Mono';
+				mX.fillStyle = '#4a606c';
+				mX.textAlign = 'center';
+				mX.fillText('×', matX + 3 * cellW + 30, startY + cellH * 1.5 + 5);
+				v.forEach((val, ri) => {
+					const x = vecX,
+						y = startY + ri * cellH;
+					const hiRow = highlightRow >= 0;
+					mX.fillStyle = hiRow ? '#34d39920' : '#0d1215';
+					mX.fillRect(x, y, cellW - 3, cellH - 3);
+					mX.strokeStyle = hiRow ? '#34d399' : '#1a2228';
+					mX.lineWidth = 1;
+					mX.strokeRect(x, y, cellW - 3, cellH - 3);
+					mX.fillStyle = hiRow ? '#34d399' : '#cdd8e0';
+					mX.font = 'bold 13px IBM Plex Mono';
+					mX.textAlign = 'right';
+					mX.fillText(val.toFixed(2), x + cellW - 10, y + cellH / 2 + 5);
+				});
+				mX.strokeStyle = '#253038';
+				mX.lineWidth = 2;
+				mX.beginPath();
+				mX.moveTo(vecX - 8, startY);
+				mX.lineTo(vecX - 14, startY);
+				mX.lineTo(vecX - 14, startY + 3 * cellH - 3);
+				mX.lineTo(vecX - 8, startY + 3 * cellH - 3);
+				mX.stroke();
+				mX.beginPath();
+				mX.moveTo(vecX + cellW - 3 + 8, startY);
+				mX.lineTo(vecX + cellW - 3 + 14, startY);
+				mX.lineTo(vecX + cellW - 3 + 14, startY + 3 * cellH - 3);
+				mX.lineTo(vecX + cellW - 3 + 8, startY + 3 * cellH - 3);
+				mX.stroke();
+
+				// equals
+				mX.font = '20px IBM Plex Mono';
+				mX.fillStyle = '#4a606c';
+				mX.textAlign = 'center';
+				mX.fillText('=', eqX, startY + cellH * 1.5 + 5);
+
+				// result
+				result.forEach((val, ri) => {
+					const x = resX,
+						y = startY + ri * cellH;
+					const hi = highlightRow === ri;
+					mX.fillStyle = hi ? '#fb923c20' : '#0d1215';
+					mX.fillRect(x, y, cellW - 3, cellH - 3);
+					mX.strokeStyle = hi ? '#fb923c' : '#1a2228';
+					mX.lineWidth = 1;
+					mX.strokeRect(x, y, cellW - 3, cellH - 3);
+					mX.fillStyle = hi ? '#fb923c' : '#6b7280';
+					mX.font = 'bold 13px IBM Plex Mono';
+					mX.textAlign = 'right';
+					mX.fillText(val.toFixed(2), x + cellW - 10, y + cellH / 2 + 5);
+				});
+				mX.strokeStyle = '#253038';
+				mX.lineWidth = 2;
+				mX.beginPath();
+				mX.moveTo(resX - 8, startY);
+				mX.lineTo(resX - 14, startY);
+				mX.lineTo(resX - 14, startY + 3 * cellH - 3);
+				mX.lineTo(resX - 8, startY + 3 * cellH - 3);
+				mX.stroke();
+				mX.beginPath();
+				mX.moveTo(resX + cellW - 3 + 8, startY);
+				mX.lineTo(resX + cellW - 3 + 14, startY);
+				mX.lineTo(resX + cellW - 3 + 14, startY + 3 * cellH - 3);
+				mX.lineTo(resX + cellW - 3 + 8, startY + 3 * cellH - 3);
+				mX.stroke();
+
+				// formula text
+				if (highlightRow >= 0) {
+					const ri = highlightRow;
+					const row = M[ri];
+					const terms = row.map((c, ci) => `${c.toFixed(2)}×${v[ci].toFixed(2)}`).join(' + ');
+					const ans = result[ri].toFixed(2);
+					document.getElementById('mat-formula').innerHTML =
+						`<span style="color:var(--accent)">Row ${ri}</span>: ${terms} = <span style="color:var(--accent3)">${ans}</span>`;
+				} else {
+					document.getElementById('mat-formula').textContent =
+						'Hover an output value to see the dot-product calculation.';
+				}
+
+				// row labels
+				mX.font = '11px IBM Plex Mono';
+				mX.fillStyle = '#4a606c';
+				mX.textAlign = 'right';
+				["x'", "y'", "w'"].forEach((lbl, ri) => {
+					mX.fillText(lbl, resX - 18, startY + ri * cellH + cellH / 2 + 5);
+				});
+			}
+			mC.addEventListener('mousemove', (e) => {
+				const rect = mC.getBoundingClientRect();
+				const scaleY = mC.height / rect.height;
+				const my = (e.clientY - rect.top) * scaleY;
+				const cellH = 52;
+				const startY = 40;
+				const resX = mC.width > 600 ? 410 : 350;
+				const row = Math.floor((my - startY) / cellH);
+				if (row >= 0 && row < 3) {
+					matHover = row;
+					drawMatCanvas(row);
+				} else {
+					matHover = -1;
+					drawMatCanvas();
+				}
+			});
+			mC.addEventListener('mouseleave', () => {
+				matHover = -1;
+				drawMatCanvas();
+			});
+			drawMatCanvas();
+
+			/* ═══════════════════════════ ORDER DEMO ════════════════════════════ */
+			const ordC = document.getElementById('order-canvas');
+			const ordX = ordC.getContext('2d');
+			let ordOrder = 'SRT',
+				ordOps = { T: true, R: true, S: true };
+
+			function toggleOp(op, el) {
+				ordOps[op] = !ordOps[op];
+				el.classList.toggle('on', ordOps[op]);
+				drawOrderCanvas();
+			}
+			function setOrder(o, btn) {
+				ordOrder = o;
+				document.querySelectorAll('#order-btns .btn').forEach((b) => b.classList.remove('active'));
+				btn.classList.add('active');
+				drawOrderCanvas();
+			}
+
+			function buildOrderMatrix() {
+				const tx = 80,
+					ty = 40,
+					rot = 45,
+					sx = 1.8,
+					sy = 1.8;
+				const ops = {
+					T: () => transMat(tx, -ty),
+					R: () => rotMat(-rot),
+					S: () => scaleMat(sx, sy)
+				};
+				let M = mat3();
+				// order string means first letter = first applied (rightmost in multiplication)
+				const letters = ordOrder.split('');
+				// M = last @ ... @ first (so first applied is rightmost)
+				const mats = letters.filter((l) => ordOps[l]).map((l) => ops[l]());
+				for (let i = mats.length - 1; i >= 0; i--) M = matMul(M, mats[i]);
+				return M;
+			}
+
+			function drawOrderCanvas() {
+				const W = ordC.width,
+					H = ordC.height;
+				ordX.clearRect(0, 0, W, H);
+				ordX.fillStyle = '#08080f';
+				ordX.fillRect(0, 0, W, H);
+				const grid = 40;
+				ordX.strokeStyle = '#111922';
+				ordX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					ordX.beginPath();
+					ordX.moveTo(x, 0);
+					ordX.lineTo(x, H);
+					ordX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					ordX.beginPath();
+					ordX.moveTo(0, y);
+					ordX.lineTo(W, y);
+					ordX.stroke();
+				}
+				const cx = W / 2,
+					cy = H / 2;
+				ordX.strokeStyle = '#1e3040';
+				ordX.lineWidth = 1;
+				ordX.beginPath();
+				ordX.moveTo(0, cy);
+				ordX.lineTo(W, cy);
+				ordX.stroke();
+				ordX.beginPath();
+				ordX.moveTo(cx, 0);
+				ordX.lineTo(cx, H);
+				ordX.stroke();
+
+				// ghost
+				const ghostM = transMat(cx, cy);
+				drawShape(ordX, applyMat(ghostM, ARROW_PTS), '#ffffff05', '#1e3040', 1);
+
+				const M = buildOrderMatrix();
+				const fullM = matMul(transMat(cx, cy), M);
+				const tPts = applyMat(fullM, ARROW_PTS);
+				drawShape(ordX, tPts, '#a78bfa25', '#a78bfa', 2.5);
+				drawAxes(ordX, fullM, 50);
+
+				// show step-by-step intermediates
+				const letters = ordOrder.split('').filter((l) => ordOps[l]);
+				const ops = {
+					T: () => transMat(80, -40),
+					R: () => rotMat(-45),
+					S: () => scaleMat(1.8, 1.8)
+				};
+				let stepM = mat3();
+				letters.forEach((l, i) => {
+					stepM = matMul(ops[l](), stepM);
+					const sM = matMul(transMat(cx, cy), stepM);
+					const sPts = applyMat(sM, ARROW_PTS);
+					const alpha = Math.round(((i + 1) / letters.length) * 40)
+						.toString(16)
+						.padStart(2, '0');
+					const colors = { T: '#34d399', R: '#a78bfa', S: '#fb923c' };
+					drawShape(ordX, sPts, colors[l] + alpha, colors[l] + '80', 1);
+				});
+
+				// build chain display
+				const chain = document.getElementById('chain-display');
+				chain.innerHTML = '';
+				letters.forEach((l, i) => {
+					const pill = document.createElement('span');
+					pill.className = `chain-op ${l}`;
+					const names = { T: 'Translate', R: 'Rotate 45°', S: 'Scale 1.8×' };
+					pill.textContent = names[l];
+					chain.appendChild(pill);
+					if (i < letters.length - 1) {
+						const arr = document.createElement('span');
+						arr.className = 'chain-arrow';
+						arr.textContent = '→';
+						chain.appendChild(arr);
+					}
+				});
+
+				const o = matVec(fullM, [0, 0, 1]);
+				document.getElementById('order-desc').textContent =
+					`Result origin: (${(o[0] - cx).toFixed(1)}, ${(-(o[1] - cy)).toFixed(1)}) — changing the order moves this.`;
+			}
+			drawOrderCanvas();
+
+			/* ═══════════════════════════ HIERARCHY DEMO ════════════════════════ */
+			const hC = document.getElementById('hier-canvas');
+			const hX = hC.getContext('2d');
+
+			function updateHier() {
+				const rootRot = parseInt(document.getElementById('h-root-rot').value);
+				const rootTx = parseInt(document.getElementById('h-root-tx').value);
+				const armRot = parseInt(document.getElementById('h-arm-rot').value);
+				const handRot = parseInt(document.getElementById('h-hand-rot').value);
+				document.getElementById('hv-root-rot').textContent = rootRot + '°';
+				document.getElementById('hv-root-tx').textContent = rootTx;
+				document.getElementById('hv-arm-rot').textContent = armRot + '°';
+				document.getElementById('hv-hand-rot').textContent = handRot + '°';
+
+				const W = hC.width,
+					H = hC.height;
+				const cx = W / 2 + rootTx,
+					cy = H / 2 + 40;
+				hX.clearRect(0, 0, W, H);
+				hX.fillStyle = '#08080f';
+				hX.fillRect(0, 0, W, H);
+
+				const grid = 40;
+				hX.strokeStyle = '#111922';
+				hX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					hX.beginPath();
+					hX.moveTo(x, 0);
+					hX.lineTo(x, H);
+					hX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					hX.beginPath();
+					hX.moveTo(0, y);
+					hX.lineTo(W, y);
+					hX.stroke();
+				}
+
+				// Root body
+				const rootM = matMul(transMat(cx, cy), rotMat(-rootRot));
+				const rootPts = applyMat(rootM, HOUSE_PTS);
+				drawShape(hX, rootPts, '#34d39920', '#34d399', 2);
+				drawAxes(hX, rootM, 35, 'root');
+				document.getElementById('hi-root').textContent = rootRot + '°';
+
+				// Arm: child of root, attached at top of body
+				const armOffset = matMul(rootM, transMat(0, -50)); // local-space attachment
+				const armLocalRot = rotMat(-armRot);
+				const armM = matMul(armOffset, armLocalRot);
+				// arm is a rectangle in local space
+				const armPts_local = [
+					[-8, 0],
+					[8, 0],
+					[8, -60],
+					[-8, -60]
+				];
+				const armPts = applyMat(armM, armPts_local);
+				drawShape(hX, armPts, '#a78bfa20', '#a78bfa', 2);
+				drawAxes(hX, armM, 28, 'arm');
+				const armWorldAngle = rootRot + armRot;
+				document.getElementById('hi-arm').textContent = armWorldAngle + '°';
+
+				// Hand: child of arm tip
+				const handOffset = matMul(armM, transMat(0, -60));
+				const handLocalRot = rotMat(-handRot);
+				const handM = matMul(handOffset, handLocalRot);
+				const handPts = applyMat(handM, DIAMOND_PTS);
+				drawShape(hX, handPts, '#fb923c20', '#fb923c', 2);
+				drawAxes(hX, handM, 22, 'hand');
+				const handWorldAngle = rootRot + armRot + handRot;
+				document.getElementById('hi-hand').textContent = handWorldAngle + '°';
+			}
+			updateHier();
+
+			/* ═══════════════════════════ ANIMATION DEMO ════════════════════════ */
+			const anC = document.getElementById('anim-canvas');
+			const anX = anC.getContext('2d');
+			let animRunning = true,
+				animT = 0,
+				animRAF = null;
+			let animShapes = { orbit: true, spin: true, wave: true };
+
+			function toggleAnim() {
+				animRunning = !animRunning;
+				document.getElementById('anim-play-btn').textContent = animRunning ? '⏸ Pause' : '▶ Play';
+				if (animRunning) animLoop();
+			}
+			function resetAnim() {
+				animT = 0;
+				drawAnim();
+			}
+			function toggleAnimShape(s, btn) {
+				animShapes[s] = !animShapes[s];
+				btn.classList.toggle('active', animShapes[s]);
+			}
+
+			function drawAnim() {
+				const W = anC.width,
+					H = anC.height;
+				anX.clearRect(0, 0, W, H);
+				anX.fillStyle = '#08080f';
+				anX.fillRect(0, 0, W, H);
+				const grid = 40;
+				anX.strokeStyle = '#111922';
+				anX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					anX.beginPath();
+					anX.moveTo(x, 0);
+					anX.lineTo(x, H);
+					anX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					anX.beginPath();
+					anX.moveTo(0, y);
+					anX.lineTo(W, y);
+					anX.stroke();
+				}
+
+				const t = animT;
+				const cx = W / 2,
+					cy = H / 2;
+				const infoParts = [];
+
+				if (animShapes.orbit) {
+					// Orbit: translate to origin, rotate by t, translate out by r
+					const angle = t * 1.1;
+					const r = 100;
+					const ox = cx + r * Math.cos((angle * Math.PI) / 180);
+					const oy = cy + r * Math.sin((angle * Math.PI) / 180);
+					const M = matMul(transMat(ox, oy), rotMat(-angle * 2));
+					const pts = applyMat(
+						M,
+						ARROW_PTS.map(([x, y]) => [x * 0.7, y * 0.7])
+					);
+					// orbit path
+					anX.beginPath();
+					anX.arc(cx, cy, r, 0, Math.PI * 2);
+					anX.strokeStyle = '#34d39920';
+					anX.lineWidth = 1;
+					anX.stroke();
+					drawShape(anX, pts, '#34d39930', '#34d399', 2);
+					infoParts.push(`orbit θ=${Math.round(angle) % 360}°`);
+				}
+
+				if (animShapes.spin) {
+					// Spin and scale pulse
+					const spin = t * 2.2;
+					const pulse = 1 + 0.4 * Math.sin((t * 3 * Math.PI) / 180);
+					const M = matMul(
+						transMat(cx - 180, cy + 20),
+						matMul(rotMat(-spin), scaleMat(pulse, pulse))
+					);
+					const pts = applyMat(M, HOUSE_PTS);
+					drawShape(anX, pts, '#a78bfa30', '#a78bfa', 2);
+					infoParts.push(`spin=${Math.round(spin) % 360}° scale=${pulse.toFixed(2)}`);
+				}
+
+				if (animShapes.wave) {
+					// Wave translation
+					const waveY = 70 * Math.sin((t * 2.5 * Math.PI) / 180);
+					const waveX = 50 * Math.cos((t * 1.8 * Math.PI) / 180);
+					const M = matMul(transMat(cx + 170 + waveX, cy + waveY), rotMat(-t * 0.8));
+					const pts = applyMat(
+						M,
+						DIAMOND_PTS.map(([x, y]) => [x * 1.2, y * 1.2])
+					);
+					drawShape(anX, pts, '#fb923c30', '#fb923c', 2);
+					infoParts.push(`wave x=${waveX.toFixed(0)} y=${waveY.toFixed(0)}`);
+				}
+
+				document.getElementById('anim-info').innerHTML = infoParts
+					.map((s) => `<span style="color:var(--muted)">▸ ${s}</span>`)
+					.join('');
+			}
+
+			function animLoop() {
+				if (!animRunning) return;
+				animT += 0.8;
+				drawAnim();
+				animRAF = requestAnimationFrame(animLoop);
+			}
+			drawAnim();
+			animLoop();
+
+			/* ═══════════════════════════ QUIZ ══════════════════════════════════ */
+			const quizData = [
+				{
+					q: 'Which matrix represents a translation by (+50, -20) in 2D homogeneous coordinates?',
+					options: [
+						'[[1,0,50],[0,1,-20],[0,0,1]]',
+						'[[50,0,0],[0,-20,0],[0,0,1]]',
+						'[[1,50,0],[0,1,-20],[0,0,1]]',
+						'[[1,0,0],[0,1,0],[50,-20,1]]'
+					],
+					correct: 0,
+					explanation:
+						'Translation goes in column 2 (the rightmost column), rows 0 and 1. The matrix form is [[1,0,tx],[0,1,ty],[0,0,1]]. Putting tx/ty on the diagonal would make it a scale matrix, not a translation.'
+				},
+				{
+					q: 'You apply scale(2), then rotate(45°), then translate(100, 0). What is the correct matrix expression?',
+					options: ['S @ R @ T', 'T @ R @ S', 'R @ T @ S', 'T @ S @ R'],
+					correct: 1,
+					explanation:
+						'Matrix multiplication is applied right-to-left: the rightmost matrix is applied first. To apply scale first, then rotate, then translate, write T @ R @ S. Reading left-to-right: translate, rotate, then scale — but execution order is reversed.'
+				},
+				{
+					q: "A child node has a local rotation of 30°. Its parent has a world rotation of 60°. What is the child's world rotation?",
+					options: ['30°', '60°', '90°', '−30°'],
+					correct: 2,
+					explanation:
+						"World rotation accumulates: the child's world rotation is its local rotation added to its parent's world rotation. 60° + 30° = 90°. This is what the hierarchy demo shows — world angles accumulate down the chain."
+				},
+				{
+					q: 'Why are homogeneous coordinates (adding w=1) necessary for affine transforms?',
+					options: [
+						'They allow 3D math to work on 2D points',
+						'They make the matrix square so it can be inverted',
+						'Without them, translation cannot be expressed as a matrix multiplication',
+						'They increase numerical precision when rotating'
+					],
+					correct: 2,
+					explanation:
+						'Translation adds a constant offset, which is not a linear operation. Linear operations (rotation, scale) can be expressed as matrix multiplications on 2D vectors. By adding a w=1 component, translation also becomes a matrix multiply — allowing all affine transforms to compose uniformly.'
+				},
+				{
+					q: `Given code:
+M = rotation(45) @ translation(100, 0)
+Point p = M @ [0, 0, 1]
+What happens to p?`,
+					options: [
+						'p is translated to (100, 0), then that point is rotated 45° around the origin',
+						'p is rotated 45° around the origin, then translated 100 units in the original x direction',
+						'p ends up at (100, 0) — rotation of the origin has no effect',
+						'The result is undefined — you cannot mix rotation and translation like this'
+					],
+					correct: 0,
+					explanation:
+						'Matrices are applied right-to-left: translation is the rightmost, so it applies first — moving (0,0) to (100,0). Then rotation (leftmost) rotates that result around the world origin. The final position is (cos45°×100, sin45°×100) ≈ (70.7, 70.7). Compare this to translation(100,0) @ rotation(45), which would rotate first (no effect on origin), then translate.'
+				}
+			];
+
+			let answered = 0,
+				correct = 0;
+			function buildQuiz() {
+				const c = document.getElementById('quiz-container');
+				c.innerHTML = '';
+				quizData.forEach((q, qi) => {
+					const div = document.createElement('div');
+					div.className = 'question';
+					const codeBlock = q.q.includes('\n')
+						? `<pre class="q-pre">${q.q.split('\n').slice(1).join('\n').trim()}</pre>`
+						: '';
+					const qText = q.q.includes('\n') ? q.q.split('\n')[0] : q.q;
+					div.innerHTML = `<div class="q-text"><span class="q-num">${qi + 1}.</span>${qText}</div>${codeBlock}
+      <div class="options" id="opts-${qi}">${q.options.map((o, oi) => `<div class="option" onclick="answer(${qi},${oi})" id="opt-${qi}-${oi}">${o}</div>`).join('')}</div>
+      <div class="feedback" id="fb-${qi}"></div>`;
+					c.appendChild(div);
+				});
+			}
+			function answer(qi, oi) {
+				const q = quizData[qi];
+				document
+					.querySelectorAll(`#opts-${qi} .option`)
+					.forEach((o) => o.classList.add('disabled'));
+				const fb = document.getElementById(`fb-${qi}`);
+				if (oi === q.correct) {
+					document.getElementById(`opt-${qi}-${oi}`).classList.add('correct');
+					fb.textContent = '✓ ' + q.explanation;
+					fb.className = 'feedback ok';
+					correct++;
+				} else {
+					document.getElementById(`opt-${qi}-${oi}`).classList.add('wrong');
+					document.getElementById(`opt-${qi}-${q.correct}`).classList.add('correct');
+					fb.textContent = '✗ ' + q.explanation;
+					fb.className = 'feedback bad';
+				}
+				answered++;
+				if (answered === quizData.length) {
+					const s = document.getElementById('quiz-score');
+					s.style.display = 'block';
+					document.getElementById('score-num').textContent = `${correct}/${quizData.length}`;
+					s.style.borderColor =
+						correct === quizData.length
+							? 'var(--accent)'
+							: correct >= 3
+								? 'var(--accent2)'
+								: 'var(--accent3)';
+				}
+			}
+			buildQuiz();
+
+			/* ═══════════════════════════ PROGRESS ══════════════════════════════ */
+			window.addEventListener('scroll', () => {
+				document.getElementById('reading-progress').style.width =
+					Math.min(
+						100,
+						(window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100
+					) + '%';
+			});
+		</script>
+	</body>
+</html>

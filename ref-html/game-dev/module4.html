@@ -1,0 +1,2809 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 4 — Introduction to GPU Rendering in Python</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--bg: #060a0f;
+				--surface: #0b1018;
+				--raised: #101820;
+				--border: #182030;
+				--border2: #243040;
+				--accent: #38bdf8;
+				--accent2: #f59e0b;
+				--accent3: #4ade80;
+				--accent4: #f472b6;
+				--text: #c8d8e8;
+				--muted: #48607a;
+				--code-bg: #080e16;
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				background: var(--bg);
+				color: var(--text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--border2);
+				border-radius: 3px;
+			}
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+
+			.course-header {
+				border-bottom: 1px solid var(--border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+				font-weight: 400;
+			}
+
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--accent);
+				border: 1px solid var(--accent);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 640px;
+			}
+			.module-title span {
+				color: var(--accent);
+			}
+
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+			}
+
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--accent);
+				background: var(--surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--accent);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--accent3);
+			}
+
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--accent3);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--accent);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+
+			pre {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1.5rem;
+				overflow-x: auto;
+				margin: 1.5rem 0;
+				font-size: 13px;
+				line-height: 1.6;
+				position: relative;
+			}
+			pre .lang-tag {
+				position: absolute;
+				top: 8px;
+				right: 12px;
+				font-size: 10px;
+				color: var(--muted);
+				letter-spacing: 0.1em;
+			}
+			.kw {
+				color: #c084fc;
+			}
+			.fn {
+				color: #67e8f9;
+			}
+			.str {
+				color: #fde68a;
+			}
+			.cm {
+				color: #3d5065;
+			}
+			.num {
+				color: #f9a8d4;
+			}
+			.op {
+				color: var(--accent2);
+			}
+			code {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--accent);
+			}
+
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--accent);
+				background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+				font-size: 13px;
+			}
+			.callout.gold {
+				border-color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 6%, var(--surface));
+			}
+			.callout.green {
+				border-color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 6%, var(--surface));
+			}
+			.callout.pink {
+				border-color: var(--accent4);
+				background: color-mix(in srgb, var(--accent4) 6%, var(--surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--accent);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.gold .callout-label {
+				color: var(--accent2);
+			}
+			.callout.green .callout-label {
+				color: var(--accent3);
+			}
+			.callout.pink .callout-label {
+				color: var(--accent4);
+			}
+
+			.demo-box {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.i {
+				color: var(--accent);
+				border-color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+			}
+			.demo-badge.a {
+				color: var(--accent2);
+				border-color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			canvas {
+				display: block;
+			}
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			@media (max-width: 640px) {
+				.two-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.slider-row {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				margin: 0.5rem 0;
+			}
+			.slider-row label {
+				font-size: 11px;
+				min-width: 80px;
+				color: var(--muted);
+			}
+			.slider-row input[type='range'] {
+				flex: 1;
+				-webkit-appearance: none;
+				height: 3px;
+				background: var(--border2);
+				outline: none;
+			}
+			.slider-row input[type='range']::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: var(--accent);
+				cursor: pointer;
+			}
+			.slider-val {
+				font-size: 12px;
+				color: var(--accent);
+				min-width: 44px;
+				text-align: right;
+				font-weight: 600;
+			}
+
+			.btn {
+				background: transparent;
+				border: 1px solid var(--border2);
+				color: var(--text);
+				padding: 6px 14px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.btn.active {
+				border-color: var(--accent);
+				color: var(--accent);
+				background: color-mix(in srgb, var(--accent) 10%, transparent);
+			}
+			.btn.g:hover,
+			.btn.g.active {
+				border-color: var(--accent3);
+				color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 10%, transparent);
+			}
+			.btn.gold:hover,
+			.btn.gold.active {
+				border-color: var(--accent2);
+				color: var(--accent2);
+				background: color-mix(in srgb, var(--accent2) 10%, transparent);
+			}
+
+			/* GPU pipeline diagram */
+			.gpu-pipeline {
+				display: flex;
+				flex-direction: column;
+				gap: 0;
+				border: 1px solid var(--border);
+			}
+			.gpu-stage {
+				display: flex;
+				align-items: stretch;
+				border-bottom: 1px solid var(--border);
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.gpu-stage:last-child {
+				border-bottom: none;
+			}
+			.gpu-stage:hover,
+			.gpu-stage.active {
+				background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+			}
+			.gpu-stage-num {
+				width: 48px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 11px;
+				color: var(--muted);
+				border-right: 1px solid var(--border);
+				flex-shrink: 0;
+			}
+			.gpu-stage-label {
+				width: 180px;
+				padding: 0.8rem 1rem;
+				border-right: 1px solid var(--border);
+				flex-shrink: 0;
+			}
+			.gpu-stage-name {
+				font-size: 12px;
+				font-weight: 600;
+				color: #fff;
+			}
+			.gpu-stage-sub {
+				font-size: 10px;
+				color: var(--muted);
+				margin-top: 0.15rem;
+				letter-spacing: 0.05em;
+				text-transform: uppercase;
+			}
+			.gpu-stage-desc {
+				flex: 1;
+				padding: 0.8rem 1rem;
+				font-size: 12px;
+				color: var(--muted);
+				display: flex;
+				align-items: center;
+			}
+			.gpu-stage.active .gpu-stage-num {
+				color: var(--accent);
+			}
+			.gpu-stage.active .gpu-stage-name {
+				color: var(--accent);
+			}
+			.gpu-stage.active .gpu-stage-desc {
+				color: var(--text);
+			}
+			.gpu-stage-badge {
+				padding: 0.8rem 1rem;
+				display: flex;
+				align-items: center;
+				flex-shrink: 0;
+			}
+			.prog-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.prog-badge.programmable {
+				color: var(--accent3);
+				border-color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 10%, transparent);
+			}
+			.prog-badge.fixed {
+				color: var(--muted);
+				border-color: var(--border2);
+			}
+
+			/* Buffer anatomy */
+			.buffer-row {
+				display: flex;
+				gap: 2px;
+				margin: 1rem 0;
+				flex-wrap: wrap;
+			}
+			.buffer-cell {
+				height: 44px;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				border: 1px solid var(--border2);
+				font-size: 10px;
+				transition: all 0.2s;
+				cursor: default;
+				min-width: 32px;
+			}
+			.buffer-cell span {
+				font-size: 8px;
+				color: var(--muted);
+				margin-top: 2px;
+			}
+			.buffer-cell:hover {
+				border-color: var(--accent);
+			}
+			.buffer-cell.X {
+				background: color-mix(in srgb, #ef4444 20%, var(--surface));
+				color: #ef4444;
+			}
+			.buffer-cell.Y {
+				background: color-mix(in srgb, #22c55e 20%, var(--surface));
+				color: #22c55e;
+			}
+			.buffer-cell.R {
+				background: color-mix(in srgb, #ef4444 20%, var(--surface));
+				color: #ef4444;
+			}
+			.buffer-cell.G {
+				background: color-mix(in srgb, #22c55e 20%, var(--surface));
+				color: #22c55e;
+			}
+			.buffer-cell.B {
+				background: color-mix(in srgb, #3b82f6 20%, var(--surface));
+				color: #3b82f6;
+			}
+
+			/* State machine display */
+			.state-box {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 0.75rem 1rem;
+				font-size: 11px;
+			}
+			.state-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.15rem 0;
+				border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+			}
+			.state-row:last-child {
+				border-bottom: none;
+			}
+			.state-key {
+				color: var(--muted);
+			}
+			.state-val {
+				color: var(--accent3);
+				font-weight: 600;
+			}
+			.state-val.none {
+				color: var(--border2);
+				font-weight: 400;
+			}
+			.state-val.bound {
+				color: var(--accent);
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--raised);
+				color: var(--accent);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--border);
+				color: var(--text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--raised) 50%, transparent);
+			}
+
+			hr.divider {
+				border: none;
+				border-top: 1px solid var(--border);
+				margin: 3rem 0;
+			}
+
+			/* quiz */
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.25rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--accent2);
+				margin-right: 0.5rem;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--border2);
+				background: var(--raised);
+			}
+			.option.correct {
+				border-color: var(--accent3);
+				background: color-mix(in srgb, var(--accent3) 10%, transparent);
+				color: var(--accent3);
+			}
+			.option.wrong {
+				border-color: var(--accent4);
+				background: color-mix(in srgb, var(--accent4) 10%, transparent);
+				color: var(--accent4);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--muted);
+			}
+			.feedback.ok {
+				color: var(--accent3);
+			}
+			.feedback.bad {
+				color: var(--accent4);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--accent);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 0.25rem;
+			}
+
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--accent);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			.nav-links {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 4rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+			.prev-link {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 0.75rem 1.25rem;
+				transition: all 0.2s;
+			}
+			.prev-link:hover {
+				border-color: var(--accent2);
+				color: var(--accent2);
+			}
+			.next-module {
+				display: flex;
+				align-items: center;
+				gap: 2rem;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--border);
+				text-decoration: none;
+				transition: all 0.2s;
+				background: var(--surface);
+			}
+			.next-module:hover {
+				border-color: var(--accent3);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--accent3);
+			}
+
+			/* Bind sequence */
+			.bind-step {
+				display: flex;
+				gap: 1rem;
+				padding: 0.75rem 0;
+				border-bottom: 1px solid var(--border);
+				align-items: flex-start;
+			}
+			.bind-step:last-child {
+				border-bottom: none;
+			}
+			.bind-num {
+				width: 24px;
+				height: 24px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 11px;
+				background: var(--accent);
+				color: #000;
+				font-weight: 700;
+				flex-shrink: 0;
+				margin-top: 0.15rem;
+			}
+			.bind-content {
+				flex: 1;
+			}
+			.bind-title {
+				font-size: 12px;
+				font-weight: 600;
+				color: #fff;
+				margin-bottom: 0.2rem;
+			}
+			.bind-desc {
+				font-size: 12px;
+				color: var(--muted);
+			}
+
+			/* GPU simulator */
+			#gpu-sim-canvas {
+				border: 1px solid var(--border2);
+				background: #06090e;
+			}
+			.sim-controls {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+				margin-bottom: 1rem;
+				align-items: center;
+			}
+			.sim-log {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 0.75rem 1rem;
+				font-size: 11px;
+				max-height: 120px;
+				overflow-y: auto;
+			}
+			.log-line {
+				padding: 0.1rem 0;
+				border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+			}
+			.log-line:last-child {
+				border-bottom: none;
+			}
+			.log-line.info {
+				color: var(--muted);
+			}
+			.log-line.bind {
+				color: var(--accent);
+			}
+			.log-line.draw {
+				color: var(--accent3);
+			}
+			.log-line.gpu {
+				color: var(--accent2);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<header class="course-header">
+				<div>
+					<div class="course-label">Game Development Fundamentals</div>
+					<div class="course-title">From Pixels to Play</div>
+				</div>
+				<div style="font-size: 11px; color: var(--muted); text-align: right">Module 04 of 12</div>
+			</header>
+
+			<div class="module-hero">
+				<div class="module-number">04</div>
+				<div class="module-tag">Module 04 · Theory + Practice</div>
+				<h1 class="module-title">Introduction to<br /><span>GPU Rendering</span> in Python</h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#pipeline">The GPU Pipeline</a></li>
+					<li><a href="#buffers">Vertex Buffers</a></li>
+					<li><a href="#vaos">Vertex Array Objects</a></li>
+					<li><a href="#programs">Shader Programs</a></li>
+					<li><a href="#draw-call">The Draw Call</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+				</ul>
+			</nav>
+
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Understand how vertex data is stored and sent to the GPU</li>
+					<li>Explain the purpose of vertex buffers (VBOs) and vertex array objects (VAOs)</li>
+					<li>Understand how OpenGL state binding works</li>
+					<li>Render a triangle and a rotating shape using moderngl</li>
+				</ul>
+			</section>
+
+			<!-- ══ 04.01 PIPELINE ══ -->
+			<section id="pipeline" class="section">
+				<div class="section-header">
+					<span class="section-num">04.01</span>
+					<h2 class="section-title">The GPU Pipeline (Revisited)</h2>
+				</div>
+
+				<p>
+					Module 2 introduced the rendering pipeline conceptually. Now we are operating it directly.
+					The GPU pipeline is not automatic — you configure each stage by uploading data and binding
+					programs. Understanding which stages are <em>programmable</em> versus
+					<em>fixed-function</em> determines what you control and what the hardware handles.
+				</p>
+
+				<!-- GPU PIPELINE TABLE -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · GPU Pipeline Stages — Click for Details</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<div class="gpu-pipeline" id="gpu-pipeline">
+							<div class="gpu-stage" onclick="showStage(0, this)">
+								<div class="gpu-stage-num">01</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">CPU: Upload Data</div>
+									<div class="gpu-stage-sub">Buffer creation</div>
+								</div>
+								<div class="gpu-stage-desc">
+									Pack vertex data into a Python bytes object and upload it to GPU memory as a VBO.
+								</div>
+								<div class="gpu-stage-badge"><span class="prog-badge fixed">CPU SIDE</span></div>
+							</div>
+							<div class="gpu-stage" onclick="showStage(1, this)">
+								<div class="gpu-stage-num">02</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">Vertex Fetch</div>
+									<div class="gpu-stage-sub">Input assembly</div>
+								</div>
+								<div class="gpu-stage-desc">
+									GPU reads vertices from the VBO according to the attribute layout described in the
+									VAO.
+								</div>
+								<div class="gpu-stage-badge"><span class="prog-badge fixed">FIXED</span></div>
+							</div>
+							<div class="gpu-stage" onclick="showStage(2, this)">
+								<div class="gpu-stage-num">03</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">Vertex Shader</div>
+									<div class="gpu-stage-sub">Per-vertex program</div>
+								</div>
+								<div class="gpu-stage-desc">
+									Your GLSL program runs once per vertex. Output: gl_Position — the clip-space
+									position.
+								</div>
+								<div class="gpu-stage-badge">
+									<span class="prog-badge programmable">PROGRAMMABLE</span>
+								</div>
+							</div>
+							<div class="gpu-stage" onclick="showStage(3, this)">
+								<div class="gpu-stage-num">04</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">Primitive Assembly</div>
+									<div class="gpu-stage-sub">Grouping</div>
+								</div>
+								<div class="gpu-stage-desc">
+									Processed vertices are grouped into triangles. Clipping removes geometry outside
+									the view volume.
+								</div>
+								<div class="gpu-stage-badge"><span class="prog-badge fixed">FIXED</span></div>
+							</div>
+							<div class="gpu-stage" onclick="showStage(4, this)">
+								<div class="gpu-stage-num">05</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">Rasterization</div>
+									<div class="gpu-stage-sub">Triangle → fragments</div>
+								</div>
+								<div class="gpu-stage-desc">
+									Hardware runs the edge-function test from Module 2 at enormous speed. Produces one
+									fragment per covered pixel.
+								</div>
+								<div class="gpu-stage-badge"><span class="prog-badge fixed">FIXED</span></div>
+							</div>
+							<div class="gpu-stage" onclick="showStage(5, this)">
+								<div class="gpu-stage-num">06</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">Fragment Shader</div>
+									<div class="gpu-stage-sub">Per-pixel program</div>
+								</div>
+								<div class="gpu-stage-desc">
+									Your GLSL program runs once per fragment. Output: a color that gets written to the
+									framebuffer.
+								</div>
+								<div class="gpu-stage-badge">
+									<span class="prog-badge programmable">PROGRAMMABLE</span>
+								</div>
+							</div>
+							<div class="gpu-stage" onclick="showStage(6, this)">
+								<div class="gpu-stage-num">07</div>
+								<div class="gpu-stage-label">
+									<div class="gpu-stage-name">Output Merge</div>
+									<div class="gpu-stage-sub">Depth + blend</div>
+								</div>
+								<div class="gpu-stage-desc">
+									Depth test, stencil test, and blending. Surviving fragments write their color to
+									the framebuffer.
+								</div>
+								<div class="gpu-stage-badge">
+									<span class="prog-badge fixed">FIXED (configurable)</span>
+								</div>
+							</div>
+						</div>
+						<div
+							id="stage-detail"
+							style="
+								margin-top: 0;
+								padding: 1rem 1.25rem;
+								border: 1px solid var(--border2);
+								border-top: none;
+								background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+								font-size: 12px;
+								min-height: 52px;
+								color: var(--muted);
+							"
+						>
+							Click a stage for a detailed explanation.
+						</div>
+					</div>
+				</div>
+
+				<p>
+					The two stages you write code for are the <strong>vertex shader</strong> and the
+					<strong>fragment shader</strong>. Everything else is handled by fixed hardware. This is
+					why the API for GPU rendering feels like:
+					<em>set up data, write two programs, issue a draw call</em>.
+				</p>
+			</section>
+
+			<!-- ══ 04.02 BUFFERS ══ -->
+			<section id="buffers" class="section">
+				<div class="section-header">
+					<span class="section-num">04.02</span>
+					<h2 class="section-title">Vertex Buffers (VBOs)</h2>
+				</div>
+
+				<p>
+					A <strong>Vertex Buffer Object (VBO)</strong> is a block of GPU memory that holds raw
+					vertex data. Before any triangle can be drawn, its vertex data must exist in GPU memory.
+					You pack it on the CPU as a flat byte array and upload it once.
+				</p>
+				<p>
+					Vertex data is interleaved: each vertex's attributes are packed together sequentially. For
+					a triangle with positions and colors, each vertex contributes five floats — two for
+					position, three for color.
+				</p>
+
+				<!-- BUFFER ANATOMY -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Vertex Buffer Anatomy</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Hover any cell to see which vertex and attribute it belongs to. Toggle the layout to
+							see how data is packed.
+						</p>
+						<div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap">
+							<button class="btn active" id="lay-pos" onclick="setLayout('pos', this)">
+								Position only (2f)
+							</button>
+							<button class="btn" id="lay-poscolor" onclick="setLayout('poscolor', this)">
+								Position + Color (2f+3f)
+							</button>
+							<button class="btn" id="lay-posuv" onclick="setLayout('posuv', this)">
+								Position + UV (2f+2f)
+							</button>
+						</div>
+						<div id="buffer-vis"></div>
+						<div
+							id="buffer-hover-info"
+							style="font-size: 12px; color: var(--muted); margin-top: 0.75rem; min-height: 1.4em"
+						></div>
+						<div style="margin-top: 1.25rem">
+							<div
+								style="
+									font-size: 10px;
+									letter-spacing: 0.15em;
+									text-transform: uppercase;
+									color: var(--muted);
+									margin-bottom: 0.5rem;
+								"
+							>
+								Resulting array definition
+							</div>
+							<pre id="buffer-code" style="margin: 0; font-size: 12px"></pre>
+						</div>
+					</div>
+				</div>
+
+				<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> moderngl
+
+<span class="cm"># Triangle: 3 vertices, each with [x, y, r, g, b]</span>
+vertices = np.<span class="fn">array</span>([
+    <span class="cm">#  x      y     R     G     B</span>
+     <span class="num">0.0</span>,  <span class="num">0.8</span>, <span class="num">1.0</span>, <span class="num">0.0</span>, <span class="num">0.0</span>,   <span class="cm"># top — red</span>
+    -<span class="num">0.8</span>, -<span class="num">0.5</span>, <span class="num">0.0</span>, <span class="num">1.0</span>, <span class="num">0.0</span>,   <span class="cm"># bottom-left — green</span>
+     <span class="num">0.8</span>, -<span class="num">0.5</span>, <span class="num">0.0</span>, <span class="num">0.0</span>, <span class="num">1.0</span>,   <span class="cm"># bottom-right — blue</span>
+], dtype=<span class="str">'f4'</span>)
+
+ctx = moderngl.<span class="fn">create_standalone_context</span>()
+
+<span class="cm"># Upload to GPU — ctx.buffer() copies the bytes</span>
+vbo = ctx.<span class="fn">buffer</span>(vertices.tobytes())<span class="lang-tag">python + moderngl</span></code></pre>
+
+				<p>
+					Notice that the data is in <em>normalized device coordinates</em> (NDC): x and y in the
+					range [-1, 1]. The center of the screen is (0, 0). The GPU's rasterizer works in this
+					coordinate system by default. In later modules, a transform matrix maps from world
+					coordinates to NDC.
+				</p>
+
+				<div class="callout gold">
+					<div class="callout-label">Float Format</div>
+					GPU buffers use 32-bit floats (<code>f4</code> / <code>GL_FLOAT</code>), not Python's
+					64-bit doubles. Always specify <code>dtype='f4'</code> in NumPy. Passing 64-bit data will
+					silently produce incorrect results as the GPU interprets the bytes as f32.
+				</div>
+			</section>
+
+			<!-- ══ 04.03 VAOs ══ -->
+			<section id="vaos" class="section">
+				<div class="section-header">
+					<span class="section-num">04.03</span>
+					<h2 class="section-title">Vertex Array Objects (VAOs)</h2>
+				</div>
+
+				<p>
+					A VBO contains raw bytes. The GPU has no idea how to interpret them — it doesn't know
+					where one vertex ends and another begins, or which bytes are positions versus colors. A
+					<strong>Vertex Array Object (VAO)</strong> provides that layout description.
+				</p>
+				<p>
+					The VAO stores: which VBO to read from, the byte offset and stride of each attribute, and
+					which shader input each attribute maps to.
+				</p>
+
+				<!-- VAO ANATOMY DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · VAO Layout Description</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Hover an attribute row to highlight which bytes in the buffer it reads. See how stride
+							and offset work.
+						</p>
+						<canvas
+							id="vao-canvas"
+							width="860"
+							height="280"
+							style="width: 100%; border: 1px solid var(--border2); background: #06090e"
+						></canvas>
+						<div
+							id="vao-hover"
+							style="font-size: 12px; color: var(--muted); margin-top: 0.75rem; min-height: 1.4em"
+						></div>
+					</div>
+				</div>
+
+				<pre><code><span class="cm"># The format string '2f 3f' means:
+#   first attribute:  2 floats (8 bytes)  → position
+#   second attribute: 3 floats (12 bytes) → color
+# moderngl reads them interleaved: [x,y,r,g,b] [x,y,r,g,b] ...</span>
+
+program = ctx.<span class="fn">program</span>(
+    vertex_shader=<span class="str">"""
+        #version 330
+        in vec2 in_position;
+        in vec3 in_color;
+        out vec3 v_color;
+        void main() {
+            gl_Position = vec4(in_position, 0.0, 1.0);
+            v_color = in_color;
+        }
+    """</span>,
+    fragment_shader=<span class="str">"""
+        #version 330
+        in vec3 v_color;
+        out vec4 out_color;
+        void main() {
+            out_color = vec4(v_color, 1.0);
+        }
+    """</span>
+)
+
+<span class="cm"># VAO: link VBO → program inputs, with layout '2f 3f'</span>
+vao = ctx.<span class="fn">vertex_array</span>(program, [(vbo, <span class="str">'2f 3f'</span>, <span class="str">'in_position'</span>, <span class="str">'in_color'</span>)])<span class="lang-tag">python + moderngl</span></code></pre>
+
+				<div class="callout">
+					<div class="callout-label">OpenGL State Machine</div>
+					OpenGL operates as a global state machine. Objects like VBOs and VAOs are created, given
+					integer IDs, and must be <em>bound</em> (made current) before operations apply to them.
+					The VAO stores which VBO was bound when attributes were configured — so binding the VAO
+					later automatically restores that relationship.
+				</div>
+
+				<!-- STATE MACHINE DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · OpenGL State Machine Simulator</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Step through OpenGL API calls. Watch the state table update as objects are created and
+							bound.
+						</p>
+						<div class="sim-controls">
+							<button class="btn gold" onclick="simStep()">▶ Next Call</button>
+							<button class="btn" onclick="simReset()">↺ Reset</button>
+							<span
+								style="font-size: 11px; color: var(--muted); margin-left: 0.5rem"
+								id="sim-step-label"
+								>Step 0 / 9</span
+							>
+						</div>
+						<div class="two-col" style="align-items: start">
+							<div>
+								<div
+									style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.5rem;
+									"
+								>
+									Current API Call
+								</div>
+								<pre id="sim-code" style="margin: 0; font-size: 12px; min-height: 80px"></pre>
+								<div
+									id="sim-explain"
+									style="font-size: 12px; color: var(--muted); margin-top: 0.75rem; min-height: 3em"
+								></div>
+							</div>
+							<div>
+								<div
+									style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.5rem;
+									"
+								>
+									OpenGL State
+								</div>
+								<div class="state-box">
+									<div class="state-row">
+										<span class="state-key">Current VBO</span
+										><span class="state-val none" id="st-vbo">— unbound</span>
+									</div>
+									<div class="state-row">
+										<span class="state-key">Current VAO</span
+										><span class="state-val none" id="st-vao">— unbound</span>
+									</div>
+									<div class="state-row">
+										<span class="state-key">Current Program</span
+										><span class="state-val none" id="st-prog">— unbound</span>
+									</div>
+									<div class="state-row">
+										<span class="state-key">VBO[1] data</span
+										><span class="state-val none" id="st-vbo-data">empty</span>
+									</div>
+									<div class="state-row">
+										<span class="state-key">VAO[1] layout</span
+										><span class="state-val none" id="st-vao-layout">undefined</span>
+									</div>
+									<div class="state-row">
+										<span class="state-key">Program[1] linked</span
+										><span class="state-val none" id="st-prog-linked">no</span>
+									</div>
+								</div>
+								<div class="sim-log" id="sim-log" style="margin-top: 0.75rem"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ══ 04.04 PROGRAMS ══ -->
+			<section id="programs" class="section">
+				<div class="section-header">
+					<span class="section-num">04.04</span>
+					<h2 class="section-title">Shader Programs</h2>
+				</div>
+
+				<p>
+					A <strong>shader program</strong> is a pair of GPU programs — vertex and fragment —
+					compiled and linked together. In moderngl this is done in a single
+					<code>ctx.program()</code> call. The shaders are written in GLSL (OpenGL Shading
+					Language), which has a C-like syntax.
+				</p>
+				<p>
+					Data flows from the CPU through the pipeline in three ways:
+					<em>attributes</em> (per-vertex data from the VBO), <em>uniforms</em> (constant values set
+					by the CPU, same for every vertex), and <em>varyings</em> (values passed from the vertex
+					shader to the fragment shader, interpolated across the triangle).
+				</p>
+
+				<!-- DATA FLOW DIAGRAM -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Shader Data Flow</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Click each data path to see where it originates and where it ends up.
+						</p>
+						<canvas
+							id="flow-canvas"
+							width="860"
+							height="260"
+							style="width: 100%; border: 1px solid var(--border2); background: #06090e"
+						></canvas>
+						<div
+							id="flow-detail"
+							style="font-size: 12px; color: var(--muted); margin-top: 0.75rem; min-height: 2em"
+						></div>
+					</div>
+				</div>
+
+				<pre><code><span class="cm"># Uniforms are set after the program is created</span>
+program[<span class="str">'u_transform'</span>].value = <span class="fn">tuple</span>(matrix.flatten())
+
+<span class="cm"># GLSL vertex shader using a uniform transform</span>
+vertex_src = <span class="str">"""
+#version 330
+uniform mat3 u_transform;   // same for every vertex this draw call
+in vec2 in_position;
+in vec3 in_color;
+out vec3 v_color;            // passed to fragment shader
+void main() {
+    vec3 p = u_transform * vec3(in_position, 1.0);
+    gl_Position = vec4(p.xy, 0.0, 1.0);
+    v_color = in_color;
+}
+"""</span>
+
+<span class="cm"># GLSL fragment shader: receives interpolated v_color</span>
+fragment_src = <span class="str">"""
+#version 330
+in vec3 v_color;
+out vec4 out_color;
+void main() {
+    out_color = vec4(v_color, 1.0);
+}
+"""</span><span class="lang-tag">glsl + python</span></code></pre>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Data type</th>
+							<th>Qualifier</th>
+							<th>Source</th>
+							<th>Scope</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Attribute</td>
+							<td><code>in</code> (vertex shader)</td>
+							<td>VBO, one per vertex</td>
+							<td>Per-vertex</td>
+						</tr>
+						<tr>
+							<td>Uniform</td>
+							<td><code>uniform</code></td>
+							<td>CPU via program[name]</td>
+							<td>Constant per draw call</td>
+						</tr>
+						<tr>
+							<td>Varying</td>
+							<td><code>out</code>/<code>in</code> between stages</td>
+							<td>Vertex shader output</td>
+							<td>Interpolated across triangle</td>
+						</tr>
+						<tr>
+							<td>Built-in</td>
+							<td><code>gl_Position</code>, etc.</td>
+							<td>Written by shader</td>
+							<td>Per-vertex (system)</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- ══ 04.05 DRAW CALL ══ -->
+			<section id="draw-call" class="section">
+				<div class="section-header">
+					<span class="section-num">04.05</span>
+					<h2 class="section-title">The Draw Call</h2>
+				</div>
+
+				<p>
+					A <strong>draw call</strong> is the instruction that tells the GPU to start processing
+					geometry. It specifies the VAO to read from, the primitive type, and how many vertices to
+					process. Everything before the draw call is setup — data uploads, state binding, uniform
+					setting. The draw call is what launches the pipeline.
+				</p>
+
+				<pre><code><span class="cm"># The complete sequence for one frame:</span>
+
+<span class="cm"># 1. Clear the framebuffer</span>
+ctx.<span class="fn">clear</span>(<span class="num">0.07</span>, <span class="num">0.07</span>, <span class="num">0.12</span>)
+
+<span class="cm"># 2. Update uniforms (e.g., a transform that changes each frame)</span>
+program[<span class="str">'u_transform'</span>].value = <span class="fn">tuple</span>(M.flatten())
+
+<span class="cm"># 3. Issue the draw call — TRIANGLES, starting at vertex 0, 3 vertices</span>
+vao.<span class="fn">render</span>(moderngl.TRIANGLES)<span class="lang-tag">python + moderngl</span></code></pre>
+
+				<p>
+					The draw call is deceptively small. Behind those three lines: the GPU reads all vertex
+					data, runs the vertex shader on every vertex in parallel, rasterizes the resulting
+					triangles, runs the fragment shader on every covered pixel in parallel, and writes the
+					results to the framebuffer. For a large mesh that may be millions of operations — all
+					launched by a single call.
+				</p>
+
+				<div class="callout green">
+					<div class="callout-label">Draw Call Overhead</div>
+					Each draw call has CPU-side overhead — state validation, command encoding, driver work.
+					Games try to minimize the number of draw calls per frame. A scene with 1000 objects that
+					each require a separate draw call performs much worse than one that batches geometry into
+					a single call. This motivates techniques like geometry batching, instancing, and atlasing.
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ══ 04.06 PRACTICAL ══ -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">04.06</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<p>
+					Two exercises: first, the minimum viable GPU triangle. Then, a rotating triangle that
+					applies a transform matrix as a uniform, connecting Module 3's matrix library to the GPU.
+				</p>
+
+				<!-- EXERCISE 1: GPU TRIANGLE -->
+				<div style="margin: 2rem 0">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.2em;
+							text-transform: uppercase;
+							color: var(--accent2);
+							margin-bottom: 0.75rem;
+						"
+					>
+						Exercise 1 · The Minimum GPU Triangle
+					</div>
+					<p>The complete moderngl program from context creation to saving the output image:</p>
+					<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> moderngl
+<span class="kw">from</span> PIL <span class="kw">import</span> Image
+
+<span class="cm"># 1. Create a headless (no window) OpenGL context</span>
+ctx = moderngl.<span class="fn">create_standalone_context</span>()
+
+<span class="cm"># 2. Vertex data: x, y, r, g, b — 3 vertices in NDC</span>
+vertices = np.<span class="fn">array</span>([
+     <span class="num">0.0</span>,  <span class="num">0.8</span>, <span class="num">0.22</span>, <span class="num">0.74</span>, <span class="num">0.97</span>,
+    -<span class="num">0.8</span>, -<span class="num">0.5</span>, <span class="num">0.97</span>, <span class="num">0.36</span>, <span class="num">0.22</span>,
+     <span class="num">0.8</span>, -<span class="num">0.5</span>, <span class="num">0.29</span>, <span class="num">0.86</span>, <span class="num">0.50</span>,
+], dtype=<span class="str">'f4'</span>)
+
+<span class="cm"># 3. Upload to GPU</span>
+vbo = ctx.<span class="fn">buffer</span>(vertices.tobytes())
+
+<span class="cm"># 4. Compile shaders + create program</span>
+program = ctx.<span class="fn">program</span>(
+    vertex_shader=<span class="str">"""
+        #version 330
+        in vec2 in_position;
+        in vec3 in_color;
+        out vec3 v_color;
+        void main() {
+            gl_Position = vec4(in_position, 0.0, 1.0);
+            v_color = in_color;
+        }
+    """</span>,
+    fragment_shader=<span class="str">"""
+        #version 330
+        in vec3 v_color;
+        out vec4 out_color;
+        void main() { out_color = vec4(v_color, 1.0); }
+    """</span>
+)
+
+<span class="cm"># 5. Create VAO: link VBO to program attributes</span>
+vao = ctx.<span class="fn">vertex_array</span>(program, [(vbo, <span class="str">'2f 3f'</span>, <span class="str">'in_position'</span>, <span class="str">'in_color'</span>)])
+
+<span class="cm"># 6. Create a framebuffer to render into (512×512)</span>
+fbo = ctx.<span class="fn">simple_framebuffer</span>((<span class="num">512</span>, <span class="num">512</span>))
+fbo.<span class="fn">use</span>()
+
+<span class="cm"># 7. Render</span>
+ctx.<span class="fn">clear</span>(<span class="num">0.07</span>, <span class="num">0.07</span>, <span class="num">0.12</span>)
+vao.<span class="fn">render</span>(moderngl.TRIANGLES)
+
+<span class="cm"># 8. Read pixels back to CPU and save</span>
+data = fbo.<span class="fn">read</span>(components=<span class="num">3</span>)
+img = Image.<span class="fn">frombytes</span>(<span class="str">'RGB'</span>, fbo.size, data, <span class="str">'raw'</span>, <span class="str">'RGB'</span>, <span class="num">0</span>, -<span class="num">1</span>)
+img.<span class="fn">save</span>(<span class="str">'triangle.png'</span>)<span class="lang-tag">python + moderngl</span></code></pre>
+				</div>
+
+				<!-- GPU TRIANGLE VISUALIZER -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · GPU Triangle Preview</span>
+						<span class="demo-badge i">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							This simulates the output of the GPU pipeline above. Drag vertices to update the
+							buffer data shown on the right.
+						</p>
+						<div class="two-col" style="align-items: start">
+							<div>
+								<canvas id="gpu-sim-canvas" width="360" height="360" style="width: 100%"></canvas>
+							</div>
+							<div style="display: flex; flex-direction: column; gap: 1rem">
+								<div>
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--muted);
+											margin-bottom: 0.5rem;
+										"
+									>
+										VBO contents (15 floats)
+									</div>
+									<div
+										id="vbo-live"
+										style="
+											font-size: 11px;
+											background: var(--code-bg);
+											border: 1px solid var(--border);
+											padding: 0.75rem;
+											line-height: 2;
+										"
+									></div>
+								</div>
+								<div>
+									<div
+										style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--muted);
+											margin-bottom: 0.5rem;
+										"
+									>
+										Fragment interpolation
+									</div>
+									<canvas
+										id="interp-canvas"
+										width="220"
+										height="80"
+										style="width: 100%; border: 1px solid var(--border2); background: #06090e"
+									></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- EXERCISE 2: ROTATING TRIANGLE -->
+				<div style="margin: 2.5rem 0">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.2em;
+							text-transform: uppercase;
+							color: var(--accent2);
+							margin-bottom: 0.75rem;
+						"
+					>
+						Exercise 2 · Rotating Triangle with a Uniform Matrix
+					</div>
+					<p>
+						The vertex shader applies a rotation matrix passed from Python. The matrix changes each
+						frame, giving the illusion of motion.
+					</p>
+					<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> moderngl, math
+
+<span class="kw">def</span> <span class="fn">rotation_matrix</span>(angle_deg):
+    r = math.<span class="fn">radians</span>(angle_deg)
+    c, s = math.<span class="fn">cos</span>(r), math.<span class="fn">sin</span>(r)
+    <span class="kw">return</span> np.<span class="fn">array</span>([
+        c, -s, <span class="num">0</span>,
+        s,  c, <span class="num">0</span>,
+        <span class="num">0</span>,  <span class="num">0</span>, <span class="num">1</span>
+    ], dtype=<span class="str">'f4'</span>)
+
+<span class="cm"># Vertex shader reads a mat3 uniform</span>
+vertex_src = <span class="str">"""
+    #version 330
+    uniform mat3 u_transform;
+    in vec2 in_position;
+    in vec3 in_color;
+    out vec3 v_color;
+    void main() {
+        vec3 p = u_transform * vec3(in_position, 1.0);
+        gl_Position = vec4(p.xy, 0.0, 1.0);
+        v_color = in_color;
+    }
+"""</span>
+
+<span class="cm"># Each frame: update the angle and re-upload the matrix</span>
+angle = <span class="num">0.0</span>
+<span class="kw">while</span> running:
+    angle += <span class="num">1.5</span>  <span class="cm"># degrees per frame</span>
+    M = <span class="fn">rotation_matrix</span>(angle)
+    program[<span class="str">'u_transform'</span>].value = <span class="fn">tuple</span>(M)
+    ctx.<span class="fn">clear</span>(<span class="num">0.07</span>, <span class="num">0.07</span>, <span class="num">0.12</span>)
+    vao.<span class="fn">render</span>(moderngl.TRIANGLES)
+    window.<span class="fn">swap_buffers</span>()<span class="lang-tag">python + moderngl</span></code></pre>
+				</div>
+
+				<!-- ROTATING TRIANGLE DEMO -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Animated · Rotating Triangle with Uniform Matrix</span>
+						<span class="demo-badge a">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Simulates what the GPU renders each frame. Adjust the transform to see the uniform
+							matrix update.
+						</p>
+						<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem">
+							<button class="btn g active" id="rot-play-btn" onclick="toggleRotAnim()">
+								⏸ Pause
+							</button>
+							<button class="btn" onclick="resetRotAnim()">↺ Reset</button>
+						</div>
+						<div class="slider-row">
+							<label>Speed</label>
+							<input type="range" id="rot-speed" min="0" max="400" value="150" />
+							<span class="slider-val" id="rot-speed-val">1.5°/frame</span>
+						</div>
+						<div class="slider-row">
+							<label>Scale</label>
+							<input type="range" id="rot-scale" min="20" max="180" value="100" />
+							<span class="slider-val" id="rot-scale-val">1.00</span>
+						</div>
+						<div class="two-col" style="align-items: start; margin-top: 1rem">
+							<canvas
+								id="rot-canvas"
+								width="360"
+								height="360"
+								style="width: 100%; border: 1px solid var(--border2); background: #06090e"
+							></canvas>
+							<div>
+								<div
+									style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.5rem;
+									"
+								>
+									u_transform (mat3 uniform)
+								</div>
+								<div
+									id="rot-matrix"
+									style="
+										font-size: 12px;
+										background: var(--code-bg);
+										border: 1px solid var(--border);
+										padding: 1rem;
+										line-height: 2.2;
+										font-family: 'IBM Plex Mono', monospace;
+									"
+								></div>
+								<div
+									style="
+										margin-top: 1rem;
+										font-size: 12px;
+										background: var(--code-bg);
+										border: 1px solid var(--border);
+										padding: 0.75rem;
+									"
+								>
+									<div style="display: flex; justify-content: space-between">
+										<span style="color: var(--muted)">angle</span
+										><span style="color: var(--accent)" id="rot-angle-val">0.0°</span>
+									</div>
+									<div style="display: flex; justify-content: space-between">
+										<span style="color: var(--muted)">frame</span
+										><span style="color: var(--accent3)" id="rot-frame-val">0</span>
+									</div>
+									<div style="display: flex; justify-content: space-between">
+										<span style="color: var(--muted)">draw calls</span
+										><span style="color: var(--accent2)" id="rot-draw-val">0</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ══ QUIZ ══ -->
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module Quiz</div>
+				<div class="quiz-sub">5 questions · GPU buffers, VAOs, and draw calls</div>
+				<div id="quiz-container"></div>
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-num">0/5</div>
+					<div class="score-label">Module 04 complete. Proceed to Module 05 when ready.</div>
+				</div>
+			</section>
+
+			<div class="nav-links">
+				<a href="#" class="prev-link">← 03 · Coordinate Systems and Transformations</a>
+				<a class="next-module" href="#">
+					<div>
+						<div class="next-label">Next Module</div>
+						<div class="next-title">05 · Shaders</div>
+					</div>
+					<div class="next-arrow">→</div>
+				</a>
+			</div>
+		</div>
+
+		<script>
+			/* ══════════════════════════════════════════════
+   PIPELINE STAGE DETAILS
+══════════════════════════════════════════════ */
+			const stageDetails = [
+				`<strong style="color:var(--accent)">CPU: Upload Data</strong> — Before any rendering can happen, vertex data must be in GPU memory. You define the data as a NumPy array on the CPU, then call <code>ctx.buffer(data.tobytes())</code>. This copies the bytes over the PCIe bus into VRAM. The VBO handle returned is an integer ID referencing that GPU allocation.`,
+				`<strong style="color:var(--accent)">Vertex Fetch</strong> — The GPU reads raw bytes from the VBO for each vertex to be processed. It uses the VAO's attribute layout description to know how wide each vertex is (the <em>stride</em>) and which bytes belong to which shader input. Without a VAO, the GPU has no way to interpret the buffer.`,
+				`<strong style="color:var(--accent)">Vertex Shader</strong> — Your GLSL program, run once per vertex on a dedicated GPU thread. Its only required output is <code>gl_Position</code>: the vertex's position in clip space (a 4D homogeneous coordinate). It can also write varyings that will be interpolated and passed to the fragment shader. Vertex shaders are where transforms, skinning, and vertex displacement happen.`,
+				`<strong style="color:var(--accent)">Primitive Assembly</strong> — Groups processed vertices into triangles (or other primitives) based on the draw mode. Performs clipping: triangles that straddle the edge of the view volume are split, and geometry entirely outside is discarded. The rasterizer only receives geometry that is potentially visible.`,
+				`<strong style="color:var(--accent)">Rasterization</strong> — The hardware edge-function test from Module 2, running at GPU speed. For each triangle, every pixel in the bounding box is tested. Covered pixels become <em>fragments</em>. Fragment attributes (position, varyings) are computed by interpolating between the triangle's three vertices using barycentric coordinates.`,
+				`<strong style="color:var(--accent)">Fragment Shader</strong> — Your second GLSL program, run once per fragment. It receives interpolated varyings from the vertex shader and outputs a color (<code>out vec4</code>). This is where texturing, lighting calculations, and visual effects live. Fragment shaders are often the rendering performance bottleneck.`,
+				`<strong style="color:var(--accent)">Output Merge</strong> — The fragment's color is not written unconditionally. First: depth test (is this fragment closer than what's already in the depth buffer?), stencil test (optional masking), blending (for transparency). Only fragments passing all tests write to the framebuffer. This stage is configured via OpenGL state, not shader code.`
+			];
+
+			function showStage(i, el) {
+				document.querySelectorAll('.gpu-stage').forEach((s) => s.classList.remove('active'));
+				el.classList.add('active');
+				document.getElementById('stage-detail').innerHTML = stageDetails[i];
+			}
+
+			/* ══════════════════════════════════════════════
+   BUFFER ANATOMY
+══════════════════════════════════════════════ */
+			const layouts = {
+				pos: {
+					attrs: [{ name: 'in_position', type: '2f', bytes: 8, color: 'X' }],
+					stride: 8,
+					verts: [
+						[0.0, 0.8],
+						[-0.8, -0.5],
+						[0.8, -0.5]
+					],
+					code: `vertices = np.array([\n     0.0,  0.8,   # v0: position\n    -0.8, -0.5,   # v1: position\n     0.8, -0.5,  # v2: position\n], dtype='f4')\n\nvao = ctx.vertex_array(prog, [(vbo, '2f', 'in_position')])`
+				},
+				poscolor: {
+					attrs: [
+						{ name: 'in_position', type: '2f', bytes: 8, color: 'X' },
+						{ name: 'in_color', type: '3f', bytes: 12, color: 'R' }
+					],
+					stride: 20,
+					verts: [
+						[0.0, 0.8, 1.0, 0.0, 0.0],
+						[-0.8, -0.5, 0.0, 1.0, 0.0],
+						[0.8, -0.5, 0.0, 0.0, 1.0]
+					],
+					code: `vertices = np.array([\n     0.0,  0.8,  1.0, 0.0, 0.0,  # v0: pos + color\n    -0.8, -0.5,  0.0, 1.0, 0.0,  # v1: pos + color\n     0.8, -0.5,  0.0, 0.0, 1.0,  # v2: pos + color\n], dtype='f4')\n\nvao = ctx.vertex_array(prog, [(vbo, '2f 3f', 'in_position', 'in_color')])`
+				},
+				posuv: {
+					attrs: [
+						{ name: 'in_position', type: '2f', bytes: 8, color: 'X' },
+						{ name: 'in_uv', type: '2f', bytes: 8, color: 'Y' }
+					],
+					stride: 16,
+					verts: [
+						[0.0, 0.8, 0.5, 0.0],
+						[-0.8, -0.5, 0.0, 1.0],
+						[0.8, -0.5, 1.0, 1.0]
+					],
+					code: `vertices = np.array([\n     0.0,  0.8,  0.5, 0.0,  # v0: pos + uv\n    -0.8, -0.5,  0.0, 1.0,  # v1: pos + uv\n     0.8, -0.5,  1.0, 1.0,  # v2: pos + uv\n], dtype='f4')\n\nvao = ctx.vertex_array(prog, [(vbo, '2f 2f', 'in_position', 'in_uv')])`
+				}
+			};
+			let curLayout = 'pos';
+
+			function setLayout(name, btn) {
+				curLayout = name;
+				document.querySelectorAll('[id^=lay-]').forEach((b) => b.classList.remove('active'));
+				btn.classList.add('active');
+				renderBufferVis();
+			}
+
+			function renderBufferVis() {
+				const lay = layouts[curLayout];
+				const container = document.getElementById('buffer-vis');
+				container.innerHTML = '';
+				const floatLabels = { X: ['x', 'y'], Y: ['u', 'v'], R: ['r', 'g', 'b'] };
+				const fColors = {
+					X: ['#ef4444', '#22c55e'],
+					Y: ['#f59e0b', '#a78bfa'],
+					R: ['#ef4444', '#22c55e', '#3b82f6']
+				};
+				const fClasses = { X: ['X', 'Y'], Y: ['R', 'G'], R: ['R', 'G', 'B'] };
+				const div = document.createElement('div');
+				div.className = 'buffer-row';
+				let byteIdx = 0;
+				lay.verts.forEach((vert, vi) => {
+					let floatIdx = 0;
+					lay.attrs.forEach((attr) => {
+						const nf = attr.bytes / 4;
+						for (let f = 0; f < nf; f++) {
+							const cell = document.createElement('div');
+							cell.className = `buffer-cell ${fClasses[attr.color][f % fClasses[attr.color].length] || attr.color}`;
+							cell.dataset.vertex = vi;
+							cell.dataset.attr = attr.name;
+							cell.dataset.float = f;
+							cell.dataset.byte = byteIdx;
+							const val = vert[floatIdx];
+							cell.innerHTML = `${val.toFixed(2)}<span>${floatLabels[attr.color]?.[f] || 'f' + f}</span>`;
+							cell.addEventListener('mouseenter', () => {
+								document.getElementById('buffer-hover-info').innerHTML =
+									`<span style="color:var(--accent)">Byte ${byteIdx}</span> — Vertex ${vi}, attribute <span style="color:var(--accent2)">${attr.name}</span>[${f}] = <span style="color:var(--accent3)">${val.toFixed(4)}</span>`;
+							});
+							div.appendChild(cell);
+							byteIdx += 4;
+							floatIdx++;
+						}
+					});
+					// stride marker
+					if (vi < lay.verts.length - 1) {
+						const sep = document.createElement('div');
+						sep.style.cssText =
+							'width:1px;background:var(--accent);opacity:0.3;align-self:stretch;margin:4px 2px;';
+						div.appendChild(sep);
+					}
+				});
+				container.appendChild(div);
+				// stride label
+				const strideDiv = document.createElement('div');
+				strideDiv.style.cssText = 'font-size:11px;color:var(--muted);margin-top:.5rem;';
+				strideDiv.innerHTML = `Stride: <span style="color:var(--accent)">${lay.stride} bytes</span> per vertex &nbsp;·&nbsp; Total: <span style="color:var(--accent3)">${lay.stride * 3} bytes</span>`;
+				container.appendChild(strideDiv);
+				document.getElementById('buffer-code').innerHTML =
+					`<span class="lang-tag">python</span>${lay.code}`;
+			}
+			renderBufferVis();
+
+			/* ══════════════════════════════════════════════
+   VAO CANVAS
+══════════════════════════════════════════════ */
+			const vaoC = document.getElementById('vao-canvas');
+			const vaoX = vaoC.getContext('2d');
+			let vaoHover = -1;
+
+			function drawVAOCanvas(hi = -1) {
+				const W = vaoC.width,
+					H = vaoC.height;
+				vaoX.clearRect(0, 0, W, H);
+				vaoX.fillStyle = '#06090e';
+				vaoX.fillRect(0, 0, W, H);
+				const stride = 20; // bytes
+				const fw = 30; // float cell width
+				const fh = 40;
+				const startX = 20,
+					startY = 60;
+				const colors = ['#ef4444', '#22c55e', '#ef4444', '#22c55e', '#3b82f6'];
+				const labels = ['x', 'y', 'r', 'g', 'b'];
+				const attrNames = ['in_position (2f)', 'in_color (3f)'];
+				const attrRanges = [
+					[0, 1],
+					[2, 4]
+				];
+
+				// Draw buffer header
+				vaoX.font = '11px IBM Plex Mono';
+				vaoX.fillStyle = 'var(--muted)';
+				vaoX.textAlign = 'left';
+				vaoX.fillStyle = '#3d5065';
+				vaoX.fillText('VBO — Flat byte stream (showing vertex 0 of 3):', startX, startY - 12);
+
+				// Draw 5 floats for one vertex (repeated lightly for v1)
+				[0, 1].forEach((vi) => {
+					const alpha = vi === 0 ? 1 : 0.3;
+					const ox = startX + vi * ((stride / 4) * fw + fw * 0.5 + 10);
+					for (let f = 0; f < 5; f++) {
+						const x = ox + f * fw,
+							y = startY;
+						const isHi = (hi === 0 && f < 2) || (hi === 1 && f >= 2);
+						vaoX.globalAlpha = alpha;
+						vaoX.fillStyle = isHi ? colors[f] + '40' : '#0f1820';
+						vaoX.fillRect(x, y, fw - 3, fh);
+						vaoX.strokeStyle = isHi ? colors[f] : '#182030';
+						vaoX.lineWidth = isHi ? 1.5 : 1;
+						vaoX.strokeRect(x, y, fw - 3, fh);
+						vaoX.fillStyle = isHi ? colors[f] : '#3d5065';
+						vaoX.font = 'bold 11px IBM Plex Mono';
+						vaoX.textAlign = 'center';
+						vaoX.fillText(labels[f], x + fw / 2 - 1.5, y + fh / 2 + 4);
+						// byte offset
+						vaoX.font = '9px IBM Plex Mono';
+						vaoX.fillStyle = '#3d5065';
+						vaoX.fillText(vi * 20 + f * 4, x + fw / 2 - 1.5, y + fh + 10);
+					}
+					if (vi < 1) {
+						vaoX.globalAlpha = 1;
+						vaoX.fillStyle = '#253040';
+						vaoX.font = '10px IBM Plex Mono';
+						vaoX.textAlign = 'center';
+						vaoX.fillText('···', ox + 5 * fw + 10, startY + fh / 2 + 4);
+					}
+				});
+				vaoX.globalAlpha = 1;
+
+				// Draw attribute description table
+				const tY = startY + fh + 40;
+				vaoX.font = '10px IBM Plex Mono';
+				vaoX.fillStyle = '#3d5065';
+				vaoX.textAlign = 'left';
+				vaoX.fillText('VAO Attribute Table:', startX, tY - 10);
+
+				const headers = ['Attrib Name', 'Type', 'Offset', 'Size', 'Stride'];
+				const hWidths = [180, 60, 70, 70, 70];
+				const rows = [
+					['in_position', '2f', '0 bytes', '8 bytes', '20 bytes'],
+					['in_color', '3f', '8 bytes', '12 bytes', '20 bytes']
+				];
+				let hx = startX;
+				headers.forEach((h, i) => {
+					vaoX.fillStyle = '#1a2838';
+					vaoX.fillRect(hx, tY, hWidths[i] - 3, 28);
+					vaoX.strokeStyle = '#253040';
+					vaoX.lineWidth = 1;
+					vaoX.strokeRect(hx, tY, hWidths[i] - 3, 28);
+					vaoX.fillStyle = '#38bdf8';
+					vaoX.font = 'bold 10px IBM Plex Mono';
+					vaoX.textAlign = 'center';
+					vaoX.fillText(h, hx + hWidths[i] / 2, tY + 18);
+					hx += hWidths[i];
+				});
+				rows.forEach((row, ri) => {
+					let rx = startX;
+					const isHi = hi === ri;
+					row.forEach((cell, ci) => {
+						vaoX.fillStyle = isHi ? '#182838' : '#0f1820';
+						vaoX.fillRect(rx, tY + 30 + ri * 28, hWidths[ci] - 3, 26);
+						vaoX.strokeStyle = isHi ? '#38bdf8' : '#182030';
+						vaoX.lineWidth = isHi ? 1.5 : 1;
+						vaoX.strokeRect(rx, tY + 30 + ri * 28, hWidths[ci] - 3, 26);
+						vaoX.fillStyle = isHi ? '#38bdf8' : '#c8d8e8';
+						vaoX.font = '11px IBM Plex Mono';
+						vaoX.textAlign = 'center';
+						vaoX.fillText(cell, rx + hWidths[ci] / 2, tY + 30 + ri * 28 + 17);
+						rx += hWidths[ci];
+					});
+					// draw connecting arrow to buffer
+					if (isHi) {
+						const ax = startX + (ri === 0 ? fw : 2 * fw),
+							ay = startY + fh;
+						const targetY = tY + 30 + ri * 28 + 13;
+						vaoX.beginPath();
+						vaoX.moveTo(ax, ay + 14);
+						vaoX.lineTo(ax, targetY);
+						vaoX.strokeStyle = attrRanges[ri][1] >= 2 ? '#38bdf880' : '#38bdf880';
+						vaoX.setLineDash([3, 3]);
+						vaoX.lineWidth = 1.5;
+						vaoX.stroke();
+						vaoX.setLineDash([]);
+					}
+				});
+
+				vaoC.onmousemove = (e) => {
+					const rect = vaoC.getBoundingClientRect();
+					const my = ((e.clientY - rect.top) / rect.height) * H;
+					const tY2 = startY + fh + 40;
+					const row = Math.floor((my - (tY2 + 30)) / 28);
+					const newHi = row >= 0 && row < 2 ? row : -1;
+					if (newHi !== vaoHover) {
+						vaoHover = newHi;
+						drawVAOCanvas(newHi);
+					}
+					document.getElementById('vao-hover').innerHTML =
+						newHi >= 0
+							? `Hovering <span style="color:var(--accent)">${rows[newHi][0]}</span>: starts at byte <span style="color:var(--accent2)">${rows[newHi][2]}</span>, reads <span style="color:var(--accent3)">${rows[newHi][3]}</span> per vertex`
+							: 'Hover a row to see which buffer bytes the attribute reads.';
+				};
+			}
+			drawVAOCanvas();
+
+			/* ══════════════════════════════════════════════
+   STATE MACHINE SIMULATOR
+══════════════════════════════════════════════ */
+			const simSteps = [
+				{
+					code: `vbo = ctx.buffer(vertices.tobytes())`,
+					explain:
+						'Creates a new VBO on the GPU and uploads vertex data. Returns handle VBO[1]. No binding yet — object exists but is not "current".',
+					state: {
+						vbo: '— unbound',
+						vao: '— unbound',
+						prog: '— unbound',
+						vbodata: '15 floats (60 bytes)',
+						vaolayout: 'undefined',
+						proglinked: 'no'
+					},
+					log: { text: 'VBO[1] created (60 bytes uploaded)', cls: 'bind' }
+				},
+				{
+					code: `program = ctx.program(\n    vertex_shader=vert_src,\n    fragment_shader=frag_src\n)`,
+					explain:
+						'Compiles vertex and fragment GLSL source strings, then links them into a program. Returns handle PROG[1].',
+					state: {
+						vbo: '— unbound',
+						vao: '— unbound',
+						prog: '— unbound',
+						vbodata: '15 floats (60 bytes)',
+						vaolayout: 'undefined',
+						proglinked: 'yes'
+					},
+					log: { text: 'PROG[1] compiled + linked', cls: 'bind' }
+				},
+				{
+					code: `vao = ctx.vertex_array(\n    program,\n    [(vbo, '2f 3f',\n      'in_position', 'in_color')]\n)`,
+					explain:
+						'Creates VAO[1] and configures it: binds VBO[1], then records that attribute 0 (in_position) reads 2 floats at offset 0, and attribute 1 (in_color) reads 3 floats at offset 8, with stride 20.',
+					state: {
+						vbo: 'VBO[1] (inside VAO setup)',
+						vao: 'VAO[1] (recording)',
+						prog: 'PROG[1]',
+						vbodata: '15 floats (60 bytes)',
+						vaolayout: '2f 3f → in_position, in_color',
+						proglinked: 'yes'
+					},
+					log: { text: 'VAO[1] created, layout recorded', cls: 'bind' }
+				},
+				{
+					code: `fbo = ctx.simple_framebuffer((512, 512))\nfbo.use()`,
+					explain:
+						'Creates an off-screen framebuffer (no window needed). fbo.use() binds it as the render target. All subsequent draw calls write here.',
+					state: {
+						vbo: 'VBO[1]',
+						vao: 'VAO[1]',
+						prog: 'PROG[1]',
+						vbodata: '15 floats',
+						vaolayout: '2f 3f → in_position, in_color',
+						proglinked: 'yes'
+					},
+					log: { text: 'FBO[1] created + bound (512×512)', cls: 'bind' }
+				},
+				{
+					code: `ctx.clear(0.07, 0.07, 0.12)`,
+					explain:
+						'Fills the framebuffer with the specified color. Resets the depth buffer too if one is attached. Always clear before rendering a new frame.',
+					state: {
+						vbo: 'VBO[1]',
+						vao: 'VAO[1]',
+						prog: 'PROG[1]',
+						vbodata: '15 floats',
+						vaolayout: '2f 3f → in_position, in_color',
+						proglinked: 'yes'
+					},
+					log: { text: 'Framebuffer cleared (dark blue)', cls: 'info' }
+				},
+				{
+					code: `vao.render(moderngl.TRIANGLES)`,
+					explain:
+						'THE DRAW CALL. moderngl internally: binds VAO[1], binds PROG[1], calls glDrawArrays(GL_TRIANGLES, 0, 3). The GPU fetches 3 vertices, runs the vertex shader, rasterizes, runs the fragment shader, writes to FBO.',
+					state: {
+						vbo: 'VBO[1] (bound via VAO)',
+						vao: 'VAO[1] (active)',
+						prog: 'PROG[1] (active)',
+						vbodata: '15 floats',
+						vaolayout: '2f 3f → in_position, in_color',
+						proglinked: 'yes'
+					},
+					log: { text: '▶ DRAW CALL — glDrawArrays(TRIANGLES, 0, 3)', cls: 'draw' }
+				},
+				{
+					code: `# GPU executes: vertex shader × 3`,
+					explain:
+						'Three vertex shader invocations run in parallel. Each reads in_position and in_color from the VBO, writes gl_Position and v_color.',
+					state: {
+						vbo: 'VBO[1] (reading)',
+						vao: 'VAO[1]',
+						prog: 'PROG[1]',
+						vbodata: '15 floats',
+						vaolayout: '2f 3f',
+						proglinked: 'yes'
+					},
+					log: { text: '  GPU: vertex shader ×3 invocations', cls: 'gpu' }
+				},
+				{
+					code: `# GPU executes: rasterization`,
+					explain:
+						'Hardware finds all pixels covered by the triangle. For each covered pixel, it interpolates v_color between the three vertices using barycentric weights.',
+					state: {
+						vbo: 'VBO[1]',
+						vao: 'VAO[1]',
+						prog: 'PROG[1]',
+						vbodata: '15 floats',
+						vaolayout: '2f 3f',
+						proglinked: 'yes'
+					},
+					log: { text: '  GPU: rasterization + interpolation', cls: 'gpu' }
+				},
+				{
+					code: `data = fbo.read(components=3)\nimg = Image.frombytes('RGB', fbo.size, data)`,
+					explain:
+						'After the draw call completes, reads the framebuffer back to CPU RAM. This is the only CPU↔GPU synchronization point — reading back stalls until the GPU is done.',
+					state: {
+						vbo: 'VBO[1]',
+						vao: 'VAO[1]',
+						prog: 'PROG[1]',
+						vbodata: '15 floats',
+						vaolayout: '2f 3f',
+						proglinked: 'yes'
+					},
+					log: { text: 'Framebuffer read back to CPU (786,432 bytes)', cls: 'info' }
+				}
+			];
+
+			let simIdx = 0;
+			function simReset() {
+				simIdx = 0;
+				document.getElementById('sim-step-label').textContent = `Step 0 / ${simSteps.length}`;
+				document.getElementById('sim-code').textContent = '';
+				document.getElementById('sim-explain').textContent =
+					'Click "Next Call" to step through the OpenGL setup sequence.';
+				document.getElementById('sim-log').innerHTML = '';
+				const defaults = {
+					vbo: '— unbound',
+					vao: '— unbound',
+					prog: '— unbound',
+					vbodata: 'empty',
+					vaolayout: 'undefined',
+					proglinked: 'no'
+				};
+				Object.entries(defaults).forEach(([k, v]) => {
+					const el = document.getElementById('st-' + k);
+					el.textContent = v;
+					el.className = 'state-val none';
+				});
+			}
+			function simStep() {
+				if (simIdx >= simSteps.length) return;
+				const s = simSteps[simIdx];
+				document.getElementById('sim-code').innerHTML =
+					`<span class="lang-tag">step ${simIdx + 1}</span>${s.code}`;
+				document.getElementById('sim-explain').textContent = s.explain;
+				document.getElementById('sim-step-label').textContent =
+					`Step ${simIdx + 1} / ${simSteps.length}`;
+				Object.entries(s.state).forEach(([k, v]) => {
+					const el = document.getElementById('st-' + k);
+					el.textContent = v;
+					el.className =
+						'state-val ' +
+						(v.includes('unbound') || v === 'empty' || v === 'undefined' || v === 'no'
+							? 'none'
+							: 'bound');
+				});
+				const log = document.getElementById('sim-log');
+				const line = document.createElement('div');
+				line.className = `log-line ${s.log.cls}`;
+				line.textContent = `[${simIdx + 1}] ${s.log.text}`;
+				log.appendChild(line);
+				log.scrollTop = log.scrollHeight;
+				simIdx++;
+			}
+			simReset();
+
+			/* ══════════════════════════════════════════════
+   DATA FLOW CANVAS
+══════════════════════════════════════════════ */
+			const flC = document.getElementById('flow-canvas');
+			const flX = flC.getContext('2d');
+			let flowHover = -1;
+
+			const flowNodes = [
+				{
+					label: 'CPU Memory',
+					sub: 'Python/NumPy',
+					x: 80,
+					y: 130,
+					w: 120,
+					h: 50,
+					color: '#38bdf8'
+				},
+				{ label: 'VBO', sub: 'GPU Memory', x: 280, y: 60, w: 100, h: 40, color: '#38bdf8' },
+				{
+					label: 'Vertex Shader',
+					sub: 'per-vertex',
+					x: 460,
+					y: 60,
+					w: 130,
+					h: 40,
+					color: '#4ade80'
+				},
+				{
+					label: 'Fragment Shader',
+					sub: 'per-pixel',
+					x: 640,
+					y: 60,
+					w: 150,
+					h: 40,
+					color: '#4ade80'
+				},
+				{ label: 'Framebuffer', sub: 'output', x: 730, y: 180, w: 110, h: 40, color: '#f59e0b' },
+				{ label: 'Uniforms', sub: 'CPU → GPU', x: 280, y: 185, w: 110, h: 40, color: '#f472b6' }
+			];
+
+			const flowEdges = [
+				{ from: 0, to: 1, label: 'attribute upload', color: '#38bdf8', id: 0 },
+				{ from: 1, to: 2, label: 'in_position, in_color (attributes)', color: '#38bdf8', id: 0 },
+				{ from: 5, to: 2, label: 'u_transform (uniform)', color: '#f472b6', id: 1 },
+				{ from: 5, to: 3, label: 'u_time etc. (uniform)', color: '#f472b6', id: 1 },
+				{ from: 2, to: 3, label: 'v_color (varying, interpolated)', color: '#4ade80', id: 2 },
+				{ from: 3, to: 4, label: 'out_color → write', color: '#f59e0b', id: 3 }
+			];
+
+			const flowDetails = [
+				`<strong style="color:var(--accent)">Attributes</strong> — Per-vertex data uploaded from a NumPy array via <code>ctx.buffer()</code>. Each vertex gets its own values. The VBO stores the raw bytes; the VAO describes the layout. In the vertex shader these appear as <code>in vec2 in_position</code> etc.`,
+				`<strong style="color:var(--accent4)">Uniforms</strong> — Single values set by the CPU that are the same for every vertex and fragment in a draw call. A transform matrix is the classic example. Set via <code>program['name'].value = ...</code>. Can be updated between draw calls.`,
+				`<strong style="color:var(--accent3)">Varyings</strong> — Values written by the vertex shader (<code>out vec3 v_color</code>) and read by the fragment shader (<code>in vec3 v_color</code>). The GPU automatically interpolates them across the triangle surface using barycentric coordinates — this is how color gradients appear on a single triangle.`,
+				`<strong style="color:var(--accent2)">Framebuffer write</strong> — The fragment shader outputs a color via <code>out vec4 out_color</code>. After depth and blend testing, this value is written to the currently bound framebuffer at the fragment's pixel coordinate.`
+			];
+
+			function drawFlowCanvas(hi = -1) {
+				const W = flC.width,
+					H = flC.height;
+				flX.clearRect(0, 0, W, H);
+				flX.fillStyle = '#06090e';
+				flX.fillRect(0, 0, W, H);
+
+				// edges
+				flowEdges.forEach((e) => {
+					const f = flowNodes[e.from],
+						t = flowNodes[e.to];
+					const fx = f.x + f.w,
+						fy = f.y + f.h / 2;
+					const tx = t.x,
+						ty = t.y + t.h / 2;
+					const isHi = hi === e.id;
+					flX.beginPath();
+					flX.moveTo(fx, fy);
+					const mx = (fx + tx) / 2;
+					flX.bezierCurveTo(mx, fy, mx, ty, tx, ty);
+					flX.strokeStyle = isHi ? e.color : e.color + '40';
+					flX.lineWidth = isHi ? 2 : 1;
+					flX.stroke();
+					// label
+					if (isHi) {
+						const lx = (fx + tx) / 2,
+							ly = (fy + ty) / 2 - 8;
+						flX.font = '10px IBM Plex Mono';
+						flX.fillStyle = e.color;
+						flX.textAlign = 'center';
+						flX.fillText(e.label, lx, ly);
+					}
+				});
+
+				// nodes
+				flowNodes.forEach((n, i) => {
+					const isHi =
+						hi >= 0 && flowEdges.some((e) => (e.from === i || e.to === i) && e.id === hi);
+					flX.fillStyle = isHi ? n.color + '20' : '#0d1820';
+					flX.fillRect(n.x, n.y, n.w, n.h);
+					flX.strokeStyle = isHi ? n.color : '#182030';
+					flX.lineWidth = isHi ? 1.5 : 1;
+					flX.strokeRect(n.x, n.y, n.w, n.h);
+					flX.font = 'bold 11px IBM Plex Mono';
+					flX.fillStyle = isHi ? n.color : '#c8d8e8';
+					flX.textAlign = 'center';
+					flX.fillText(n.label, n.x + n.w / 2, n.y + n.h / 2 - 3);
+					flX.font = '9px IBM Plex Mono';
+					flX.fillStyle = '#48607a';
+					flX.fillText(n.sub, n.x + n.w / 2, n.y + n.h / 2 + 10);
+				});
+
+				// clickable path hints
+				const pathLabels = [
+					{ x: 180, y: 90, label: 'attributes', id: 0, color: '#38bdf8' },
+					{ x: 370, y: 195, label: 'uniforms', id: 1, color: '#f472b6' },
+					{ x: 550, y: 45, label: 'varyings', id: 2, color: '#4ade80' },
+					{ x: 710, y: 140, label: 'output', id: 3, color: '#f59e0b' }
+				];
+				pathLabels.forEach((p) => {
+					flX.font = '10px IBM Plex Mono';
+					flX.fillStyle = hi === p.id ? p.color : p.color + '60';
+					flX.textAlign = 'center';
+					flX.fillText('▸ ' + p.label, p.x, p.y);
+				});
+			}
+
+			flC.addEventListener('click', (e) => {
+				const rect = flC.getBoundingClientRect();
+				const mx = ((e.clientX - rect.left) / rect.width) * flC.width;
+				const my = ((e.clientY - rect.top) / rect.height) * flC.height;
+				const pathLabels = [
+					{ x: 180, y: 90, id: 0 },
+					{ x: 370, y: 195, id: 1 },
+					{ x: 550, y: 45, id: 2 },
+					{ x: 710, y: 140, id: 3 }
+				];
+				let hit = -1;
+				pathLabels.forEach((p) => {
+					if (Math.abs(mx - p.x) < 50 && Math.abs(my - p.y) < 20) hit = p.id;
+				});
+				flowHover = flowHover === hit ? -1 : hit;
+				drawFlowCanvas(flowHover);
+				document.getElementById('flow-detail').innerHTML =
+					flowHover >= 0
+						? flowDetails[flowHover]
+						: 'Click ▸ attribute / uniform / varying / output to learn about each data path.';
+			});
+			drawFlowCanvas();
+			document.getElementById('flow-detail').textContent =
+				'Click ▸ attribute / uniform / varying / output to learn about each data path.';
+
+			/* ══════════════════════════════════════════════
+   GPU TRIANGLE SIMULATOR (draggable)
+══════════════════════════════════════════════ */
+			const gsC = document.getElementById('gpu-sim-canvas');
+			const gsX = gsC.getContext('2d');
+			const triColors = [
+				[1, 0.22, 0.22],
+				[0.22, 0.97, 0.5],
+				[0.22, 0.5, 0.97]
+			];
+			let triVerts = [
+				{ x: 180, y: 50 },
+				{ x: 40, y: 310 },
+				{ x: 320, y: 310 }
+			];
+			let gsDrag = null;
+
+			function ndcToCanvas(nx, ny, W, H) {
+				return [W / 2 + ((nx * W) / 2) * 0.9, H / 2 - ((ny * H) / 2) * 0.9];
+			}
+			function canvasToNdc(cx, cy, W, H) {
+				return [(cx - W / 2) / ((W / 2) * 0.9), -(cy - H / 2) / ((H / 2) * 0.9)];
+			}
+
+			function barycentricColor(p, v0, v1, v2, c0, c1, c2) {
+				const d = (v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y);
+				const w0 = ((v1.y - v2.y) * (p.x - v2.x) + (v2.x - v1.x) * (p.y - v2.y)) / d;
+				const w1 = ((v2.y - v0.y) * (p.x - v2.x) + (v0.x - v2.x) * (p.y - v2.y)) / d;
+				const w2 = 1 - w0 - w1;
+				return [
+					w0 * c0[0] + w1 * c1[0] + w2 * c2[0],
+					w0 * c0[1] + w1 * c1[1] + w2 * c2[1],
+					w0 * c0[2] + w1 * c1[2] + w2 * c2[2]
+				];
+			}
+
+			function drawGpuSim() {
+				const W = gsC.width,
+					H = gsC.height;
+				gsX.clearRect(0, 0, W, H);
+				gsX.fillStyle = '#06090e';
+				gsX.fillRect(0, 0, W, H);
+				const grid = 40;
+				gsX.strokeStyle = '#0d1a24';
+				gsX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					gsX.beginPath();
+					gsX.moveTo(x, 0);
+					gsX.lineTo(x, H);
+					gsX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					gsX.beginPath();
+					gsX.moveTo(0, y);
+					gsX.lineTo(W, y);
+					gsX.stroke();
+				}
+				// axes
+				gsX.strokeStyle = '#182838';
+				gsX.lineWidth = 1;
+				gsX.beginPath();
+				gsX.moveTo(0, H / 2);
+				gsX.lineTo(W, H / 2);
+				gsX.stroke();
+				gsX.beginPath();
+				gsX.moveTo(W / 2, 0);
+				gsX.lineTo(W / 2, H);
+				gsX.stroke();
+				gsX.font = '9px IBM Plex Mono';
+				gsX.fillStyle = '#253040';
+				gsX.textAlign = 'center';
+				['-1', '0', '1'].forEach((l, i) => {
+					const x = W / 2 + (((i - 1) * W) / 2) * 0.9;
+					gsX.fillText(l, x, H / 2 + 12);
+					const y = H / 2 - (((1 - i) * H) / 2) * 0.9;
+					gsX.fillText(l, W / 2 + 8, y + 3);
+				});
+				gsX.fillText('NDC', W / 2, 14);
+
+				// rasterize the triangle with interpolated colors
+				const v0 = triVerts[0],
+					v1 = triVerts[1],
+					v2 = triVerts[2];
+				const minX = Math.max(0, Math.min(v0.x, v1.x, v2.x) - 1) | 0;
+				const maxX = Math.min(W, Math.max(v0.x, v1.x, v2.x) + 1) | 0;
+				const minY = Math.max(0, Math.min(v0.y, v1.y, v2.y) - 1) | 0;
+				const maxY = Math.min(H, Math.max(v0.y, v1.y, v2.y) + 1) | 0;
+				const ps = 4;
+				for (let y = minY; y < maxY; y += ps) {
+					for (let x = minX; x < maxX; x += ps) {
+						const e0 = (v1.x - v0.x) * (y + ps / 2 - v0.y) - (v1.y - v0.y) * (x + ps / 2 - v0.x);
+						const e1 = (v2.x - v1.x) * (y + ps / 2 - v1.y) - (v2.y - v1.y) * (x + ps / 2 - v1.x);
+						const e2 = (v0.x - v2.x) * (y + ps / 2 - v2.y) - (v0.y - v2.y) * (x + ps / 2 - v2.x);
+						if (e0 >= 0 && e1 >= 0 && e2 >= 0) {
+							const c = barycentricColor(
+								{ x: x + ps / 2, y: y + ps / 2 },
+								v0,
+								v1,
+								v2,
+								triColors[0],
+								triColors[1],
+								triColors[2]
+							);
+							gsX.fillStyle = `rgb(${(c[0] * 255) | 0},${(c[1] * 255) | 0},${(c[2] * 255) | 0})`;
+							gsX.fillRect(x, y, ps, ps);
+						}
+					}
+				}
+
+				// vertices
+				const vColors = ['#ff6666', '#66ffaa', '#6699ff'];
+				const vLabels = ['v0', 'v1', 'v2'];
+				triVerts.forEach((v, i) => {
+					gsX.beginPath();
+					gsX.arc(v.x, v.y, gsDrag === i ? 10 : 7, 0, Math.PI * 2);
+					gsX.fillStyle = vColors[i];
+					gsX.fill();
+					gsX.strokeStyle = '#fff';
+					gsX.lineWidth = 1.5;
+					gsX.stroke();
+					const ndc = canvasToNdc(v.x, v.y, W, H);
+					gsX.font = '10px IBM Plex Mono';
+					gsX.fillStyle = '#fff';
+					gsX.textAlign = 'center';
+					gsX.fillText(vLabels[i], v.x, v.y - 14);
+					gsX.fillStyle = '#48607a';
+					gsX.fillText(`(${ndc[0].toFixed(2)},${ndc[1].toFixed(2)})`, v.x, v.y - 3);
+				});
+
+				// update VBO display
+				const vboLines = triVerts.map((v, i) => {
+					const ndc = canvasToNdc(v.x, v.y, W, H);
+					const c = triColors[i];
+					return `  <span style="color:${vColors[i]}">${ndc[0].toFixed(3)}, ${ndc[1].toFixed(3)}</span>, <span style="color:#ef444480">${c[0].toFixed(2)}</span>, <span style="color:#22c55e80">${c[1].toFixed(2)}</span>, <span style="color:#3b82f680">${c[2].toFixed(2)}</span>,`;
+				});
+				document.getElementById('vbo-live').innerHTML = `[<br>${vboLines.join('<br>')}<br>]`;
+				drawInterp();
+			}
+
+			function drawInterp() {
+				const ic = document.getElementById('interp-canvas');
+				const ix = ic.getContext('2d');
+				const W = ic.width,
+					H = ic.height;
+				ix.clearRect(0, 0, W, H);
+				ix.fillStyle = '#06090e';
+				ix.fillRect(0, 0, W, H);
+				// draw a gradient bar
+				for (let x = 0; x < W; x++) {
+					const t = x / W;
+					const c = [
+						triColors[0][0] * (1 - t) + triColors[2][0] * t,
+						triColors[0][1] * (1 - t) + triColors[2][1] * t,
+						triColors[0][2] * (1 - t) + triColors[2][2] * t
+					];
+					ix.fillStyle = `rgb(${(c[0] * 255) | 0},${(c[1] * 255) | 0},${(c[2] * 255) | 0})`;
+					ix.fillRect(x, 8, 1, H - 16);
+				}
+				ix.font = '10px IBM Plex Mono';
+				ix.textAlign = 'left';
+				ix.fillStyle = '#fff';
+				ix.fillText('v0', 4, H - 4);
+				ix.textAlign = 'right';
+				ix.fillText('v2', W - 4, H - 4);
+				ix.textAlign = 'center';
+				ix.fillStyle = '#aaa';
+				ix.fillText('barycentric interpolation of v_color', W / 2, 6);
+			}
+
+			gsC.addEventListener('pointerdown', (e) => {
+				const rect = gsC.getBoundingClientRect();
+				const x = ((e.clientX - rect.left) / rect.width) * gsC.width;
+				const y = ((e.clientY - rect.top) / rect.height) * gsC.height;
+				for (let i = 0; i < triVerts.length; i++) {
+					if (Math.hypot(triVerts[i].x - x, triVerts[i].y - y) < 20) {
+						gsDrag = i;
+						e.preventDefault();
+						return;
+					}
+				}
+			});
+			gsC.addEventListener('pointermove', (e) => {
+				if (gsDrag === null) return;
+				const rect = gsC.getBoundingClientRect();
+				triVerts[gsDrag] = {
+					x: ((e.clientX - rect.left) / rect.width) * gsC.width,
+					y: ((e.clientY - rect.top) / rect.height) * gsC.height
+				};
+				drawGpuSim();
+				e.preventDefault();
+			});
+			gsC.addEventListener('pointerup', () => {
+				gsDrag = null;
+			});
+			drawGpuSim();
+
+			/* ══════════════════════════════════════════════
+   ROTATING TRIANGLE DEMO
+══════════════════════════════════════════════ */
+			const rotC = document.getElementById('rot-canvas');
+			const rotX = rotC.getContext('2d');
+			let rotAngle = 0,
+				rotFrame = 0,
+				rotPlaying = true,
+				rotRAF = null;
+
+			function toggleRotAnim() {
+				rotPlaying = !rotPlaying;
+				document.getElementById('rot-play-btn').textContent = rotPlaying ? '⏸ Pause' : '▶ Play';
+				if (rotPlaying) rotLoop();
+			}
+			function resetRotAnim() {
+				rotAngle = 0;
+				rotFrame = 0;
+				drawRot();
+			}
+
+			const rotTriBase = [
+				{ x: 0, y: 0.75 },
+				{ x: -0.65, y: -0.45 },
+				{ x: 0.65, y: -0.45 }
+			];
+			const rotColors = [
+				[0.22, 0.74, 0.97],
+				[0.97, 0.36, 0.22],
+				[0.29, 0.86, 0.5]
+			];
+
+			function buildRotMatrix(deg, sx, sy) {
+				const r = (deg * Math.PI) / 180,
+					c = Math.cos(r),
+					s = Math.sin(r);
+				return [
+					[c * sx, -s * sy, 0],
+					[s * sx, c * sy, 0],
+					[0, 0, 1]
+				];
+			}
+			function matVec3(M, v) {
+				return [
+					M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2],
+					M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2],
+					M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2]
+				];
+			}
+			function ndcToRot(nx, ny, W, H) {
+				return [W / 2 + nx * W * 0.42, H / 2 - ny * H * 0.42];
+			}
+
+			function drawRot() {
+				const W = rotC.width,
+					H = rotC.height;
+				const spd = parseInt(document.getElementById('rot-speed').value) / 100;
+				const sc = parseInt(document.getElementById('rot-scale').value) / 100;
+				document.getElementById('rot-speed-val').textContent = spd.toFixed(2) + '°/f';
+				document.getElementById('rot-scale-val').textContent = sc.toFixed(2);
+				rotX.clearRect(0, 0, W, H);
+				rotX.fillStyle = '#06090e';
+				rotX.fillRect(0, 0, W, H);
+				const grid = 45;
+				rotX.strokeStyle = '#0d1a24';
+				rotX.lineWidth = 1;
+				for (let x = 0; x < W; x += grid) {
+					rotX.beginPath();
+					rotX.moveTo(x, 0);
+					rotX.lineTo(x, H);
+					rotX.stroke();
+				}
+				for (let y = 0; y < H; y += grid) {
+					rotX.beginPath();
+					rotX.moveTo(0, y);
+					rotX.lineTo(W, y);
+					rotX.stroke();
+				}
+				rotX.strokeStyle = '#182838';
+				rotX.beginPath();
+				rotX.moveTo(0, H / 2);
+				rotX.lineTo(W, H / 2);
+				rotX.stroke();
+				rotX.beginPath();
+				rotX.moveTo(W / 2, 0);
+				rotX.lineTo(W / 2, H);
+				rotX.stroke();
+
+				const M = buildRotMatrix(rotAngle, sc, sc);
+				const tVerts = rotTriBase.map((v) => matVec3(M, [v.x, v.y, 1]));
+
+				// filled + interpolated
+				const canvPts = tVerts.map((v) => ndcToRot(v[0], v[1], W, H));
+				const v0 = { x: canvPts[0][0], y: canvPts[0][1] },
+					v1 = { x: canvPts[1][0], y: canvPts[1][1] },
+					v2 = { x: canvPts[2][0], y: canvPts[2][1] };
+				const minX = Math.max(0, Math.min(v0.x, v1.x, v2.x) - 1) | 0;
+				const maxX = Math.min(W, Math.max(v0.x, v1.x, v2.x) + 1) | 0;
+				const minY = Math.max(0, Math.min(v0.y, v1.y, v2.y) - 1) | 0;
+				const maxY = Math.min(H, Math.max(v0.y, v1.y, v2.y) + 1) | 0;
+				const ps = 3;
+				for (let y = minY; y < maxY; y += ps) {
+					for (let x = minX; x < maxX; x += ps) {
+						const e0 = (v1.x - v0.x) * (y + ps / 2 - v0.y) - (v1.y - v0.y) * (x + ps / 2 - v0.x);
+						const e1 = (v2.x - v1.x) * (y + ps / 2 - v1.y) - (v2.y - v1.y) * (x + ps / 2 - v1.x);
+						const e2 = (v0.x - v2.x) * (y + ps / 2 - v2.y) - (v0.y - v2.y) * (x + ps / 2 - v2.x);
+						if (e0 >= 0 && e1 >= 0 && e2 >= 0) {
+							const col = barycentricColor(
+								{ x: x + ps / 2, y: y + ps / 2 },
+								v0,
+								v1,
+								v2,
+								rotColors[0],
+								rotColors[1],
+								rotColors[2]
+							);
+							rotX.fillStyle = `rgb(${(col[0] * 255) | 0},${(col[1] * 255) | 0},${(col[2] * 255) | 0})`;
+							rotX.fillRect(x, y, ps, ps);
+						}
+					}
+				}
+
+				// matrix display
+				const mi = document.getElementById('rot-matrix');
+				const fmt = (n) => (n >= 0 ? '  ' : ' ') + n.toFixed(4);
+				mi.innerHTML =
+					`<span style="color:#38bdf8">${fmt(M[0][0])}</span>  <span style="color:#38bdf880">${fmt(M[0][1])}</span>  <span style="color:var(--muted)">0.0000</span>\n` +
+					`<span style="color:#38bdf880">${fmt(M[1][0])}</span>  <span style="color:#38bdf8">${fmt(M[1][1])}</span>  <span style="color:var(--muted)">0.0000</span>\n` +
+					`<span style="color:var(--muted)">  0.0000    0.0000    1.0000</span>`;
+				document.getElementById('rot-angle-val').textContent = (rotAngle % 360).toFixed(1) + '°';
+				document.getElementById('rot-frame-val').textContent = rotFrame;
+				document.getElementById('rot-draw-val').textContent = rotFrame;
+
+				if (rotPlaying) {
+					rotAngle += spd;
+					rotFrame++;
+				}
+			}
+			function rotLoop() {
+				if (!rotPlaying) return;
+				drawRot();
+				rotRAF = requestAnimationFrame(rotLoop);
+			}
+			['rot-speed', 'rot-scale'].forEach((id) =>
+				document.getElementById(id).addEventListener('input', drawRot)
+			);
+			drawRot();
+			rotLoop();
+
+			/* ══════════════════════════════════════════════
+   QUIZ
+══════════════════════════════════════════════ */
+			const quizData = [
+				{
+					q: 'What is the primary purpose of a Vertex Array Object (VAO)?',
+					options: [
+						'To store the raw byte data of vertex positions and colors',
+						'To describe the layout of a VBO — which bytes belong to which shader attribute',
+						'To compile and link GLSL shader source code',
+						'To hold the output pixels after rasterization'
+					],
+					correct: 1,
+					explanation:
+						'A VBO stores raw bytes. A VAO stores the interpretation of those bytes: stride, offset per attribute, and which shader input each attribute maps to. Binding a VAO restores the full attribute configuration automatically.'
+				},
+				{
+					q: "You define vertices with dtype='f8' (64-bit double) but the GPU expects 32-bit floats. What happens?",
+					options: [
+						'moderngl automatically converts to f4',
+						'An exception is raised immediately',
+						'The GPU silently misinterprets the bytes, producing garbled geometry',
+						'The triangle renders correctly but at lower precision'
+					],
+					correct: 2,
+					explanation:
+						"GPUs work with 32-bit floats. If you upload 64-bit doubles without conversion, the GPU reads the bytes as f32 — each 8-byte double gets split into two 4-byte values that mean something completely different. Always use dtype='f4' for GPU data."
+				},
+				{
+					q: "In a GLSL vertex shader, what does 'gl_Position' represent?",
+					options: [
+						'The pixel coordinate where this vertex will appear on screen',
+						'The vertex position in world space',
+						'The vertex position in clip space (homogeneous 4D coordinate)',
+						'The UV coordinate for texture sampling'
+					],
+					correct: 2,
+					explanation:
+						'gl_Position is a vec4 in clip space, where the GPU applies perspective division (divides by w) and viewport transform to produce the final screen coordinate. Outputting (x,y,0,1) with x and y in [-1,1] maps directly to NDC, which is why the triangle exercise works without any camera setup.'
+				},
+				{
+					q: "A 'uniform' variable in GLSL differs from an 'attribute' (in) variable because:",
+					options: [
+						'Uniforms are faster to access than attributes',
+						'Uniforms have the same value for every vertex/fragment in a draw call; attributes vary per vertex',
+						'Uniforms are only available in the fragment shader; attributes only in the vertex shader',
+						"Uniforms are stored in the VBO; attributes are set via program['name'].value"
+					],
+					correct: 1,
+					explanation:
+						'Attributes are read from the VBO — each vertex gets different values. Uniforms are set once by the CPU before the draw call and are constant for all vertices and fragments during that call. A rotation matrix is a classic uniform: same transform for every vertex.'
+				},
+				{
+					q: 'Why does minimizing the number of draw calls improve rendering performance?',
+					options: [
+						'Fewer draw calls mean the GPU processes fewer triangles',
+						'Each draw call has CPU-side overhead: state validation, command encoding, and driver work — independent of how many triangles are drawn',
+						'The GPU can only rasterize one triangle per draw call',
+						'Fewer draw calls reduce the number of times the VBO is uploaded to GPU memory'
+					],
+					correct: 1,
+					explanation:
+						"A draw call doesn't upload data — that already happened. The cost is the CPU work to prepare and submit the command: OpenGL state validation, driver encoding, synchronization. 1000 draw calls of 1 triangle each is much slower than 1 draw call of 1000 triangles, even though the GPU does the same rasterization work either way."
+				}
+			];
+
+			let answered = 0,
+				correct = 0;
+			function buildQuiz() {
+				const c = document.getElementById('quiz-container');
+				c.innerHTML = '';
+				quizData.forEach((q, qi) => {
+					const div = document.createElement('div');
+					div.className = 'question';
+					div.innerHTML = `<div class="q-text"><span class="q-num">${qi + 1}.</span>${q.q}</div>
+      <div class="options" id="opts-${qi}">${q.options.map((o, oi) => `<div class="option" onclick="answer(${qi},${oi})" id="opt-${qi}-${oi}">${o}</div>`).join('')}</div>
+      <div class="feedback" id="fb-${qi}"></div>`;
+					c.appendChild(div);
+				});
+			}
+			function answer(qi, oi) {
+				const q = quizData[qi];
+				document
+					.querySelectorAll(`#opts-${qi} .option`)
+					.forEach((o) => o.classList.add('disabled'));
+				const fb = document.getElementById(`fb-${qi}`);
+				if (oi === q.correct) {
+					document.getElementById(`opt-${qi}-${oi}`).classList.add('correct');
+					fb.textContent = '✓ ' + q.explanation;
+					fb.className = 'feedback ok';
+					correct++;
+				} else {
+					document.getElementById(`opt-${qi}-${oi}`).classList.add('wrong');
+					document.getElementById(`opt-${qi}-${q.correct}`).classList.add('correct');
+					fb.textContent = '✗ ' + q.explanation;
+					fb.className = 'feedback bad';
+				}
+				answered++;
+				if (answered === quizData.length) {
+					const s = document.getElementById('quiz-score');
+					s.style.display = 'block';
+					document.getElementById('score-num').textContent = `${correct}/${quizData.length}`;
+					s.style.borderColor =
+						correct === quizData.length
+							? 'var(--accent)'
+							: correct >= 3
+								? 'var(--accent3)'
+								: 'var(--accent4)';
+				}
+			}
+			buildQuiz();
+
+			window.addEventListener('scroll', () => {
+				document.getElementById('reading-progress').style.width =
+					Math.min(
+						100,
+						(window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100
+					) + '%';
+			});
+		</script>
+	</body>
+</html>
