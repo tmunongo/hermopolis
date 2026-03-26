@@ -38,7 +38,12 @@ def convert_module(input_path, output_path):
         '.buffer-cell.X', '.buffer-cell.Y', '.buffer-cell.R', '.buffer-cell.G', '.buffer-cell.B',
         '.state-val', '.state-val.none', '.state-val.bound',
         '.log-line', '.log-line.bind', '.log-line.draw', '.log-line.gpu', '.log-line.info',
-        '.question', '.lang-tag'
+        '.question', '.lang-tag',
+        '.op', '.callout.pink', '.callout.pink .callout-label', '.btn.gold.active',
+        '.gpu-stage.active', '.gpu-stage.active .gpu-stage-num', '.gpu-stage.active .gpu-stage-name', 
+        '.gpu-stage.active .gpu-stage-desc', '.q-text', '.q-num', '.options', '.option', '.option:hover', 
+        '.feedback', '.bind-step', '.bind-step:last-child', '.bind-num', '.bind-content', '.bind-title', 
+        '.bind-desc', '.log-line:last-child'
     ]
     for sel in selectors_to_wrap:
         escaped_sel = re.escape(sel)
@@ -58,12 +63,21 @@ def convert_module(input_path, output_path):
     body_content = body_match.group(1).strip() if body_match else text
 
     script_match = re.search(r'<script>(.*?)</script>', body_content, re.DOTALL)
-    script_js = script_match.group(1).strip() if script_match else ""
+    script_js = script_match.group(1).strip() if script_match else ''
     # Patch specific logic bugs found in modules (like profile list duplication in Module 2)
     script_js = script_js.replace("const list = document.getElementById('profileList');", "const list = document.getElementById('profileList');\n\t\tlist.innerHTML = '';")
     script_js = script_js.replace("let desc = '';", "let desc;")
     script_js = script_js.replace("anticipateOffset = 0;", "anticipateOffset;")
     html_content = re.sub(r'<script>.*?</script>', '', body_content, flags=re.DOTALL).strip()
+
+    # Escape GLSL/Python braces inside <pre> blocks so Svelte doesn't crash trying to evaluate them
+    def escape_braces(match):
+        return match.group(0).replace('{', '&#123;').replace('}', '&#125;')
+    html_content = re.sub(r'(<pre>.*?</pre>|<code>.*?</code>)', escape_braces, html_content, flags=re.DOTALL)
+
+    # Automatically patch a11y complaints
+    html_content = html_content.replace('href="#"', 'href="javascript:void(0)"')
+    html_content = html_content.replace('<label>', '<label for="dummy">')
 
     # Generic click handler logic
     def replace_onclick(match):
@@ -71,7 +85,12 @@ def convert_module(input_path, output_path):
         code = match.group(2)
         suffix = match.group(3)
         code = re.sub(r'\bthis\b', 'e.currentTarget', code)
-        return f'{prefix}onclick={{(e) => {{ window.{code} }}}} role="button" tabindex="0" onkeydown={{(e) => {{ if (e.key === "Enter") window.{code} }}}}{suffix}'
+        
+        tag = prefix.strip('< ').split()[0].lower()
+        if tag in ['button', 'a']:
+            return f'{prefix}onclick={{(e) => {{ window.{code} }}}}{suffix}'
+        else:
+            return f'{prefix}onclick={{(e) => {{ window.{code} }}}} role="button" tabindex="0" onkeydown={{(e) => {{ if (e.key === "Enter") window.{code} }}}}{suffix}'
 
     html_content = re.sub(r'(<[^>]+)\bonclick="([^"]+)"([^>]*>)', replace_onclick, html_content)
 
