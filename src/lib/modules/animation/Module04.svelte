@@ -1,0 +1,3107 @@
+<script>
+	/* eslint-disable @typescript-eslint/no-unused-vars */
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		/* ═══════════════════════════
+   UTILS
+═══════════════════════════ */
+		const C = {
+			gold: '#f0a830',
+			coral: '#e8553a',
+			mint: '#4ecbb4',
+			lav: '#c4a8f0',
+			muted: '#7a6e5e',
+			border: '#28221a',
+			border2: '#3c342a',
+			raised: '#1c1812',
+			surface: '#131009',
+			bg: '#0b0906',
+			dim: '#4a4035',
+			text: '#ede5d4'
+		};
+		function lerp(a, b, t) {
+			return a + (b - a) * t;
+		}
+		function clamp(v, a, b) {
+			return Math.max(a, Math.min(b, v));
+		}
+		function eio(t) {
+			return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+		}
+		function eout(t) {
+			return 1 - Math.pow(1 - t, 3);
+		}
+
+		/* ═══════════════════════════════════════════
+   DEMO 4.1 — SHAPE DECOMPOSITION
+═══════════════════════════════════════════ */
+		const DC = document.getElementById('decompCanvas');
+		const dctx = DC.getContext('2d');
+		const DW = DC.width,
+			DH = DC.height;
+
+		const LAYERS = [
+			{
+				id: 'head',
+				name: 'Head',
+				shape: 'Circle',
+				color: C.lav,
+				info: 'Large circle · pivot point for head rotation · ~¼ of body height',
+				draw: (ctx, t, sil, wire) => drawDecompHead(ctx, t, sil, wire)
+			},
+			{
+				id: 'neck',
+				name: 'Neck',
+				shape: 'Rectangle',
+				color: C.mint,
+				info: 'Narrow rectangle · connects head to torso · rarely animated independently',
+				draw: (ctx, t, sil, wire) => drawDecompNeck(ctx, t, sil, wire)
+			},
+			{
+				id: 'torso',
+				name: 'Torso',
+				shape: 'Ellipse',
+				color: C.gold,
+				info: 'Flattened ellipse · largest mass · drives all secondary motion',
+				draw: (ctx, t, sil, wire) => drawDecompTorso(ctx, t, sil, wire)
+			},
+			{
+				id: 'hips',
+				name: 'Hips',
+				shape: 'Ellipse',
+				color: '#e0904a',
+				info: 'Smaller ellipse below torso · counter-rotates against torso in walk cycles',
+				draw: (ctx, t, sil, wire) => drawDecompHips(ctx, t, sil, wire)
+			},
+			{
+				id: 'upper-arm',
+				name: 'Upper Arms',
+				shape: 'Capsule',
+				color: C.coral,
+				info: 'Elongated capsules · pivot at shoulder · drive arm swing',
+				draw: (ctx, t, sil, wire) => drawDecompUpperArms(ctx, t, sil, wire)
+			},
+			{
+				id: 'lower-arm',
+				name: 'Lower Arms',
+				shape: 'Capsule',
+				color: '#c04428',
+				info: 'Shorter capsules · pivot at elbow · follow upper arm with lag',
+				draw: (ctx, t, sil, wire) => drawDecompLowerArms(ctx, t, sil, wire)
+			},
+			{
+				id: 'thighs',
+				name: 'Thighs',
+				shape: 'Capsule',
+				color: '#d09020',
+				info: 'Thick capsules · pivot at hip · primary driver of walk cycle leg',
+				draw: (ctx, t, sil, wire) => drawDecompThighs(ctx, t, sil, wire)
+			},
+			{
+				id: 'shins',
+				name: 'Shins',
+				shape: 'Capsule',
+				color: '#a07010',
+				info: 'Thinner capsules · pivot at knee · follow thigh with slight delay',
+				draw: (ctx, t, sil, wire) => drawDecompShins(ctx, t, sil, wire)
+			},
+			{
+				id: 'feet',
+				name: 'Feet',
+				shape: 'Ellipse',
+				color: C.mint,
+				info: 'Flattened ellipses · pivot at ankle · add weight on landings',
+				draw: (ctx, t, sil, wire) => drawDecompFeet(ctx, t, sil, wire)
+			}
+		];
+
+		let layerState = {};
+		LAYERS.forEach((l) => (layerState[l.id] = true));
+		let showColors = true,
+			wireframe = false,
+			decompAnimating = false,
+			decompT = 0,
+			decompRaf = null,
+			decompLastTs = null;
+		const CX = DW / 2,
+			baseY = 40;
+
+		// Shared character params (t = breath/idle sway 0..1)
+		function getCP(t) {
+			const sway = Math.sin(t * Math.PI * 2) * 3;
+			const breathY = Math.sin(t * Math.PI * 2) * 2;
+			return {
+				headX: CX + sway * 0.6,
+				headY: baseY + 30 + breathY,
+				neckX: CX + sway * 0.4,
+				neckY: baseY + 58 + breathY,
+				torsoX: CX + sway * 0.2,
+				torsoY: baseY + 95 + breathY * 0.5,
+				hipsX: CX,
+				hipsY: baseY + 140,
+				shoulderLX: CX - 32 + sway * 0.1,
+				shoulderLY: baseY + 70,
+				shoulderRX: CX + 32 + sway * 0.1,
+				shoulderRY: baseY + 70,
+				elbowLX: CX - 46 + sway * 0.05,
+				elbowLY: baseY + 100,
+				elbowRX: CX + 46 + sway * 0.05,
+				elbowRY: baseY + 100,
+				wristLX: CX - 44,
+				wristLY: baseY + 128,
+				wristRX: CX + 44,
+				wristRY: baseY + 128,
+				hipLX: CX - 20,
+				hipLY: baseY + 145,
+				hipRX: CX + 20,
+				hipRY: baseY + 145,
+				kneeLX: CX - 22,
+				kneeLY: baseY + 190,
+				kneeRX: CX + 22,
+				kneeRY: baseY + 190,
+				ankleLX: CX - 22,
+				ankleLY: baseY + 235,
+				ankleRX: CX + 22,
+				ankleRY: baseY + 235,
+				footLX: CX - 22,
+				footLY: baseY + 242,
+				footRX: CX + 22,
+				footRY: baseY + 242
+			};
+		}
+
+		function capsule(ctx, x1, y1, x2, y2, r) {
+			const dx = x2 - x1,
+				dy = y2 - y1,
+				d = Math.hypot(dx, dy);
+			const nx = -dy / d,
+				ny = dx / d;
+			ctx.beginPath();
+			ctx.moveTo(x1 + nx * r, y1 + ny * r);
+			ctx.lineTo(x2 + nx * r, y2 + ny * r);
+			ctx.arc(x2, y2, r, Math.atan2(ny, nx), Math.atan2(-ny, -nx), false);
+			ctx.lineTo(x1 - nx * r, y1 - ny * r);
+			ctx.arc(x1, y1, r, Math.atan2(-ny, -nx), Math.atan2(ny, nx), false);
+			ctx.closePath();
+		}
+
+		function applyStyle(ctx, col, sil, wire) {
+			if (wire) {
+				ctx.strokeStyle = col + 'cc';
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+			} else if (sil) {
+				ctx.fillStyle = '#111';
+				ctx.fill();
+			} else {
+				ctx.fillStyle = col + 'cc';
+				ctx.fill();
+				ctx.strokeStyle = col;
+				ctx.lineWidth = 0.8;
+				ctx.stroke();
+			}
+		}
+
+		function drawDecompHead(ctx, t, sil, wire) {
+			const p = getCP(t);
+			ctx.beginPath();
+			ctx.arc(p.headX, p.headY, 26, 0, Math.PI * 2);
+			applyStyle(ctx, C.lav, sil, wire);
+		}
+		function drawDecompNeck(ctx, t, sil, wire) {
+			const p = getCP(t);
+			ctx.beginPath();
+			ctx.rect(p.neckX - 7, p.neckY, 14, 20);
+			applyStyle(ctx, C.mint, sil, wire);
+		}
+		function drawDecompTorso(ctx, t, sil, wire) {
+			const p = getCP(t);
+			ctx.beginPath();
+			ctx.ellipse(p.torsoX, p.torsoY, 26, 38, 0, 0, Math.PI * 2);
+			applyStyle(ctx, C.gold, sil, wire);
+		}
+		function drawDecompHips(ctx, t, sil, wire) {
+			const p = getCP(t);
+			ctx.beginPath();
+			ctx.ellipse(p.hipsX, p.hipsY, 22, 14, 0, 0, Math.PI * 2);
+			applyStyle(ctx, '#e0904a', sil, wire);
+		}
+		function drawDecompUpperArms(ctx, t, sil, wire) {
+			const p = getCP(t);
+			[
+				['L', p.shoulderLX, p.shoulderLY, p.elbowLX, p.elbowLY],
+				['R', p.shoulderRX, p.shoulderRY, p.elbowRX, p.elbowRY]
+			].forEach(([s, x1, y1, x2, y2]) => {
+				capsule(ctx, x1, y1, x2, y2, 9);
+				applyStyle(ctx, C.coral, sil, wire);
+			});
+		}
+		function drawDecompLowerArms(ctx, t, sil, wire) {
+			const p = getCP(t);
+			[
+				['L', p.elbowLX, p.elbowLY, p.wristLX, p.wristLY],
+				['R', p.elbowRX, p.elbowRY, p.wristRX, p.wristRY]
+			].forEach(([s, x1, y1, x2, y2]) => {
+				capsule(ctx, x1, y1, x2, y2, 7);
+				applyStyle(ctx, '#c04428', sil, wire);
+			});
+		}
+		function drawDecompThighs(ctx, t, sil, wire) {
+			const p = getCP(t);
+			[
+				['L', p.hipLX, p.hipLY, p.kneeLX, p.kneeLY],
+				['R', p.hipRX, p.hipRY, p.kneeRX, p.kneeRY]
+			].forEach(([s, x1, y1, x2, y2]) => {
+				capsule(ctx, x1, y1, x2, y2, 13);
+				applyStyle(ctx, '#d09020', sil, wire);
+			});
+		}
+		function drawDecompShins(ctx, t, sil, wire) {
+			const p = getCP(t);
+			[
+				['L', p.kneeLX, p.kneeLY, p.ankleLX, p.ankleLY],
+				['R', p.kneeRX, p.kneeRY, p.ankleRX, p.ankleRY]
+			].forEach(([s, x1, y1, x2, y2]) => {
+				capsule(ctx, x1, y1, x2, y2, 9);
+				applyStyle(ctx, '#a07010', sil, wire);
+			});
+		}
+		function drawDecompFeet(ctx, t, sil, wire) {
+			const p = getCP(t);
+			[
+				['L', p.footLX, p.footLY],
+				['R', p.footRX, p.footRY]
+			].forEach(([s, fx, fy]) => {
+				ctx.beginPath();
+				ctx.ellipse(fx + (s === 'L' ? -8 : 8), fy, 18, 8, 0, 0, Math.PI * 2);
+				applyStyle(ctx, C.mint, sil, wire);
+			});
+		}
+
+		function renderDecomp(t) {
+			dctx.clearRect(0, 0, DW, DH);
+			// Ground line
+			dctx.strokeStyle = C.border2;
+			dctx.lineWidth = 1;
+			dctx.beginPath();
+			dctx.moveTo(10, DH - 12);
+			dctx.lineTo(DW - 10, DH - 12);
+			dctx.stroke();
+			// Draw in correct z-order
+			LAYERS.slice()
+				.reverse()
+				.forEach((l) => {
+					if (layerState[l.id]) l.draw(dctx, t, wireframe && !showColors, wireframe);
+				});
+		}
+
+		// Build layer toggles
+		const layerList = document.getElementById('layerList');
+		LAYERS.forEach((l) => {
+			const item = document.createElement('div');
+			item.className = 'layer-item on';
+			item.style.setProperty('--itemcolor', l.color);
+			item.dataset.id = l.id;
+			item.innerHTML = `<div class="layer-swatch" style="background:${l.color}"></div><span class="layer-name">${l.name}</span><span class="layer-shape">${l.shape}</span>`;
+			item.addEventListener('mouseenter', () => {
+				document.getElementById('layerInfo').textContent = l.info;
+			});
+			item.addEventListener('mouseleave', () => {
+				document.getElementById('layerInfo').textContent = 'Hover a layer to see its shape info.';
+			});
+			item.onclick = () => {
+				layerState[l.id] = !layerState[l.id];
+				item.classList.toggle('on', layerState[l.id]);
+				renderDecomp(decompT);
+			};
+			layerList.appendChild(item);
+		});
+
+		function toggleAllLayers(on) {
+			LAYERS.forEach((l) => {
+				layerState[l.id] = on;
+				const el = layerList.querySelector(`[data-id="${l.id}"]`);
+				if (el) el.classList.toggle('on', on);
+			});
+			renderDecomp(decompT);
+		}
+
+		let showColorsState = true,
+			wireframeState = false;
+		function toggleShowColors(btn) {
+			showColorsState = !showColorsState;
+			showColors = showColorsState;
+			btn.classList.toggle('active', showColorsState);
+			if (!showColorsState) wireframeState = false;
+			renderDecomp(decompT);
+		}
+		function toggleWireframe(btn) {
+			wireframeState = !wireframeState;
+			wireframe = wireframeState;
+			btn.classList.toggle('active', wireframeState);
+			renderDecomp(decompT);
+		}
+
+		function toggleDecompAnim(btn) {
+			decompAnimating = !decompAnimating;
+			btn.textContent = decompAnimating ? '⏸ Pause' : '▶ Animate';
+			btn.classList.toggle('active', decompAnimating);
+			if (decompAnimating) {
+				decompLastTs = null;
+				decompRaf = requestAnimationFrame(decompLoop);
+			} else cancelAnimationFrame(decompRaf);
+		}
+		function decompLoop(ts) {
+			if (!decompLastTs) decompLastTs = ts;
+			decompT += ((ts - decompLastTs) / 1000) * 0.25;
+			decompLastTs = ts;
+			if (decompT > 1) decompT -= 1;
+			renderDecomp(decompT);
+			decompRaf = requestAnimationFrame(decompLoop);
+		}
+
+		renderDecomp(0);
+
+		/* ═══════════════════════════════════════════
+   DEMO 4.2 — LINE OF ACTION
+═══════════════════════════════════════════ */
+		const POSES = [
+			{
+				name: 'Neutral Stand',
+				strength: 'Weak',
+				color: C.muted,
+				desc: 'Perfectly upright — no curvature, no energy. The line of action is vertical and static. This pose communicates nothing beyond "standing."',
+				// LOA: straight vertical
+				loa: [
+					[100, 20],
+					[100, 240]
+				],
+				draw(ctx, W, H, showLOA) {
+					const cx = W / 2,
+						cy = H / 2 - 10;
+					ctx.fillStyle = C.muted + 'aa';
+					// head
+					ctx.beginPath();
+					ctx.arc(cx, cy - 65, 20, 0, Math.PI * 2);
+					ctx.fill();
+					// torso straight
+					ctx.fillStyle = C.muted + '88';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 14, 30, 0, 0, Math.PI * 2);
+					ctx.fill();
+					// arms straight down
+					capsuleCtx(ctx, cx - 18, cy - 20, cx - 18, cy + 30, 7, C.muted + '66');
+					capsuleCtx(ctx, cx + 18, cy - 20, cx + 18, cy + 30, 7, C.muted + '66');
+					// legs straight
+					capsuleCtx(ctx, cx - 10, cy + 28, cx - 10, cy + 78, 9, C.muted + '66');
+					capsuleCtx(ctx, cx + 10, cy + 28, cx + 10, cy + 78, 9, C.muted + '66');
+					if (showLOA) {
+						ctx.strokeStyle = C.coral + 'cc';
+						ctx.lineWidth = 2;
+						ctx.setLineDash([5, 4]);
+						ctx.beginPath();
+						ctx.moveTo(cx, cy - 80);
+						ctx.lineTo(cx, cy + 80);
+						ctx.stroke();
+						ctx.setLineDash([]);
+						ctx.fillStyle = C.coral;
+						ctx.font = `9px 'JetBrains Mono'`;
+						ctx.textAlign = 'center';
+						ctx.fillText('straight line = no energy', cx, H - 6);
+					}
+				}
+			},
+			{
+				name: 'Slight Lean',
+				strength: 'Moderate',
+				color: C.gold,
+				desc: 'A diagonal lean creates mild energy and direction. The line of action runs from the feet up through the torso and head at an angle — better, but still gentle.',
+				draw(ctx, W, H, showLOA) {
+					const cx = W / 2,
+						cy = H / 2 - 10,
+						lean = 18;
+					ctx.fillStyle = C.gold + 'aa';
+					ctx.beginPath();
+					ctx.arc(cx + lean * 0.6, cy - 65, 20, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = C.gold + '88';
+					ctx.beginPath();
+					ctx.ellipse(cx + lean * 0.3, cy, 14, 30, -0.15, 0, Math.PI * 2);
+					ctx.fill();
+					capsuleCtx(
+						ctx,
+						cx + lean * 0.3 - 18,
+						cy - 22,
+						cx + lean * 0.3 - 24,
+						cy + 28,
+						7,
+						C.gold + '66'
+					);
+					capsuleCtx(
+						ctx,
+						cx + lean * 0.3 + 18,
+						cy - 22,
+						cx + lean * 0.3 + 10,
+						cy + 28,
+						7,
+						C.gold + '66'
+					);
+					capsuleCtx(ctx, cx - 12, cy + 28, cx - 14, cy + 78, 9, C.gold + '66');
+					capsuleCtx(ctx, cx + 12, cy + 28, cx + 10, cy + 78, 9, C.gold + '66');
+					if (showLOA) {
+						ctx.strokeStyle = C.coral + 'cc';
+						ctx.lineWidth = 2;
+						ctx.setLineDash([5, 4]);
+						ctx.beginPath();
+						ctx.moveTo(cx - lean * 0.2, cy + 75);
+						ctx.lineTo(cx + lean * 0.6, cy - 75);
+						ctx.stroke();
+						ctx.setLineDash([]);
+						ctx.fillStyle = C.coral;
+						ctx.font = `9px 'JetBrains Mono'`;
+						ctx.textAlign = 'center';
+						ctx.fillText('diagonal — some direction', cx, H - 6);
+					}
+				}
+			},
+			{
+				name: 'Reaching Forward',
+				strength: 'Strong',
+				color: C.mint,
+				desc: 'The torso tilts and the arm reaches far — the line of action sweeps from the back foot through the body and out the extended arm. Clear direction and intention.',
+				draw(ctx, W, H, showLOA) {
+					const cx = W / 2,
+						cy = H / 2 + 5;
+					// Body tilted forward
+					ctx.fillStyle = C.mint + 'aa';
+					ctx.beginPath();
+					ctx.arc(cx - 8, cy - 68, 19, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = C.mint + '88';
+					ctx.beginPath();
+					ctx.ellipse(cx - 5, cy - 10, 13, 30, -0.35, 0, Math.PI * 2);
+					ctx.fill();
+					// Reaching arm
+					capsuleCtx(ctx, cx - 5, cy - 32, cx + 50, cy - 48, 8, C.mint + 'aa');
+					capsuleCtx(ctx, cx + 50, cy - 48, cx + 88, cy - 38, 7, C.mint + '88');
+					// Back arm
+					capsuleCtx(ctx, cx - 5, cy - 32, cx - 30, cy - 15, 7, C.mint + '55');
+					// Legs — back leg extended
+					capsuleCtx(ctx, cx - 8, cy + 20, cx + 18, cy + 65, 10, C.mint + '66');
+					capsuleCtx(ctx, cx + 18, cy + 65, cx + 22, cy + 90, 8, C.mint + '55');
+					capsuleCtx(ctx, cx - 8, cy + 20, cx - 30, cy + 70, 10, C.mint + '88');
+					capsuleCtx(ctx, cx - 30, cy + 70, cx - 28, cy + 90, 8, C.mint + '77');
+					if (showLOA) {
+						ctx.strokeStyle = C.coral + 'cc';
+						ctx.lineWidth = 2.5;
+						ctx.setLineDash([5, 4]);
+						// S-curve from back foot through body to extended arm
+						ctx.beginPath();
+						ctx.moveTo(cx - 28, cy + 88);
+						ctx.bezierCurveTo(cx - 15, cy + 40, cx - 8, cy - 20, cx + 88, cy - 38);
+						ctx.stroke();
+						ctx.setLineDash([]);
+						ctx.fillStyle = C.coral;
+						ctx.font = `9px 'JetBrains Mono'`;
+						ctx.textAlign = 'center';
+						ctx.fillText('sweeping arc = strong energy', cx, H - 6);
+					}
+				}
+			},
+			{
+				name: 'Dynamic Leap',
+				strength: 'Very Strong',
+				color: C.coral,
+				desc: 'Everything aligns into one sweeping diagonal — body arched back, arms and legs streaming behind. The line of action is extreme and unmistakable. Maximum energy.',
+				draw(ctx, W, H, showLOA) {
+					const cx = W / 2,
+						cy = H / 2;
+					// Body arched back (C-curve in the air)
+					ctx.fillStyle = C.coral + 'aa';
+					ctx.save();
+					ctx.translate(cx, cy - 40);
+					ctx.rotate(0.4);
+					ctx.beginPath();
+					ctx.arc(0, 0, 18, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.restore();
+					ctx.fillStyle = C.coral + '88';
+					ctx.save();
+					ctx.translate(cx, cy + 5);
+					ctx.rotate(0.3);
+					ctx.beginPath();
+					ctx.ellipse(0, 0, 12, 28, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.restore();
+					// Arms streaming back
+					capsuleCtx(ctx, cx - 8, cy - 15, cx - 55, cy - 38, 7, C.coral + '88');
+					capsuleCtx(ctx, cx - 55, cy - 38, cx - 88, cy - 28, 6, C.coral + '66');
+					capsuleCtx(ctx, cx + 5, cy - 10, cx - 40, cy + 5, 7, C.coral + '66');
+					// Legs streaming behind/down
+					capsuleCtx(ctx, cx + 5, cy + 33, cx + 45, cy + 60, 10, C.coral + '88');
+					capsuleCtx(ctx, cx + 45, cy + 60, cx + 72, cy + 50, 8, C.coral + '66');
+					capsuleCtx(ctx, cx, cy + 33, cx + 28, cy + 68, 10, C.coral + '77');
+					capsuleCtx(ctx, cx + 28, cy + 68, cx + 50, cy + 62, 8, C.coral + '66');
+					if (showLOA) {
+						ctx.strokeStyle = C.gold + 'cc';
+						ctx.lineWidth = 3;
+						ctx.setLineDash([5, 4]);
+						ctx.beginPath();
+						ctx.moveTo(cx - 88, cy - 28);
+						ctx.bezierCurveTo(cx - 20, cy - 20, cx + 10, cy + 15, cx + 72, cy + 50);
+						ctx.stroke();
+						ctx.setLineDash([]);
+						ctx.fillStyle = C.gold;
+						ctx.font = `bold 9px 'JetBrains Mono'`;
+						ctx.textAlign = 'center';
+						ctx.fillText('extreme arc = maximum energy', cx, H - 6);
+					}
+				}
+			}
+		];
+
+		function capsuleCtx(ctx, x1, y1, x2, y2, r, col) {
+			const dx = x2 - x1,
+				dy = y2 - y1,
+				d = Math.hypot(dx, dy) || 1;
+			const nx = -dy / d,
+				ny = dx / d;
+			ctx.fillStyle = col;
+			ctx.beginPath();
+			ctx.moveTo(x1 + nx * r, y1 + ny * r);
+			ctx.lineTo(x2 + nx * r, y2 + ny * r);
+			ctx.arc(x2, y2, r, Math.atan2(ny, nx), Math.atan2(-ny, -nx), false);
+			ctx.lineTo(x1 - nx * r, y1 - ny * r);
+			ctx.arc(x1, y1, r, Math.atan2(-ny, -nx), Math.atan2(ny, nx), false);
+			ctx.closePath();
+			ctx.fill();
+		}
+
+		let selectedPose = 2; // default: Reaching Forward
+		const loaCtxA = document.getElementById('loaCanvasA').getContext('2d');
+		const loaCtxB = document.getElementById('loaCanvasB').getContext('2d');
+
+		function renderLOA() {
+			const p = POSES[selectedPose];
+			const w = 200,
+				h = 260;
+			loaCtxA.clearRect(0, 0, w, h);
+			loaCtxB.clearRect(0, 0, w, h);
+			p.draw(loaCtxA, w, h, false);
+			p.draw(loaCtxB, w, h, true);
+			document.getElementById('loaDescription').textContent = p.desc;
+		}
+
+		// Build pose selector
+		const poseSelector = document.getElementById('poseSelector');
+		POSES.forEach((p, i) => {
+			const btn = document.createElement('button');
+			btn.className = 'btn' + (i === selectedPose ? ' active' : '');
+			btn.textContent = p.name;
+			btn.style.setProperty('border-color', i === selectedPose ? p.color : '');
+			btn.onclick = () => {
+				selectedPose = i;
+				poseSelector.querySelectorAll('.btn').forEach((b, j) => {
+					b.classList.toggle('active', j === i);
+				});
+				renderLOA();
+			};
+			poseSelector.appendChild(btn);
+		});
+		renderLOA();
+
+		/* ═══════════════════════════════════════════
+   DEMO 4.3 — SILHOUETTE TEST
+═══════════════════════════════════════════ */
+		const silCanvases = {
+			A: { canvas: document.getElementById('silA'), ctx: null },
+			B: { canvas: document.getElementById('silB'), ctx: null },
+			C: { canvas: document.getElementById('silC'), ctx: null }
+		};
+		Object.values(silCanvases).forEach((s) => (s.ctx = s.canvas.getContext('2d')));
+		let silMode = false;
+
+		const SIL_DRAWS = {
+			A(ctx, W, H, sil) {
+				// Clear, distinct: jumping figure with arms wide
+				const cx = W / 2,
+					cy = H / 2 + 10,
+					col = sil ? '#111' : null;
+				const fill = (c) => col || c;
+				// Head — clearly separated from body
+				ctx.fillStyle = fill(C.lav + 'cc');
+				ctx.beginPath();
+				ctx.arc(cx, cy - 70, 18, 0, Math.PI * 2);
+				ctx.fill();
+				// Body
+				ctx.fillStyle = fill(C.gold + 'aa');
+				ctx.beginPath();
+				ctx.ellipse(cx, cy - 10, 12, 30, 0, 0, Math.PI * 2);
+				ctx.fill();
+				// Arms wide out — clearly visible in sil
+				ctx.fillStyle = fill(C.coral + 'aa');
+				capsuleCtx(ctx, cx - 14, cy - 25, cx - 65, cy - 50, 7, fill(C.coral + 'aa'));
+				capsuleCtx(ctx, cx + 14, cy - 25, cx + 65, cy - 50, 7, fill(C.coral + 'aa'));
+				// Legs spread (jump pose)
+				ctx.fillStyle = fill(C.mint + 'aa');
+				capsuleCtx(ctx, cx - 8, cy + 20, cx - 30, cy + 70, 10, fill(C.mint + 'aa'));
+				capsuleCtx(ctx, cx + 8, cy + 20, cx + 30, cy + 70, 10, fill(C.mint + 'aa'));
+			},
+			B(ctx, W, H, sil) {
+				// Ambiguous: all same size, arms parallel to body
+				const cx = W / 2,
+					cy = H / 2 + 10;
+				const fill = (c) => (sil ? '#111' : c);
+				ctx.fillStyle = fill(C.muted + 'cc');
+				ctx.beginPath();
+				ctx.arc(cx, cy - 62, 18, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.beginPath();
+				ctx.ellipse(cx, cy - 10, 14, 30, 0, 0, Math.PI * 2);
+				ctx.fill();
+				// Arms close to body — merge in silhouette
+				capsuleCtx(ctx, cx - 18, cy - 28, cx - 16, cy + 28, 9, fill(C.muted + 'cc'));
+				capsuleCtx(ctx, cx + 18, cy - 28, cx + 16, cy + 28, 9, fill(C.muted + 'cc'));
+				// Legs together — merge in silhouette
+				capsuleCtx(ctx, cx - 8, cy + 20, cx - 6, cy + 74, 11, fill(C.muted + '99'));
+				capsuleCtx(ctx, cx + 8, cy + 20, cx + 6, cy + 74, 11, fill(C.muted + '99'));
+			},
+			C(ctx, W, H, sil) {
+				// Unreadable: complex overlapping, no clear read
+				const cx = W / 2,
+					cy = H / 2;
+				const fill = (c) => (sil ? '#111' : c);
+				// Tangled mess of overlapping shapes
+				const shapes = [
+					[cx - 5, cy - 55, 20, 25, -0.5],
+					[cx + 15, cy - 42, 14, 22, 0.3],
+					[cx - 10, cy - 20, 16, 35, 0.1],
+					[cx + 5, cy - 25, 12, 28, -0.2],
+					[cx - 18, cy + 5, 15, 25, 0.4],
+					[cx + 12, cy + 10, 13, 24, -0.1],
+					[cx - 8, cy + 30, 14, 30, 0.2],
+					[cx + 5, cy + 25, 16, 28, -0.3],
+					[cx - 2, cy + 52, 18, 20, 0.1]
+				];
+				const cols = [
+					C.muted,
+					C.dim,
+					C.border2,
+					C.muted,
+					C.dim,
+					C.muted,
+					C.border2,
+					C.muted,
+					C.dim
+				];
+				shapes.forEach(([x, y, rx, ry, a], i) => {
+					ctx.fillStyle = fill(cols[i] + 'dd');
+					ctx.beginPath();
+					ctx.ellipse(x, y, rx, ry, a, 0, Math.PI * 2);
+					ctx.fill();
+				});
+			}
+		};
+
+		function renderSilhouettes() {
+			['A', 'B', 'C'].forEach((k) => {
+				const { ctx, canvas } = silCanvases[k];
+				const W = canvas.width,
+					H = canvas.height;
+				if (silMode) {
+					ctx.fillStyle = '#f5f0e8';
+					ctx.fillRect(0, 0, W, H);
+				} else {
+					ctx.clearRect(0, 0, W, H);
+				}
+				SIL_DRAWS[k](ctx, W, H, silMode);
+			});
+		}
+
+		document.getElementById('silToggle').onchange = function () {
+			silMode = this.checked;
+			document.getElementById('silToggleLabel').textContent = silMode
+				? 'Back to Full Colour'
+				: 'Show as Silhouette';
+			renderSilhouettes();
+		};
+		renderSilhouettes();
+
+		/* ═══════════════════════════════════════════
+   DEMO 4.4 — DIAGRAM ELEMENT QUALITY
+═══════════════════════════════════════════ */
+		const dgCtxs = {
+			good: document.getElementById('diagGoodCanvas').getContext('2d'),
+			bad: document.getElementById('diagBadCanvas').getContext('2d')
+		};
+		let currentElem = 'arrow',
+			complexity = 0;
+		let diagAnimT = 0,
+			diagPlaying = false,
+			diagRaf = null,
+			diagLastTs = null;
+
+		const COMPLEXITY_READOUTS = [
+			'0% — Clean, closed shape. Single path. Animates perfectly.',
+			'25% — Slight decoration added. Still manageable.',
+			'50% — Multiple sub-paths. Animation requires grouping workarounds.',
+			'75% — Compound shapes, mixed strokes. Rigs become fragile.',
+			'100% — Decoration overload. Every animation change breaks the design.'
+		];
+
+		function getComplexityReadout(v) {
+			return COMPLEXITY_READOUTS[Math.min(4, Math.floor(v * 5))];
+		}
+
+		const ELEM_DRAWERS = {
+			arrow: {
+				good(ctx, W, H, t, cx) {
+					// Simple closed arrow shape
+					const ax = cx - 60 + eio(t) * 80,
+						ay = H / 2;
+					ctx.fillStyle = C.mint + 'cc';
+					ctx.beginPath();
+					ctx.moveTo(ax, ay - 10);
+					ctx.lineTo(ax + 55, ay - 10);
+					ctx.lineTo(ax + 55, ay - 20);
+					ctx.lineTo(ax + 80, ay);
+					ctx.lineTo(ax + 55, ay + 20);
+					ctx.lineTo(ax + 55, ay + 10);
+					ctx.lineTo(ax, ay + 10);
+					ctx.closePath();
+					ctx.fill();
+				},
+				bad(ctx, W, H, t, cx, complexity) {
+					// Stroke-based with decorative crud
+					const ax = cx - 60 + eio(t) * 80,
+						ay = H / 2;
+					// Main stroke (not filled — bad for animation)
+					ctx.strokeStyle = C.coral;
+					ctx.lineWidth = 2 + complexity * 3;
+					ctx.beginPath();
+					ctx.moveTo(ax, ay);
+					ctx.lineTo(ax + 70, ay);
+					ctx.stroke();
+					// Arrowhead — separate element
+					ctx.beginPath();
+					ctx.moveTo(ax + 65, ay - 15);
+					ctx.lineTo(ax + 85, ay);
+					ctx.lineTo(ax + 65, ay + 15);
+					if (complexity > 0.3) {
+						ctx.closePath();
+						ctx.fillStyle = C.coral + '88';
+						ctx.fill();
+					}
+					ctx.stroke();
+					// "Decorative" extra lines
+					if (complexity > 0.5) {
+						ctx.strokeStyle = C.coral + '55';
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.moveTo(ax, ay - 5);
+						ctx.lineTo(ax + 55, ay - 5);
+						ctx.stroke();
+						ctx.beginPath();
+						ctx.moveTo(ax, ay + 5);
+						ctx.lineTo(ax + 55, ay + 5);
+						ctx.stroke();
+					}
+					if (complexity > 0.75) {
+						// Corner ticks
+						[ax, ax + 25, ax + 50].forEach((x) => {
+							ctx.beginPath();
+							ctx.moveTo(x, ay - 8);
+							ctx.lineTo(x, ay + 8);
+							ctx.stroke();
+						});
+					}
+				}
+			},
+			label: {
+				good(ctx, W, H, t, cx) {
+					const lx = cx - 40 + eio(t) * 60,
+						ly = H / 2 - 20;
+					ctx.globalAlpha = eout(t);
+					ctx.fillStyle = C.raised;
+					ctx.strokeStyle = C.mint;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.rect(lx, ly, 90, 40);
+					ctx.fill();
+					ctx.stroke();
+					ctx.fillStyle = C.mint;
+					ctx.font = `11px 'JetBrains Mono'`;
+					ctx.textAlign = 'center';
+					ctx.fillText('Label', lx + 45, ly + 25);
+					ctx.globalAlpha = 1;
+				},
+				bad(ctx, W, H, t, cx, complexity) {
+					const lx = cx - 40 + eio(t) * 60,
+						ly = H / 2 - 20;
+					ctx.globalAlpha = eout(t);
+					// Gradient fill (bad — harder to keyframe)
+					const grd = ctx.createLinearGradient(lx, ly, lx + 90, ly + 40);
+					grd.addColorStop(0, C.raised);
+					grd.addColorStop(1, C.bg);
+					ctx.fillStyle = grd;
+					ctx.beginPath();
+					ctx.rect(lx, ly, 90, 40);
+					ctx.fill();
+					// Multiple stroke layers
+					[3, 2, 1].forEach((w, i) => {
+						ctx.strokeStyle = i === 0 ? C.coral + '44' : i === 1 ? C.coral + '88' : C.coral;
+						ctx.lineWidth = w;
+						ctx.stroke();
+					});
+					// Drop shadow (separate blurred rect)
+					if (complexity > 0.4) {
+						ctx.fillStyle = 'rgba(0,0,0,.25)';
+						ctx.beginPath();
+						ctx.rect(lx + 3, ly + 3, 90, 40);
+						ctx.fill();
+					}
+					// Inner glow ring
+					if (complexity > 0.7) {
+						ctx.strokeStyle = C.coral + '33';
+						ctx.lineWidth = 6;
+						ctx.beginPath();
+						ctx.rect(lx + 2, ly + 2, 86, 36);
+						ctx.stroke();
+					}
+					ctx.fillStyle = C.coral;
+					ctx.font = `bold 11px 'JetBrains Mono'`;
+					ctx.textAlign = 'center';
+					ctx.fillText('Label', lx + 45, ly + 25);
+					ctx.globalAlpha = 1;
+				}
+			},
+			node: {
+				good(ctx, W, H, t, cx) {
+					const nx = cx + eio(t) * 30,
+						ny = H / 2;
+					ctx.globalAlpha = eout(t) * 0.9 + 0.1;
+					ctx.fillStyle = C.gold + '88';
+					ctx.strokeStyle = C.gold;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.arc(nx, ny, 28, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.stroke();
+					ctx.fillStyle = C.text;
+					ctx.font = `10px 'JetBrains Mono'`;
+					ctx.textAlign = 'center';
+					ctx.fillText('Node', nx, ny + 4);
+					ctx.globalAlpha = 1;
+				},
+				bad(ctx, W, H, t, cx, complexity) {
+					const nx = cx + eio(t) * 30,
+						ny = H / 2;
+					ctx.globalAlpha = eout(t) * 0.9 + 0.1;
+					// Concentric ring decoration
+					[34, 30, 26].forEach((r, i) => {
+						ctx.strokeStyle = i === 0 ? C.coral + '33' : i === 1 ? C.coral + '66' : C.coral + '99';
+						ctx.lineWidth = 2;
+						ctx.beginPath();
+						ctx.arc(nx, ny, r, 0, Math.PI * 2);
+						ctx.stroke();
+					});
+					if (complexity > 0.4) {
+						// Radiating lines
+						for (let a = 0; a < 8; a++) {
+							const ang = (a * Math.PI) / 4;
+							ctx.strokeStyle = C.coral + '33';
+							ctx.lineWidth = 1;
+							ctx.beginPath();
+							ctx.moveTo(nx + Math.cos(ang) * 26, ny + Math.sin(ang) * 26);
+							ctx.lineTo(nx + Math.cos(ang) * 38, ny + Math.sin(ang) * 38);
+							ctx.stroke();
+						}
+					}
+					if (complexity > 0.7) {
+						// Inner gradient fill
+						const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, 26);
+						grd.addColorStop(0, C.coral + '55');
+						grd.addColorStop(1, 'transparent');
+						ctx.fillStyle = grd;
+						ctx.beginPath();
+						ctx.arc(nx, ny, 26, 0, Math.PI * 2);
+						ctx.fill();
+					}
+					ctx.fillStyle = C.coral;
+					ctx.font = `10px 'JetBrains Mono'`;
+					ctx.textAlign = 'center';
+					ctx.fillText('Node', nx, ny + 4);
+					ctx.globalAlpha = 1;
+				}
+			},
+			icon: {
+				good(ctx, W, H, t, cx) {
+					const ix = cx + eio(t) * 40,
+						iy = H / 2;
+					ctx.globalAlpha = eout(t) * 0.9 + 0.1;
+					// Simple checkmark in a circle — two shapes max
+					ctx.fillStyle = C.mint + '88';
+					ctx.strokeStyle = C.mint;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.arc(ix, iy, 24, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.stroke();
+					ctx.strokeStyle = '#fff';
+					ctx.lineWidth = 2.5;
+					ctx.lineCap = 'round';
+					ctx.lineJoin = 'round';
+					ctx.beginPath();
+					ctx.moveTo(ix - 10, iy);
+					ctx.lineTo(ix - 3, iy + 8);
+					ctx.lineTo(ix + 11, iy - 8);
+					ctx.stroke();
+					ctx.globalAlpha = 1;
+				},
+				bad(ctx, W, H, t, cx, complexity) {
+					const ix = cx + eio(t) * 40,
+						iy = H / 2;
+					ctx.globalAlpha = eout(t) * 0.9 + 0.1;
+					// Elaborate icon with many sub-paths
+					ctx.strokeStyle = C.coral;
+					ctx.lineWidth = 1.5;
+					// Outer ring
+					ctx.beginPath();
+					ctx.arc(ix, iy, 26, 0, Math.PI * 2);
+					ctx.stroke();
+					// Inner ring
+					ctx.beginPath();
+					ctx.arc(ix, iy, 20, 0, Math.PI * 2);
+					ctx.stroke();
+					// Checkmark built from individual line segments (not a single path)
+					[
+						[ix - 9, iy, -2, 8],
+						[ix - 2, iy + 8, 12, -16]
+					].forEach(([x, y, dx, dy]) => {
+						ctx.beginPath();
+						ctx.moveTo(x, y);
+						ctx.lineTo(x + dx, y + dy);
+						ctx.stroke();
+					});
+					if (complexity > 0.5) {
+						// Corner decorations
+						for (let a = 0; a < 4; a++) {
+							const ang = (a * Math.PI) / 2 + Math.PI / 4;
+							ctx.beginPath();
+							ctx.arc(ix + Math.cos(ang) * 26, iy + Math.sin(ang) * 26, 3, 0, Math.PI * 2);
+							ctx.stroke();
+						}
+					}
+					ctx.globalAlpha = 1;
+				}
+			}
+		};
+
+		function renderDiag() {
+			const cx = 110,
+				W = 220,
+				H = 200;
+			[
+				['good', dgCtxs.good],
+				['bad', dgCtxs.bad]
+			].forEach(([type, ctx]) => {
+				ctx.clearRect(0, 0, W, H);
+				const drawer = ELEM_DRAWERS[currentElem];
+				if (type === 'good') drawer.good(ctx, W, H, diagAnimT, cx);
+				else drawer.bad(ctx, W, H, diagAnimT, cx, complexity);
+			});
+		}
+
+		function diagLoop(ts) {
+			if (!diagLastTs) diagLastTs = ts;
+			diagAnimT = Math.min(1, diagAnimT + ((ts - diagLastTs) / 1000) * 0.6);
+			diagLastTs = ts;
+			renderDiag();
+			if (diagAnimT < 1) diagRaf = requestAnimationFrame(diagLoop);
+			else {
+				diagPlaying = false;
+				document.getElementById('diagAnimBtn').textContent = '▶ Animate Both';
+				document.getElementById('diagAnimBtn').classList.remove('active');
+				diagLastTs = null;
+			}
+		}
+
+		document.getElementById('diagAnimBtn').onclick = function () {
+			if (!diagPlaying) {
+				diagAnimT = 0;
+				diagPlaying = true;
+				this.textContent = '⏸ Playing…';
+				this.classList.add('active');
+				diagLastTs = null;
+				diagRaf = requestAnimationFrame(diagLoop);
+			}
+		};
+		document.getElementById('diagResetBtn').onclick = function () {
+			cancelAnimationFrame(diagRaf);
+			diagPlaying = false;
+			diagAnimT = 0;
+			diagLastTs = null;
+			document.getElementById('diagAnimBtn').textContent = '▶ Animate Both';
+			document.getElementById('diagAnimBtn').classList.remove('active');
+			renderDiag();
+		};
+
+		function selectElem(btn, elem) {
+			currentElem = elem;
+			document.querySelectorAll('#elemSelector .btn').forEach((b) => b.classList.remove('active'));
+			btn.classList.add('active');
+			diagAnimT = 0;
+			renderDiag();
+		}
+
+		document.getElementById('complexitySlider').oninput = function () {
+			complexity = parseFloat(this.value);
+			document.getElementById('complexityVal').textContent = Math.round(complexity * 100) + '%';
+			document.getElementById('complexityReadout').textContent = getComplexityReadout(complexity);
+			renderDiag();
+		};
+		document.getElementById('complexityReadout').textContent = getComplexityReadout(0);
+		renderDiag();
+
+		/* ═══════════════════════════════════════════
+   DEMO 4.5 — BEFORE / AFTER SIMPLIFICATION
+═══════════════════════════════════════════ */
+		const baCtxB = document.getElementById('baBeforeCanvas').getContext('2d');
+		const baCtxA = document.getElementById('baAfterCanvas').getContext('2d');
+		const BAW = 300,
+			BAH = 220;
+		let baT = 0,
+			baPlaying = false,
+			baRaf = null,
+			baLastTs = null;
+
+		function renderBA(t) {
+			const et = eio(t);
+
+			// ── BEFORE (overcomplicated) ──
+			baCtxB.clearRect(0, 0, BAW, BAH);
+			const bx = 30 + et * 20;
+
+			// Arrow: stroke-based, open path, decorative
+			baCtxB.save();
+			baCtxB.translate(bx, 0);
+			baCtxB.strokeStyle = C.coral;
+			baCtxB.lineWidth = 2;
+			baCtxB.beginPath();
+			baCtxB.moveTo(20, 45);
+			baCtxB.lineTo(100, 45);
+			baCtxB.stroke();
+			baCtxB.beginPath();
+			baCtxB.moveTo(95, 35);
+			baCtxB.lineTo(115, 45);
+			baCtxB.lineTo(95, 55);
+			baCtxB.stroke();
+			baCtxB.strokeStyle = C.coral + '44';
+			baCtxB.lineWidth = 1;
+			baCtxB.beginPath();
+			baCtxB.moveTo(20, 40);
+			baCtxB.lineTo(90, 40);
+			baCtxB.stroke();
+			baCtxB.beginPath();
+			baCtxB.moveTo(20, 50);
+			baCtxB.lineTo(90, 50);
+			baCtxB.stroke();
+			baCtxB.restore();
+
+			// Label: gradient + multi-border
+			baCtxB.save();
+			baCtxB.translate(0, bx * 0.8);
+			const grd = baCtxB.createLinearGradient(20, 80, 150, 120);
+			grd.addColorStop(0, C.raised);
+			grd.addColorStop(1, C.bg);
+			baCtxB.fillStyle = grd;
+			baCtxB.beginPath();
+			baCtxB.rect(20, 80, 130, 38);
+			baCtxB.fill();
+			[3, 1.5, 0.8].forEach((w, i) => {
+				baCtxB.strokeStyle = C.coral + ['33', '66', 'aa'][i];
+				baCtxB.lineWidth = w;
+				baCtxB.beginPath();
+				baCtxB.rect(20, 80, 130, 38);
+				baCtxB.stroke();
+			});
+			baCtxB.fillStyle = C.coral;
+			baCtxB.font = `10px 'JetBrains Mono'`;
+			baCtxB.textAlign = 'center';
+			baCtxB.fillText('Process Step', 85, 104);
+			baCtxB.restore();
+
+			// Node: concentric rings
+			baCtxB.save();
+			baCtxB.translate(bx * 0.4, bx * 0.5);
+			[32, 26, 20].forEach((r, i) => {
+				baCtxB.strokeStyle = C.coral + ['33', '66', 'aa'][i];
+				baCtxB.lineWidth = 1.5;
+				baCtxB.beginPath();
+				baCtxB.arc(230, 100, r, 0, Math.PI * 2);
+				baCtxB.stroke();
+			});
+			baCtxB.fillStyle = C.coral;
+			baCtxB.font = `9px 'JetBrains Mono'`;
+			baCtxB.textAlign = 'center';
+			baCtxB.fillText('Node', 230, 104);
+			baCtxB.restore();
+
+			baCtxB.fillStyle = C.coral;
+			baCtxB.font = `9px 'JetBrains Mono'`;
+			baCtxB.textAlign = 'center';
+			baCtxB.fillText('Over-decorated — hard to rig & animate', BAW / 2, BAH - 8);
+
+			// ── AFTER (simplified) ──
+			baCtxA.clearRect(0, 0, BAW, BAH);
+			const ax = 30 + et * 20;
+
+			// Arrow: clean closed shape
+			baCtxA.save();
+			baCtxA.translate(ax, 0);
+			baCtxA.fillStyle = C.mint + 'cc';
+			baCtxA.beginPath();
+			baCtxA.moveTo(18, 38);
+			baCtxA.lineTo(95, 38);
+			baCtxA.lineTo(95, 28);
+			baCtxA.lineTo(118, 45);
+			baCtxA.lineTo(95, 62);
+			baCtxA.lineTo(95, 52);
+			baCtxA.lineTo(18, 52);
+			baCtxA.closePath();
+			baCtxA.fill();
+			baCtxA.restore();
+
+			// Label: clean rect + separate text
+			baCtxA.save();
+			baCtxA.translate(0, ax * 0.8);
+			baCtxA.fillStyle = C.raised;
+			baCtxA.strokeStyle = C.mint;
+			baCtxA.lineWidth = 1.5;
+			baCtxA.beginPath();
+			baCtxA.rect(20, 80, 130, 38);
+			baCtxA.fill();
+			baCtxA.stroke();
+			baCtxA.fillStyle = C.mint;
+			baCtxA.font = `10px 'JetBrains Mono'`;
+			baCtxA.textAlign = 'center';
+			baCtxA.fillText('Process Step', 85, 104);
+			baCtxA.restore();
+
+			// Node: single filled circle
+			baCtxA.save();
+			baCtxA.translate(ax * 0.4, ax * 0.5);
+			baCtxA.fillStyle = C.gold + '88';
+			baCtxA.strokeStyle = C.gold;
+			baCtxA.lineWidth = 1.5;
+			baCtxA.beginPath();
+			baCtxA.arc(230, 100, 22, 0, Math.PI * 2);
+			baCtxA.fill();
+			baCtxA.stroke();
+			baCtxA.fillStyle = C.text;
+			baCtxA.font = `9px 'JetBrains Mono'`;
+			baCtxA.textAlign = 'center';
+			baCtxA.fillText('Node', 230, 104);
+			baCtxA.restore();
+
+			baCtxA.fillStyle = C.mint;
+			baCtxA.font = `9px 'JetBrains Mono'`;
+			baCtxA.textAlign = 'center';
+			baCtxA.fillText('Clean paths — easy to rig, reliable in motion', BAW / 2, BAH - 8);
+		}
+
+		function baLoop(ts) {
+			if (!baLastTs) baLastTs = ts;
+			baT = Math.min(1, baT + ((ts - baLastTs) / 1000) * 0.55);
+			baLastTs = ts;
+			renderBA(baT);
+			if (baT < 1) baRaf = requestAnimationFrame(baLoop);
+			else {
+				baPlaying = false;
+				document.getElementById('baAnimBtn').textContent = '▶ Animate Both';
+				document.getElementById('baAnimBtn').classList.remove('active');
+				baLastTs = null;
+			}
+		}
+
+		document.getElementById('baAnimBtn').onclick = function () {
+			if (!baPlaying) {
+				baT = 0;
+				baPlaying = true;
+				this.textContent = '⏸ Playing…';
+				this.classList.add('active');
+				baLastTs = null;
+				baRaf = requestAnimationFrame(baLoop);
+			}
+		};
+		document.getElementById('baResetBtn').onclick = function () {
+			cancelAnimationFrame(baRaf);
+			baPlaying = false;
+			baT = 0;
+			baLastTs = null;
+			document.getElementById('baAnimBtn').textContent = '▶ Animate Both';
+			document.getElementById('baAnimBtn').classList.remove('active');
+			renderBA(0);
+		};
+		renderBA(0);
+
+		/* ═══════════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════════ */
+		let quizScores = {};
+		function answer(optEl, qId, result) {
+			const qEl = document.getElementById(qId);
+			if (qEl.querySelector('.option.correct') || qEl.querySelector('.option.wrong')) return;
+			const fb = document.getElementById(qId + '-feedback');
+			optEl.classList.add(result === 'correct' ? 'correct' : 'wrong');
+			qEl.querySelectorAll('.option').forEach((o) => o.classList.add('disabled'));
+			if (result === 'correct') {
+				fb.textContent = '✓ Correct.';
+				fb.className = 'feedback ok';
+				quizScores[qId] = true;
+			} else {
+				fb.textContent = '✗ Not quite — review the section above.';
+				fb.className = 'feedback bad';
+				quizScores[qId] = false;
+				qEl.querySelectorAll('.option').forEach((o) => {
+					if (!o.classList.contains('wrong')) o.classList.add('correct');
+				});
+			}
+			if (Object.keys(quizScores).length === 5) {
+				const c = Object.values(quizScores).filter(Boolean).length;
+				document.getElementById('scoreNum').textContent = `${c}/5`;
+				document.getElementById('scoreLbl').textContent =
+					c === 5
+						? 'Perfect — Module 4 Complete!'
+						: c >= 4
+							? 'Strong work — review any you missed.'
+							: 'Good effort — re-read the sections.';
+				document.getElementById('quizScore').classList.add('visible');
+			}
+		}
+
+		if (typeof drawDecompLowerArms === 'function') window.drawDecompLowerArms = drawDecompLowerArms;
+		if (typeof renderDiag === 'function') window.renderDiag = renderDiag;
+		if (typeof eio === 'function') window.eio = eio;
+		if (typeof drawDecompUpperArms === 'function') window.drawDecompUpperArms = drawDecompUpperArms;
+		if (typeof applyStyle === 'function') window.applyStyle = applyStyle;
+		if (typeof capsuleCtx === 'function') window.capsuleCtx = capsuleCtx;
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof toggleWireframe === 'function') window.toggleWireframe = toggleWireframe;
+		if (typeof getComplexityReadout === 'function')
+			window.getComplexityReadout = getComplexityReadout;
+		if (typeof drawDecompNeck === 'function') window.drawDecompNeck = drawDecompNeck;
+		if (typeof renderBA === 'function') window.renderBA = renderBA;
+		if (typeof drawDecompTorso === 'function') window.drawDecompTorso = drawDecompTorso;
+		if (typeof clamp === 'function') window.clamp = clamp;
+		if (typeof renderSilhouettes === 'function') window.renderSilhouettes = renderSilhouettes;
+		if (typeof baLoop === 'function') window.baLoop = baLoop;
+		if (typeof renderDecomp === 'function') window.renderDecomp = renderDecomp;
+		if (typeof drawDecompShins === 'function') window.drawDecompShins = drawDecompShins;
+		if (typeof capsule === 'function') window.capsule = capsule;
+		if (typeof drawDecompHips === 'function') window.drawDecompHips = drawDecompHips;
+		if (typeof decompLoop === 'function') window.decompLoop = decompLoop;
+		if (typeof getCP === 'function') window.getCP = getCP;
+		if (typeof eout === 'function') window.eout = eout;
+		if (typeof toggleDecompAnim === 'function') window.toggleDecompAnim = toggleDecompAnim;
+		if (typeof drawDecompThighs === 'function') window.drawDecompThighs = drawDecompThighs;
+		if (typeof toggleShowColors === 'function') window.toggleShowColors = toggleShowColors;
+		if (typeof renderLOA === 'function') window.renderLOA = renderLOA;
+		if (typeof toggleAllLayers === 'function') window.toggleAllLayers = toggleAllLayers;
+		if (typeof lerp === 'function') window.lerp = lerp;
+		if (typeof selectElem === 'function') window.selectElem = selectElem;
+		if (typeof drawDecompHead === 'function') window.drawDecompHead = drawDecompHead;
+		if (typeof drawDecompFeet === 'function') window.drawDecompFeet = drawDecompFeet;
+		if (typeof diagLoop === 'function') window.diagLoop = diagLoop;
+
+		return () => {};
+	});
+</script>
+
+<div class="page-wrapper">
+	<!-- ══ HERO ══ -->
+	<header class="module-hero">
+		<svg
+			class="hero-deco"
+			width="320"
+			height="320"
+			viewBox="0 0 320 320"
+			fill="none"
+			aria-hidden="true"
+		>
+			<circle cx="160" cy="160" r="140" stroke="#4ecbb4" stroke-width="1" />
+			<ellipse cx="160" cy="160" rx="80" ry="120" stroke="#f0a830" stroke-width="1" />
+			<rect x="100" y="90" width="120" height="160" stroke="#e8553a" stroke-width="1" />
+			<circle cx="160" cy="100" r="40" stroke="#c4a8f0" stroke-width="1" />
+			<ellipse
+				cx="160"
+				cy="220"
+				rx="50"
+				ry="28"
+				stroke="#4ecbb4"
+				stroke-width="1"
+				stroke-dasharray="4 4"
+			/>
+		</svg>
+		<div class="module-eyebrow">Animation Fundamentals · Module 04</div>
+		<h1 class="module-title">Drawing for <em>Animation</em></h1>
+		<p class="module-subtitle">
+			You don't need to be a great artist. You need to think in the right shapes.
+		</p>
+		<div class="objectives">
+			<div class="obj-label">Learning Objectives</div>
+			<ul>
+				<li>Break any character or object down into simple animatable forms</li>
+				<li>Understand and apply line of action to create dynamic poses</li>
+				<li>Test and improve silhouette clarity in your designs</li>
+				<li>Design diagram elements — arrows, labels, icons — that animate cleanly</li>
+				<li>Recognise when a design is too complex to animate effectively</li>
+			</ul>
+		</div>
+	</header>
+
+	<!-- ══ SECTION 1: SIMPLICITY IS THE PREREQUISITE ══ -->
+	<section class="section" id="s1">
+		<div class="section-header">
+			<span class="section-num">01</span>
+			<h2 class="section-title">Simplicity Is the Prerequisite</h2>
+		</div>
+
+		<p>
+			A common misconception about animation is that it requires artistic mastery. It doesn't. What
+			it requires is <strong>the ability to think in simple forms</strong>. Every animatable
+			character, creature, or object — no matter how detailed the final render — is built from a
+			skeleton of primitive shapes: circles, ellipses, rectangles, and triangles.
+		</p>
+		<p>
+			This isn't a shortcut or a beginner's compromise. It is the <em>correct</em> approach, used by professional
+			animators at every level. Animating a complex, detailed shape is difficult and unstable — the forms
+			don't hold together across frames. Animating a structure of simple shapes is fast, consistent, and
+			predictable.
+		</p>
+
+		<div class="callout mint">
+			<div class="callout-label">The Animators' Rule</div>
+			If you cannot draw something convincingly in ten seconds as a simple shape construction, it will
+			be a nightmare to animate.
+			<strong>Design for motion from the very first sketch.</strong> Complexity is added at the render
+			stage, not the rigging stage.
+		</div>
+
+		<p>
+			This principle applies equally to educational diagrams. An arrow that is a simple closed path
+			animates beautifully. An arrow built from a dozen separate anchor points, fancy gradients, and
+			decorative flourishes is a production liability.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 2: SHAPE DECOMPOSITION ══ -->
+	<section class="section" id="s2">
+		<div class="section-header">
+			<span class="section-num">02</span>
+			<h2 class="section-title">Shape Decomposition</h2>
+		</div>
+
+		<p>
+			The first skill to develop is <strong>seeing the shapes inside a design</strong>. Look at any
+			character or object and ask: which part is basically a circle? Which part is basically a
+			rectangle? Which part is a stretched ellipse?
+		</p>
+		<p>
+			Once you identify these primitives, you can rig and animate them independently. The head
+			rotates on the neck. The torso tilts forward. The limbs swing from their joints. Each body
+			part is its own shape — and shapes are what animation software knows how to move.
+		</p>
+
+		<!-- DEMO 4.1: Shape Decomposition Explorer -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 4.1 — Shape Decomposition</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Toggle each body part on or off to see which primitive shape it corresponds to. The final
+					design is just these shapes — stacked and composed.
+				</p>
+				<div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start">
+					<!-- Canvas -->
+					<div style="flex: 0 0 auto">
+						<canvas
+							id="decompCanvas"
+							width="280"
+							height="340"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+					</div>
+
+					<!-- Layer toggles -->
+					<div style="flex: 1; min-width: 200px">
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										margin-bottom: 0.75rem;
+									"
+						>
+							Shape Layers
+						</div>
+						<div class="layer-list" id="layerList"></div>
+
+						<div style="margin-top: 1.25rem">
+							<div class="btn-row">
+								<button
+									class="btn active"
+									id="decompAllBtn"
+									onclick={(e) => {
+										window.toggleAllLayers(true);
+									}}
+								>
+									Show All
+								</button>
+								<button
+									class="btn"
+									onclick={(e) => {
+										window.toggleAllLayers(false);
+									}}>Hide All</button
+								>
+							</div>
+						</div>
+
+						<div
+							style="
+										margin-top: 1rem;
+										padding: 0.75rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+									"
+						>
+							<div
+								id="layerInfo"
+								style="
+											font-family: var(--ff-mono);
+											font-size: 11px;
+											color: var(--muted);
+											line-height: 1.7;
+											min-height: 3.5em;
+										"
+							>
+								Hover a layer to see its shape info.
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="btn-row" style="margin-top: 1.25rem">
+					<button
+						class="btn gold active"
+						id="showColorsBtn"
+						onclick={(e) => {
+							window.toggleShowColors(e.currentTarget);
+						}}
+					>
+						Show Colours
+					</button>
+					<button
+						class="btn"
+						id="wireframeBtn"
+						onclick={(e) => {
+							window.toggleWireframe(e.currentTarget);
+						}}
+					>
+						Wireframe
+					</button>
+					<button
+						class="btn"
+						id="animateDecompBtn"
+						onclick={(e) => {
+							window.toggleDecompAnim(e.currentTarget);
+						}}
+					>
+						▶ Animate
+					</button>
+				</div>
+
+				<div class="callout mint" style="margin-top: 1.25rem">
+					<div class="callout-label">Notice</div>
+					Toggle to "Wireframe" to see only the shape outlines — this is exactly what a rig looks like
+					under the hood. Each outline is a separate, independently moveable piece.
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 3: LINE OF ACTION ══ -->
+	<section class="section" id="s3">
+		<div class="section-header">
+			<span class="section-num">03</span>
+			<h2 class="section-title">Line of Action</h2>
+		</div>
+
+		<p>
+			The <strong>line of action</strong> is an imaginary curve that runs through a pose from head to
+			toe — or from one end of a gesture to the other. It is the single most important concept in expressive
+			drawing, and it is almost entirely invisible to the untrained eye.
+		</p>
+		<p>
+			A pose with a clear, sweeping line of action reads instantly. The eye follows it from one end
+			of the body to the other without conscious effort. A pose with a broken or neutral line of
+			action feels stiff, unclear, or lifeless — even if all the anatomical details are correct.
+		</p>
+
+		<div class="callout coral">
+			<div class="callout-label">Why It Matters for Animation</div>
+			In animation, the line of action should be re-established with every major pose change. When the
+			character reaches the apex of a jump, there is a line. When they crouch at impact, there is a different,
+			opposite line. The arc of the line of action across time
+			<em>is</em> the character's physical story.
+		</div>
+
+		<!-- DEMO 4.2: Line of Action -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 4.2 — Line of Action</span>
+				<span class="demo-badge coral">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Compare four poses — from rigid/stiff to strongly dynamic. Toggle the line of action
+					overlay to see the underlying curve that makes or breaks a pose.
+				</p>
+
+				<div
+					style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem"
+					id="poseSelector"
+				></div>
+
+				<div
+					style="
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 1px;
+								background: var(--border);
+								border: 1px solid var(--border);
+							"
+				>
+					<div
+						style="
+									background: var(--surface);
+									padding: 0.75rem;
+									display: flex;
+									flex-direction: column;
+									gap: 0.5rem;
+									align-items: center;
+								"
+					>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--muted);
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+									"
+						>
+							Without Line
+						</div>
+						<canvas
+							id="loaCanvasA"
+							width="200"
+							height="260"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+					</div>
+					<div
+						style="
+									background: var(--surface);
+									padding: 0.75rem;
+									display: flex;
+									flex-direction: column;
+									gap: 0.5rem;
+									align-items: center;
+								"
+					>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--mint);
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+									"
+						>
+							With Line of Action
+						</div>
+						<canvas
+							id="loaCanvasB"
+							width="200"
+							height="260"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+					</div>
+				</div>
+
+				<div
+					id="loaDescription"
+					style="
+								margin-top: 1rem;
+								padding: 0.85rem 1rem;
+								border: 1px solid var(--border);
+								background: var(--raised);
+								font-family: var(--ff-mono);
+								font-size: 11px;
+								color: var(--muted);
+								line-height: 1.7;
+							"
+				></div>
+			</div>
+		</div>
+
+		<p>
+			The line of action doesn't have to be a single perfect curve. For a seated pose it might be in
+			the back and neck. For a kick, it runs from the supporting foot through the hip and out the
+			kicking leg. The skill is in finding it and then <em>committing to it</em> when drawing the pose.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 4: SILHOUETTE CLARITY ══ -->
+	<section class="section" id="s4">
+		<div class="section-header">
+			<span class="section-num">04</span>
+			<h2 class="section-title">Silhouette Clarity</h2>
+		</div>
+
+		<p>
+			A <strong>silhouette test</strong> is the fastest way to evaluate a design's clarity. Fill the character
+			or object with flat black. Does it still communicate what it is and what it's doing? If yes — the
+			staging and design are working. If not — there is a problem.
+		</p>
+		<p>
+			Silhouette clarity matters in animation because motion happens fast. The viewer does not have
+			time to decode details. The overall shape — the silhouette — is processed in milliseconds. If
+			it doesn't read, the action is lost.
+		</p>
+
+		<!-- DEMO 4.3: Silhouette Test -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 4.3 — Silhouette Test</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1rem">
+					Three designs at three levels of clarity. Toggle the silhouette view to test how well each
+					reads as a pure shape.
+				</p>
+
+				<label
+					style="
+								display: flex;
+								align-items: center;
+								gap: 0.65rem;
+								cursor: pointer;
+								margin-bottom: 1.25rem;
+								font-family: var(--ff-mono);
+								font-size: 11px;
+								user-select: none;
+							"
+				>
+					<input
+						type="checkbox"
+						id="silToggle"
+						style="accent-color: var(--mint); width: 14px; height: 14px"
+					/>
+					<span id="silToggleLabel">Show as Silhouette</span>
+				</label>
+
+				<div class="sil-grid">
+					<div class="sil-card">
+						<div class="sil-card-header">
+							<span class="sil-card-label">Design A</span>
+							<span class="sil-result" style="color: var(--mint); border-color: var(--mint)"
+								>✓ Clear</span
+							>
+						</div>
+						<canvas
+							id="silA"
+							width="200"
+							height="200"
+							style="background: var(--raised); width: 100%"
+						></canvas>
+						<div
+							style="
+										padding: 0.6rem 1rem;
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										border-top: 1px solid var(--border);
+									"
+						>
+							Distinct shapes, clear action
+						</div>
+					</div>
+					<div class="sil-card">
+						<div class="sil-card-header">
+							<span class="sil-card-label">Design B</span>
+							<span class="sil-result" style="color: var(--gold); border-color: var(--gold)"
+								>~ Ambiguous</span
+							>
+						</div>
+						<canvas
+							id="silB"
+							width="200"
+							height="200"
+							style="background: var(--raised); width: 100%"
+						></canvas>
+						<div
+							style="
+										padding: 0.6rem 1rem;
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										border-top: 1px solid var(--border);
+									"
+						>
+							Similar-sized parts merge together
+						</div>
+					</div>
+					<div class="sil-card">
+						<div class="sil-card-header">
+							<span class="sil-card-label">Design C</span>
+							<span class="sil-result" style="color: var(--coral); border-color: var(--coral)"
+								>✗ Unreadable</span
+							>
+						</div>
+						<canvas
+							id="silC"
+							width="200"
+							height="200"
+							style="background: var(--raised); width: 100%"
+						></canvas>
+						<div
+							style="
+										padding: 0.6rem 1rem;
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										border-top: 1px solid var(--border);
+									"
+						>
+							Overlapping parts collapse into blob
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<p>
+			The silhouette test applies to diagrams too. If your arrows, labels, and icons all have the
+			same visual weight and similar silhouettes, the viewer won't know where to look. Visual
+			hierarchy — making the important thing the most distinct shape — is the diagram equivalent of
+			silhouette clarity.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 5: DIAGRAM ELEMENTS ══ -->
+	<section class="section" id="s5">
+		<div class="section-header">
+			<span class="section-num">05</span>
+			<h2 class="section-title">Designing Diagram Elements for Animation</h2>
+		</div>
+
+		<p>
+			If you are making educational videos, most of your animation won't be characters — it will be <strong
+				>diagram elements</strong
+			>: arrows that reveal a process, labels that appear on cue, icons that pulse or transform,
+			flow charts that build themselves. The design decisions you make about these elements
+			determine how cleanly they animate.
+		</p>
+		<p>
+			The golden rule:
+			<strong>every element that will move must be a single, simple closed shape</strong>. Compound
+			paths, grouped clutter, and mixed stroke/fill combinations all create animation headaches.
+			Think of each element as a sprite — it should be self-contained and self-explanatory.
+		</p>
+
+		<!-- DEMO 4.4: Diagram Element Designer -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 4.4 — Diagram Element Quality</span>
+				<span class="demo-badge gold">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Drag the <strong style="color: var(--gold)">complexity</strong> slider to see how the same arrow/label
+					elements move from animation-friendly to animation-hostile. Then hit "Animate" to see why it
+					matters.
+				</p>
+
+				<div
+					style="
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 1px;
+								background: var(--border);
+								border: 1px solid var(--border);
+							"
+				>
+					<div
+						style="
+									background: var(--surface);
+									padding: 1rem;
+									display: flex;
+									flex-direction: column;
+									gap: 0.5rem;
+									align-items: center;
+								"
+					>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--mint);
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+									"
+						>
+							Animation-Friendly
+						</div>
+						<canvas
+							id="diagGoodCanvas"
+							width="220"
+							height="200"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										text-align: center;
+										line-height: 1.5;
+									"
+						>
+							Simple paths · Closed shapes<br />Single strokes · Clean fills
+						</div>
+					</div>
+					<div
+						style="
+									background: var(--surface);
+									padding: 1rem;
+									display: flex;
+									flex-direction: column;
+									gap: 0.5rem;
+									align-items: center;
+								"
+					>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--coral);
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+									"
+						>
+							Animation-Hostile
+						</div>
+						<canvas
+							id="diagBadCanvas"
+							width="220"
+							height="200"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										text-align: center;
+										line-height: 1.5;
+									"
+						>
+							Compound paths · Mixed strokes<br />Clutter · Decoration
+						</div>
+					</div>
+				</div>
+
+				<!-- Element Selector -->
+				<div style="margin-top: 1.25rem">
+					<div
+						style="
+									font-family: var(--ff-mono);
+									font-size: 10px;
+									color: var(--muted);
+									margin-bottom: 0.5rem;
+								"
+					>
+						Select Element
+					</div>
+					<div class="btn-row" id="elemSelector">
+						<button
+							class="btn active"
+							data-elem="arrow"
+							onclick={(e) => {
+								window.selectElem(e.currentTarget, 'arrow');
+							}}
+						>
+							Arrow
+						</button>
+						<button
+							class="btn"
+							data-elem="label"
+							onclick={(e) => {
+								window.selectElem(e.currentTarget, 'label');
+							}}
+						>
+							Label Box
+						</button>
+						<button
+							class="btn"
+							data-elem="node"
+							onclick={(e) => {
+								window.selectElem(e.currentTarget, 'node');
+							}}
+						>
+							Flow Node
+						</button>
+						<button
+							class="btn"
+							data-elem="icon"
+							onclick={(e) => {
+								window.selectElem(e.currentTarget, 'icon');
+							}}
+						>
+							Icon
+						</button>
+					</div>
+				</div>
+
+				<!-- Complexity ruler -->
+				<div
+					style="
+								margin-top: 1rem;
+								padding: 0.85rem 1rem;
+								border: 1px solid var(--border);
+								background: var(--raised);
+							"
+				>
+					<div class="ctrl-row">
+						<span class="ctrl-label">Complexity</span>
+						<input
+							type="range"
+							class="gold"
+							id="complexitySlider"
+							min="0"
+							max="1"
+							step="0.01"
+							value="0.0"
+						/>
+						<span class="ctrl-val" id="complexityVal" style="color: var(--gold)">0%</span>
+					</div>
+					<div
+						id="complexityReadout"
+						style="
+									font-family: var(--ff-mono);
+									font-size: 10px;
+									color: var(--muted);
+									margin-top: 0.4rem;
+									line-height: 1.6;
+								"
+					></div>
+				</div>
+
+				<div class="btn-row" style="margin-top: 1rem">
+					<button class="btn gold" id="diagAnimBtn">▶ Animate Both</button>
+					<button class="btn" id="diagResetBtn">↺ Reset</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- DEMO 4.5: Before / After Simplification -->
+		<div class="demo-box" style="margin-top: 2rem">
+			<div class="demo-header">
+				<span class="demo-label">Demo 4.5 — Simplification in Practice</span>
+				<span class="demo-badge coral">before / after</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					The same three diagram elements — before and after animation-friendly simplification.
+					Animate both to compare how they move.
+				</p>
+
+				<div class="ba-strip">
+					<div class="ba-panel">
+						<div class="ba-header" style="border-bottom: 1px solid var(--border)">
+							<div class="ba-label" style="color: var(--coral)">BEFORE — Overcomplicated</div>
+						</div>
+						<canvas
+							id="baBeforeCanvas"
+							width="300"
+							height="220"
+							style="width: 100%; background: var(--raised); display: block"
+						></canvas>
+					</div>
+					<div class="ba-panel">
+						<div class="ba-header" style="border-bottom: 1px solid var(--border)">
+							<div class="ba-label" style="color: var(--mint)">AFTER — Simplified</div>
+						</div>
+						<canvas
+							id="baAfterCanvas"
+							width="300"
+							height="220"
+							style="width: 100%; background: var(--raised); display: block"
+						></canvas>
+					</div>
+				</div>
+
+				<div class="btn-row">
+					<button class="btn" id="baAnimBtn">▶ Animate Both</button>
+					<button class="btn" id="baResetBtn">↺ Reset</button>
+				</div>
+
+				<div class="callout gold" style="margin-top: 1.25rem">
+					<div class="callout-label">The Simplification Checklist</div>
+					<div
+						style="
+									display: grid;
+									grid-template-columns: 1fr 1fr;
+									gap: 0.5rem 1.5rem;
+									font-size: 12px;
+									margin-top: 0.5rem;
+								"
+					>
+						<div style="color: var(--mint)">✓ Closed, filled shapes</div>
+						<div style="color: var(--coral)">✗ Open strokes as design elements</div>
+						<div style="color: var(--mint)">✓ One shape per moving part</div>
+						<div style="color: var(--coral)">✗ Groups of sub-shapes that move together</div>
+						<div style="color: var(--mint)">✓ Uniform stroke weight or none</div>
+						<div style="color: var(--coral)">✗ Mixed stroke widths on same element</div>
+						<div style="color: var(--mint)">✓ Flat or simple gradient fills</div>
+						<div style="color: var(--coral)">✗ Decorative detail inside animated regions</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ QUIZ ══ -->
+	<div class="quiz-section" id="quiz">
+		<div class="quiz-header-bar">
+			<div>
+				<div class="quiz-title">Module Check</div>
+				<div class="quiz-sub">5 questions · Design judgment</div>
+			</div>
+			<span class="demo-badge">Assessment</span>
+		</div>
+		<div class="quiz-body">
+			<div class="question" id="q1">
+				<div class="q-num">Q1 of 5</div>
+				<div class="q-text">
+					Why do professional animators design characters using simple geometric primitives rather
+					than detailed, realistic forms?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Simple shapes look better on screen at small sizes
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Detailed forms require more RAM to render
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+					>
+						Simple shapes are stable and consistent across frames — complex forms are difficult to
+						animate and maintain volume
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Animation software can only work with basic shapes
+					</div>
+				</div>
+				<div class="feedback" id="q1-feedback"></div>
+			</div>
+
+			<div class="question" id="q2">
+				<div class="q-num">Q2 of 5</div>
+				<div class="q-text">The line of action in a pose is best described as:</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						The outline of the character's body
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+					>
+						An imaginary curve running through the pose that captures its energy, direction, and
+						rhythm
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						The direction the character is walking toward
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						A guideline drawn at the base of every frame
+					</div>
+				</div>
+				<div class="feedback" id="q2-feedback"></div>
+			</div>
+
+			<div class="question" id="q3">
+				<div class="q-num">Q3 of 5</div>
+				<div class="q-text">
+					You fill a character design with flat black to perform a silhouette test. The result is an
+					unrecognisable blob — the head, arms, and body all merge into one dark mass. What should
+					you do?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Add more detail and texture to distinguish the parts
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Use a lighter background colour so the silhouette doesn't show
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+					>
+						Redesign the pose or character proportions so different body parts have distinctly
+						different silhouettes — spread the limbs, vary shape sizes
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						The silhouette test only applies to character animation, not educational diagrams
+					</div>
+				</div>
+				<div class="feedback" id="q3-feedback"></div>
+			</div>
+
+			<div class="question" id="q4">
+				<div class="q-num">Q4 of 5</div>
+				<div class="q-text">
+					You are designing a flow diagram for an educational video. Each box in the diagram will
+					animate onto screen individually. Which design choice is most animation-friendly?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+					>
+						Each box is a single, closed, filled rectangle with a text label as a separate layer
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						Each box is made from four separate line strokes forming a square, with decorative
+						corner marks
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						Each box has a gradient background, a drop shadow built from a blurred copy, and an
+						inner glow
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						All boxes are part of a single merged compound path for efficiency
+					</div>
+				</div>
+				<div class="feedback" id="q4-feedback"></div>
+			</div>
+
+			<div class="question" id="q5">
+				<div class="q-num">Q5 of 5</div>
+				<div class="q-text">
+					A stiff, anatomically correct pose that follows all the rules of anatomy but feels
+					lifeless and dull most likely has:
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Too many frames — the timing is too slow
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+					>
+						A weak or absent line of action — no strong curve unifies the pose and gives it energy
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Wrong colours — the palette is too muted
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Too much squash and stretch distorting the anatomy
+					</div>
+				</div>
+				<div class="feedback" id="q5-feedback"></div>
+			</div>
+		</div>
+		<div class="quiz-score" id="quizScore">
+			<div class="score-big" id="scoreNum">0/5</div>
+			<div class="score-lbl" id="scoreLbl">Module 4 Complete</div>
+		</div>
+	</div>
+
+	<!-- ══ NAV ══ -->
+	<nav class="nav-links">
+		<a href="/courses/animation/03" class="prev-link">← Module 3: The 12 Principles</a>
+		<a href="/courses/animation/05" class="next-module">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">Digital 2D Tools</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</nav>
+</div>
+
+<style>
+	.page-wrapper {
+		background: var(--anim-bg);
+		color: var(--anim-text);
+		font-family: var(--ff-body);
+		font-size: 15px;
+		line-height: 1.8;
+	}
+
+	h1,
+	h2,
+	:global(h3) {
+		font-family: var(--ff-display);
+		font-weight: 800;
+		line-height: 1.15;
+		color: #fff;
+	}
+	p {
+		margin-bottom: 1.1rem;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--anim-gold);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: italic;
+	}
+	:global(code) {
+		font-family: var(--ff-mono);
+		font-size: 12px;
+		background: var(--anim-raised);
+		border: 1px solid var(--anim-border2);
+		padding: 1px 6px;
+		color: var(--anim-mint);
+	}
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 8rem;
+	}
+
+	/* ── HERO ── */
+	.module-hero {
+		padding: 5rem 0 4rem;
+		border-bottom: 1px solid var(--anim-border);
+		margin-bottom: 4rem;
+		position: relative;
+		overflow: hidden;
+	}
+	.module-eyebrow {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-gold);
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.module-eyebrow::before,
+	.module-eyebrow::after {
+		content: '';
+		display: inline-block;
+		width: 24px;
+		height: 1px;
+		background: var(--anim-gold);
+	}
+	.module-title {
+		font-size: clamp(30px, 5.5vw, 56px);
+		color: #fff;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+	.module-title em {
+		color: var(--anim-mint);
+		font-style: italic;
+	}
+	.module-subtitle {
+		font-size: 16px;
+		color: var(--anim-muted);
+		font-weight: 400;
+		margin-bottom: 2.5rem;
+	}
+	.objectives {
+		border: 1px solid var(--anim-border);
+		border-left: 3px solid var(--anim-mint);
+		background: var(--anim-surface);
+		padding: 1.5rem 2rem;
+	}
+	.obj-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-mint);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.25rem 0 0.25rem 1.5rem;
+		position: relative;
+		font-size: 14px;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--anim-gold);
+	}
+
+	/* hero deco — overlapping circles */
+	.hero-deco {
+		position: absolute;
+		top: -20px;
+		right: -30px;
+		opacity: 0.04;
+		pointer-events: none;
+	}
+
+	/* ── SECTIONS ── */
+	.section {
+		margin: 5rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.section-num {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-coral);
+		letter-spacing: 0.1em;
+	}
+	.section-title {
+		font-family: var(--ff-display);
+		font-size: 26px;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	/* ── CALLOUT ── */
+	.callout {
+		margin: 1.75rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
+		font-size: 13.5px;
+	}
+	.callout.gold {
+		border-color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
+	}
+	.callout.coral {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
+	}
+	.callout.mint {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
+	}
+	.callout-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		margin-bottom: 0.4rem;
+		font-weight: 500;
+		color: var(--anim-lavender);
+	}
+	.callout.gold .callout-label {
+		color: var(--anim-gold);
+	}
+	.callout.coral .callout-label {
+		color: var(--anim-coral);
+	}
+	.callout.mint .callout-label {
+		color: var(--anim-mint);
+	}
+
+	/* ── DEMO BOX ── */
+	.demo-box {
+		background: var(--anim-surface);
+		border: 1px solid var(--anim-border);
+		margin: 2.5rem 0;
+	}
+	.demo-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.demo-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.demo-badge {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+	}
+	.demo-badge.gold {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 10%, transparent);
+	}
+	.demo-badge.coral {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+
+	canvas {
+		display: block;
+	}
+
+	/* ── CONTROLS ── */
+	:global(.ctrl-row) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.35rem 0;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-label) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 80px;
+	}
+	:global(.ctrl-val) {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-mint);
+		font-weight: 500;
+		min-width: 40px;
+	}
+	:global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 2px;
+		background: var(--anim-border2);
+		outline: none;
+		min-width: 80px;
+	}
+	:global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--anim-mint);
+		cursor: pointer;
+		border: 2px solid var(--anim-bg);
+	}
+	input[type='range'].gold::-webkit-slider-thumb {
+		background: var(--anim-gold);
+	}
+	input[type='range'].coral::-webkit-slider-thumb {
+		background: var(--anim-coral);
+	}
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-text);
+		padding: 5px 14px;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.15s;
+		letter-spacing: 0.05em;
+	}
+	:global(.btn:hover) {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+	}
+	:global(.btn.active) {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
+	}
+	.btn.gold:hover,
+	:global(.btn.gold.active) {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+	}
+	:global(.btn.gold.active) {
+		background: color-mix(in srgb, var(--anim-gold) 12%, transparent);
+	}
+	.btn.coral:hover,
+	:global(.btn.coral.active) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	:global(.btn.coral.active) {
+		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
+	}
+	.btn.tog {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	.btn.tog.active {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+
+	/* ── SHAPE LAYER TOGGLES ── */
+	.layer-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.layer-item {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.35rem 0.6rem;
+		border: 1px solid var(--anim-border);
+		cursor: pointer;
+		transition: all 0.15s;
+		user-select: none;
+	}
+	.layer-item:hover {
+		border-color: var(--anim-border2);
+	}
+	.layer-item.on {
+		border-color: color-mix(in srgb, var(--itemcolor, var(--anim-mint)) 60%, transparent);
+		background: color-mix(in srgb, var(--itemcolor, var(--anim-mint)) 8%, transparent);
+	}
+	.layer-swatch {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	.layer-name {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.05em;
+		color: var(--anim-muted);
+	}
+	.layer-item.on .layer-name {
+		color: var(--anim-text);
+	}
+	.layer-shape {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-dim);
+		margin-left: auto;
+	}
+
+	/* ── SILHOUETTE CARDS ── */
+	.sil-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+		margin: 1.5rem 0;
+	}
+	@media (max-width: 580px) {
+		.sil-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	.sil-card {
+		background: var(--anim-surface);
+		display: flex;
+		flex-direction: column;
+	}
+	.sil-card-header {
+		padding: 0.6rem 1rem;
+		border-bottom: 1px solid var(--anim-border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.sil-card-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.sil-result {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		padding: 1px 6px;
+		border: 1px solid;
+	}
+
+	/* ── COMPLEXITY RULER ── */
+	.complexity-ruler {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 1rem 0;
+	}
+	.complexity-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 90px;
+	}
+	.ruler-track {
+		flex: 1;
+		height: 6px;
+		background: var(--anim-border2);
+		position: relative;
+		border-radius: 3px;
+	}
+	.ruler-fill {
+		position: absolute;
+		left: 0;
+		top: 0;
+		height: 100%;
+		border-radius: 3px;
+		transition:
+			width 0.3s ease,
+			background 0.3s;
+	}
+	.ruler-val {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		font-weight: 500;
+		min-width: 40px;
+		text-align: right;
+	}
+
+	/* ── BEFORE/AFTER TOGGLE ── */
+	.ba-strip {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+		margin: 1.5rem 0;
+	}
+	.ba-panel {
+		background: var(--anim-surface);
+		display: flex;
+		flex-direction: column;
+	}
+	.ba-header {
+		padding: 0.6rem 1rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.ba-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	/* ── QUIZ ── */
+	.quiz-section {
+		margin: 5rem 0;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+	}
+	.quiz-header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 1.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.quiz-title {
+		font-family: var(--ff-display);
+		font-size: 22px;
+		font-weight: 800;
+		color: #fff;
+	}
+	.quiz-sub {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.2rem;
+	}
+	.quiz-body {
+		padding: 1.75rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	.question:first-child {
+		margin-top: 0;
+	}
+	:global(.q-num) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		color: var(--anim-mint);
+		margin-bottom: 0.4rem;
+	}
+	:global(.q-text) {
+		font-size: 14px;
+		color: #fff;
+		margin-bottom: 0.75rem;
+		line-height: 1.6;
+	}
+	.q-canvas {
+		border: 1px solid var(--anim-border);
+		margin: 0.75rem 0;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	:global(.option) {
+		padding: 0.65rem 1rem;
+		border: 1px solid var(--anim-border);
+		cursor: pointer;
+		font-size: 13px;
+		font-family: var(--ff-body);
+		transition: all 0.15s;
+		user-select: none;
+		background: var(--anim-bg);
+	}
+	:global(.option:hover) {
+		border-color: var(--anim-border2);
+		background: var(--anim-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+		color: var(--anim-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+		color: var(--anim-coral);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.6rem;
+		min-height: 1.4em;
+		font-family: var(--ff-mono);
+		color: var(--anim-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--anim-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--anim-coral);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 2rem;
+		border: 1px solid var(--anim-border);
+		text-align: center;
+		background: var(--anim-raised);
+		display: none;
+	}
+	:global(.quiz-score.visible) {
+		display: block;
+	}
+	.score-big {
+		font-family: var(--ff-display);
+		font-size: 52px;
+		font-weight: 800;
+		color: var(--anim-gold);
+		line-height: 1;
+	}
+	.score-lbl {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.5rem;
+	}
+
+	/* ── NAV ── */
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 4rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.prev-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		color: var(--anim-muted);
+		font-family: var(--ff-mono);
+		font-size: 11px;
+	}
+	.prev-link:hover {
+		border-color: var(--anim-muted);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		min-width: 260px;
+	}
+	.next-module:hover {
+		border-color: var(--anim-gold);
+	}
+	.next-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.next-title {
+		font-family: var(--ff-display);
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.2rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--anim-gold);
+		flex-shrink: 0;
+	}
+	@media (max-width: 640px) {
+		.page-wrapper {
+			padding: 0 1.25rem 6rem;
+		}
+		.ba-strip {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

@@ -43,11 +43,24 @@ def convert_module(input_path, output_path):
         '.gpu-stage.active', '.gpu-stage.active .gpu-stage-num', '.gpu-stage.active .gpu-stage-name', 
         '.gpu-stage.active .gpu-stage-desc', '.q-text', '.q-num', '.options', '.option', '.option:hover', 
         '.feedback', '.bind-step', '.bind-step:last-child', '.bind-num', '.bind-content', '.bind-title', 
-        '.bind-desc', '.log-line:last-child'
+        '.bind-desc', '.log-line:last-child',
+        
+        # Anim Module 05 Selectors
+        '.hero-bar', '.btn.coral:hover', '.btn.mint:hover', '.btn.danger', '.btn.danger:hover',
+        "input[type='range'].coral::-webkit-slider-thumb", '.tl-btn.playing', '.tl-layer-name-row', 
+        '.tl-layer-name-row:hover', '.tl-layer-name-row.selected', '.tl-layer-swatch', '.tl-layer-label', 
+        '.tl-layer-name-row.selected .tl-layer-label', '.tl-layer-eye', '.tl-layer-eye:hover', 
+        '.tl-ruler-tick', '.tl-ruler-num', '.tl-ruler-line', '.tl-ruler-line.major', '.tl-track-row', 
+        '.tl-track-bg', '.tl-keyframe', '.tl-keyframe:hover', '.tl-tween-bar', '.tl-tween-bar.hold', 
+        '.ls-layer', '.ls-layer:hover', '.ls-layer.selected', '.ls-layer.dragging', '.ls-swatch', 
+        '.ls-name', '.ls-layer.selected .ls-name', '.ls-type', '.ls-eye', '.ls-eye:hover', 
+        '.ls-layer.visible .ls-eye', '.ls-lock', '.ls-lock:hover', '.ls-preview', '.onion-shell', 
+        '.onion-panel', '.onion-panel-label'
     ]
     for sel in selectors_to_wrap:
         escaped_sel = re.escape(sel)
-        css = re.sub(fr'(?<!:global\(){escaped_sel}(?P<suffix>[\s{{,])', fr':global({sel})\g<suffix>', css)
+        # Target strict selector boundaries to prevent corrupting compound class names (e.g. `code` matching inside `.tl-timecode`)
+        css = re.sub(fr'(?<!:global\()(?<![a-zA-Z0-9_\-]){escaped_sel}(?P<suffix>[\s{{,>+~])', fr':global({sel})\g<suffix>', css)
 
     if 'animation' in output_path:
         token_replacements = [

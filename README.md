@@ -13,7 +13,9 @@ A SvelteKit web app that hosts interactive, canvas-driven programming courses. M
 | 02 | The Rendering Pipeline | ✅ Available |
 | 03 | Coordinate Systems & Transformations | ✅ Available |
 | 04 | Introduction to GPU Rendering | ✅ Available |
-| 05–12 | … | 🔒 Coming Soon |
+| 05 | Textures and Sampling | ✅ Available |
+| 06 | Lighting and Shading Models | ✅ Available |
+| 07–12 | … | 🔒 Coming Soon |
 
 ### Animation Fundamentals
 *Theory + Practice* — 10 modules covering motion, principles, and visual storytelling.
@@ -23,7 +25,9 @@ A SvelteKit web app that hosts interactive, canvas-driven programming courses. M
 | 01 | The Language of Motion | ✅ Available |
 | 02 | Timing & Spacing | ✅ Available |
 | 03 | The 12 Principles | ✅ Available |
-| 04–10 | … | 🔒 Coming Soon |
+| 04 | Drawing for Animation | ✅ Available |
+| 05 | Digital 2D Tools | ✅ Available |
+| 06–10 | … | 🔒 Coming Soon |
 
 ## Development
 

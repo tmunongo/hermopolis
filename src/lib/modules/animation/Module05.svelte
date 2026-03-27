@@ -1,0 +1,3126 @@
+<script>
+	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		/* ═══════════════ UTILS ═══════════════ */
+		const C = {
+			gold: '#f0a830',
+			coral: '#e8553a',
+			mint: '#4ecbb4',
+			lav: '#c4a8f0',
+			muted: '#7a6e5e',
+			border: '#28221a',
+			border2: '#3c342a',
+			raised: '#1c1812',
+			surface: '#131009',
+			bg: '#0b0906',
+			dim: '#4a4035',
+			text: '#ede5d4'
+		};
+		const lerp = (a, b, t) => a + (b - a) * t;
+		const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+		const eio = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
+		const eout = (t) => 1 - Math.pow(1 - t, 3);
+		const ein = (t) => t * t * t;
+
+		/* ═══════════════ HERO DECO ═══════════════ */
+		(() => {
+			const el = document.getElementById('heroDeco');
+			const widths = [80, 120, 60, 100, 40, 90, 70, 110, 50, 85];
+			widths.forEach((w) => {
+				const b = document.createElement('div');
+				b.className = 'hero-bar';
+				b.style.width = w + '%';
+				el.appendChild(b);
+			});
+		})();
+
+		/* ═══════════════════════════════════════
+   DEMO 5.1 — LAYER STACK
+═══════════════════════════════════════ */
+		const LAYERS = [
+			{
+				id: 'bg',
+				name: 'Background',
+				type: 'Raster',
+				color: '#3a2a1a',
+				visible: true,
+				info: 'Raster · Background fills · Never moves · Lock it to avoid accidental edits',
+				draw(ctx, W, H) {
+					const grd = ctx.createLinearGradient(0, 0, 0, H);
+					grd.addColorStop(0, '#1a1008');
+					grd.addColorStop(1, '#0e0804');
+					ctx.fillStyle = grd;
+					ctx.fillRect(0, 0, W, H);
+					// Ground
+					ctx.fillStyle = '#2a1e0e';
+					ctx.fillRect(0, H * 0.72, W, H);
+					ctx.strokeStyle = '#3a2a1a';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(0, H * 0.72);
+					ctx.lineTo(W, H * 0.72);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'shadow',
+				name: 'Shadow',
+				type: 'Raster',
+				color: '#6a5540',
+				visible: true,
+				info: 'Raster · Soft shadow under character · Low in stack so character renders over it',
+				draw(ctx, W, H) {
+					const cx = W * 0.5,
+						cy = H * 0.73;
+					const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+					grd.addColorStop(0, 'rgba(0,0,0,.45)');
+					grd.addColorStop(1, 'transparent');
+					ctx.fillStyle = grd;
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 55, 14, 0, 0, Math.PI * 2);
+					ctx.fill();
+				}
+			},
+			{
+				id: 'body',
+				name: 'Body',
+				type: 'Vector',
+				color: C.gold,
+				visible: true,
+				info: 'Vector · Main character torso · On its own layer so it can squash/stretch independently',
+				draw(ctx, W, H) {
+					ctx.fillStyle = C.gold + 'cc';
+					ctx.beginPath();
+					ctx.ellipse(W * 0.5, H * 0.48, 26, 38, 0.05, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = C.gold;
+					ctx.lineWidth = 1;
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'arms',
+				name: 'Arms',
+				type: 'Vector',
+				color: C.coral,
+				visible: true,
+				info: 'Vector · Both arms grouped · Could split into separate layers for independent rig control',
+				draw(ctx, W, H) {
+					ctx.fillStyle = C.coral + 'aa';
+					[
+						[W * 0.5 - 28, H * 0.42, W * 0.5 - 50, H * 0.52, 8],
+						[W * 0.5 + 28, H * 0.42, W * 0.5 + 50, H * 0.52, 8]
+					].forEach(([x1, y1, x2, y2, r]) => {
+						const dx = x2 - x1,
+							dy = y2 - y1,
+							d = Math.hypot(dx, dy) || 1,
+							nx = -dy / d,
+							ny = dx / d;
+						ctx.beginPath();
+						ctx.moveTo(x1 + nx * r, y1 + ny * r);
+						ctx.lineTo(x2 + nx * r, y2 + ny * r);
+						ctx.arc(x2, y2, r, Math.atan2(ny, nx), Math.atan2(-ny, -nx));
+						ctx.lineTo(x1 - nx * r, y1 - ny * r);
+						ctx.arc(x1, y1, r, Math.atan2(-ny, -nx), Math.atan2(ny, nx));
+						ctx.closePath();
+						ctx.fill();
+					});
+				}
+			},
+			{
+				id: 'head',
+				name: 'Head',
+				type: 'Vector',
+				color: C.lav,
+				visible: true,
+				info: 'Vector · Head is topmost body part · Separate layer allows independent head rotation/nod',
+				draw(ctx, W, H) {
+					ctx.fillStyle = C.lav + 'cc';
+					ctx.beginPath();
+					ctx.arc(W * 0.5, H * 0.3, 22, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = C.lav;
+					ctx.lineWidth = 1;
+					ctx.stroke();
+					ctx.fillStyle = '#fff';
+					ctx.beginPath();
+					ctx.ellipse(W * 0.5 - 7, H * 0.28, 5, 6, -0.2, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.beginPath();
+					ctx.ellipse(W * 0.5 + 7, H * 0.28, 5, 6, 0.2, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = C.bg;
+					ctx.beginPath();
+					ctx.arc(W * 0.5 - 7, H * 0.285, 3, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.beginPath();
+					ctx.arc(W * 0.5 + 7, H * 0.285, 3, 0, Math.PI * 2);
+					ctx.fill();
+				}
+			},
+			{
+				id: 'labels',
+				name: 'Labels / UI',
+				type: 'Vector',
+				color: C.mint,
+				visible: true,
+				info: 'Vector · Text labels and callouts always live on the topmost layer to stay readable over all artwork',
+				draw(ctx, W, H) {
+					ctx.fillStyle = C.raised;
+					ctx.strokeStyle = C.mint;
+					ctx.lineWidth = 1.2;
+					ctx.beginPath();
+					ctx.rect(W * 0.04, H * 0.1, 70, 22);
+					ctx.fill();
+					ctx.stroke();
+					ctx.fillStyle = C.mint;
+					ctx.font = `9px 'JetBrains Mono'`;
+					ctx.textAlign = 'left';
+					ctx.fillText('Character', W * 0.04 + 6, H * 0.1 + 14);
+					// connector line
+					ctx.strokeStyle = C.mint + '55';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([3, 3]);
+					ctx.beginPath();
+					ctx.moveTo(W * 0.04 + 70, H * 0.1 + 11);
+					ctx.lineTo(W * 0.5, H * 0.3);
+					ctx.stroke();
+					ctx.setLineDash([]);
+				}
+			}
+		];
+
+		let layerOrder = [...LAYERS.map((l) => l.id)];
+		let selectedLayer = null;
+		let dragSrc = null;
+
+		const lsLayersEl = document.getElementById('lsLayers');
+		const layerCanvas = document.getElementById('layerCanvas');
+		const layerCtx = layerCanvas.getContext('2d');
+
+		function renderLayerCanvas() {
+			layerCtx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
+			// Render bottom to top
+			[...layerOrder].reverse().forEach((id) => {
+				const l = LAYERS.find((x) => x.id === id);
+				if (l && l.visible) l.draw(layerCtx, layerCanvas.width, layerCanvas.height);
+			});
+		}
+
+		function buildLayerStack() {
+			lsLayersEl.innerHTML = '';
+			layerOrder.forEach((id) => {
+				const l = LAYERS.find((x) => x.id === id);
+				if (!l) return;
+				const row = document.createElement('div');
+				row.className =
+					'ls-layer' + (selectedLayer === id ? ' selected' : '') + (l.visible ? ' visible' : '');
+				row.dataset.id = id;
+				row.draggable = true;
+				row.innerHTML = `
+      <div class="ls-swatch" style="background:${l.color}"></div>
+      <span class="ls-name">${l.name}</span>
+      <span class="ls-type">${l.type}</span>
+      <span class="ls-eye" title="Toggle visibility">${l.visible ? '👁' : '🚫'}</span>
+    `;
+				row.onclick = () => {
+					selectedLayer = id;
+					document.getElementById('layerInfo').textContent = l.info;
+					buildLayerStack();
+				};
+				row.querySelector('.ls-eye').onclick = (e) => {
+					e.stopPropagation();
+					l.visible = !l.visible;
+					buildLayerStack();
+					renderLayerCanvas();
+				};
+				// Drag
+				row.addEventListener('dragstart', () => {
+					dragSrc = id;
+					row.classList.add('dragging');
+				});
+				row.addEventListener('dragend', () => row.classList.remove('dragging'));
+				row.addEventListener('dragover', (e) => {
+					e.preventDefault();
+				});
+				row.addEventListener('drop', (e) => {
+					e.preventDefault();
+					if (dragSrc === id) return;
+					const si = layerOrder.indexOf(dragSrc),
+						di = layerOrder.indexOf(id);
+					layerOrder.splice(si, 1);
+					layerOrder.splice(di, 0, dragSrc);
+					dragSrc = null;
+					buildLayerStack();
+					renderLayerCanvas();
+				});
+				lsLayersEl.appendChild(row);
+			});
+		}
+		buildLayerStack();
+		renderLayerCanvas();
+
+		/* ═══════════════════════════════════════
+   DEMO 5.2 — INTERACTIVE TIMELINE
+═══════════════════════════════════════ */
+		const TL_FRAMES = 72,
+			TL_FRAME_W = 14,
+			TL_TRACK_H = 32;
+		const TL_LAYERS = [
+			{ id: 'pos', label: 'X Position', color: C.gold, keyframes: [] },
+			{ id: 'posY', label: 'Y Position', color: C.mint, keyframes: [] },
+			{ id: 'scale', label: 'Scale', color: C.lav, keyframes: [] },
+			{ id: 'rot', label: 'Rotation', color: C.coral, keyframes: [] },
+			{ id: 'alpha', label: 'Opacity', color: C.muted, keyframes: [] }
+		];
+		// Default keyframes
+		TL_LAYERS[0].keyframes = [
+			{ f: 0, v: 0 },
+			{ f: 36, v: 1 },
+			{ f: 72, v: 0 }
+		];
+		TL_LAYERS[2].keyframes = [
+			{ f: 0, v: 0.5 },
+			{ f: 18, v: 1.2 },
+			{ f: 54, v: 1 }
+		];
+		TL_LAYERS[4].keyframes = [
+			{ f: 0, v: 0 },
+			{ f: 12, v: 1 },
+			{ f: 60, v: 1 },
+			{ f: 72, v: 0 }
+		];
+
+		let tlFrame = 0,
+			tlPlaying = false,
+			tlRaf = null,
+			tlLastTs = null,
+			tlSelectedLayer = 'pos',
+			tlSelectedKf = null;
+		let tlDraggingKf = null,
+			tlDragOffsetX = 0;
+
+		const tlLayerNamesEl = document.getElementById('tlLayerNames');
+		const tlRulerEl = document.getElementById('tlRuler');
+		const tlTrackRowsEl = document.getElementById('tlTrackRows');
+		const tlPlayheadEl = document.getElementById('tlPlayhead');
+		const tlTimecodeEl = document.getElementById('tlTimecode');
+		const tlPreviewCanvas = document.getElementById('tlPreviewCanvas');
+		const tlPreviewCtx = tlPreviewCanvas.getContext('2d');
+		const PW = tlPreviewCanvas.width,
+			PH = tlPreviewCanvas.height;
+
+		function tlGetVal(layerId, frame) {
+			const layer = TL_LAYERS.find((l) => l.id === layerId);
+			if (!layer || !layer.keyframes.length) return null;
+			const kfs = [...layer.keyframes].sort((a, b) => a.f - b.f);
+			if (frame <= kfs[0].f) return kfs[0].v;
+			if (frame >= kfs[kfs.length - 1].f) return kfs[kfs.length - 1].v;
+			for (let i = 0; i < kfs.length - 1; i++) {
+				if (frame >= kfs[i].f && frame <= kfs[i + 1].f) {
+					const t = (frame - kfs[i].f) / (kfs[i + 1].f - kfs[i].f);
+					return lerp(kfs[i].v, kfs[i + 1].v, eio(t));
+				}
+			}
+			return null;
+		}
+
+		function tlRenderPreview() {
+			tlPreviewCtx.clearRect(0, 0, PW, PH);
+			const xVal = tlGetVal('pos', tlFrame);
+			const yVal = tlGetVal('posY', tlFrame);
+			const scVal = tlGetVal('scale', tlFrame);
+			const aVal = tlGetVal('alpha', tlFrame);
+			const x = xVal !== null ? lerp(40, PW - 40, xVal) : PW / 2;
+			const y = yVal !== null ? lerp(PH * 0.2, PH * 0.8, yVal) : PH / 2;
+			const sc = scVal !== null ? scVal : 1;
+			const alpha = aVal !== null ? aVal : 1;
+			tlPreviewCtx.globalAlpha = Math.max(0, Math.min(1, alpha));
+			const r = 20 * sc;
+			const grd = tlPreviewCtx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+			grd.addColorStop(0, '#fff');
+			grd.addColorStop(0.3, C.gold);
+			grd.addColorStop(1, '#b07010');
+			tlPreviewCtx.fillStyle = grd;
+			tlPreviewCtx.beginPath();
+			tlPreviewCtx.arc(x, y, r, 0, Math.PI * 2);
+			tlPreviewCtx.fill();
+			tlPreviewCtx.globalAlpha = 1;
+			// Frame indicator
+			tlPreviewCtx.fillStyle = C.muted;
+			tlPreviewCtx.font = `9px 'JetBrains Mono'`;
+			tlPreviewCtx.textAlign = 'left';
+			tlPreviewCtx.fillText(`Frame ${tlFrame}  |  ${(tlFrame / 24).toFixed(2)}s`, 10, 14);
+		}
+
+		function buildTLRuler() {
+			tlRulerEl.style.width = TL_FRAMES * TL_FRAME_W + 'px';
+			tlRulerEl.style.position = 'relative';
+			for (let f = 0; f <= TL_FRAMES; f += 4) {
+				const tick = document.createElement('div');
+				tick.className = 'tl-ruler-tick';
+				tick.style.left = f * TL_FRAME_W + 'px';
+				const major = f % 24 === 0;
+				tick.innerHTML = `<span class="tl-ruler-num">${major ? f : ''}</span><div class="tl-ruler-line${major ? ' major' : ''}"></div>`;
+				tlRulerEl.appendChild(tick);
+			}
+		}
+
+		function buildTLLayers() {
+			tlLayerNamesEl.innerHTML = '';
+			tlTrackRowsEl.querySelectorAll('.tl-track-row').forEach((r) => r.remove());
+			TL_LAYERS.forEach((layer) => {
+				// Name row
+				const nameRow = document.createElement('div');
+				nameRow.className = 'tl-layer-name-row' + (layer.id === tlSelectedLayer ? ' selected' : '');
+				nameRow.innerHTML = `<div class="tl-layer-swatch" style="background:${layer.color}"></div><span class="tl-layer-label">${layer.label}</span>`;
+				nameRow.onclick = () => {
+					tlSelectedLayer = layer.id;
+					buildTLLayers();
+				};
+				tlLayerNamesEl.appendChild(nameRow);
+
+				// Track row
+				const trackRow = document.createElement('div');
+				trackRow.className = 'tl-track-row';
+				trackRow.style.width = TL_FRAMES * TL_FRAME_W + 'px';
+				trackRow.dataset.layerId = layer.id;
+
+				// Background stripe
+				const bg = document.createElement('div');
+				bg.className = 'tl-track-bg';
+				bg.style.background =
+					layer.id === tlSelectedLayer ? `color-mix(in srgb,${layer.color} 4%,var(--raised))` : '';
+				trackRow.appendChild(bg);
+
+				// Tween bars
+				const sortedKfs = [...layer.keyframes].sort((a, b) => a.f - b.f);
+				for (let i = 0; i < sortedKfs.length - 1; i++) {
+					const bar = document.createElement('div');
+					bar.className = 'tl-tween-bar';
+					bar.style.left = sortedKfs[i].f * TL_FRAME_W + 5 + 'px';
+					bar.style.width = (sortedKfs[i + 1].f - sortedKfs[i].f) * TL_FRAME_W - 10 + 'px';
+					bar.style.background = layer.color;
+					trackRow.appendChild(bar);
+				}
+
+				// Keyframes
+				layer.keyframes.forEach((kf) => {
+					const kfEl = document.createElement('div');
+					kfEl.className = 'tl-keyframe';
+					kfEl.style.left = kf.f * TL_FRAME_W + 'px';
+					kfEl.style.background = layer.color;
+					kfEl.dataset.frame = kf.f;
+					kfEl.title = `Frame ${kf.f}`;
+
+					kfEl.addEventListener('mousedown', (e) => {
+						e.stopPropagation();
+						tlDraggingKf = { layer, kf };
+						tlDragOffsetX = e.clientX - kfEl.getBoundingClientRect().left;
+						tlSelectedKf = { layer, kf };
+						document.getElementById('tlStatusBar').textContent =
+							`Selected: ${layer.label} @ Frame ${kf.f} (value: ${kf.v.toFixed(2)}) — drag to move, Delete to remove`;
+					});
+					trackRow.appendChild(kfEl);
+				});
+
+				// Click track to add keyframe at current frame
+				trackRow.addEventListener('click', (e) => {
+					if (e.target.classList.contains('tl-keyframe')) return;
+					const rect = trackRow.getBoundingClientRect();
+					const clickX = e.clientX - rect.left + tlTrackRowsEl.parentElement.scrollLeft;
+					const frame = Math.round(clickX / TL_FRAME_W);
+					const clamped = clamp(frame, 0, TL_FRAMES);
+					if (layer.keyframes.find((k) => k.f === clamped)) return;
+					const currentVal = tlGetVal(layer.id, clamped) ?? 0.5;
+					layer.keyframes.push({ f: clamped, v: currentVal });
+					tlFrame = clamped;
+					buildTLLayers();
+					updatePlayhead();
+					tlRenderPreview();
+					document.getElementById('tlStatusBar').textContent =
+						`Added keyframe: ${layer.label} @ Frame ${clamped}`;
+				});
+
+				tlTrackRowsEl.insertBefore(trackRow, tlPlayheadEl);
+			});
+		}
+
+		function updatePlayhead() {
+			const x = tlFrame * TL_FRAME_W;
+			tlPlayheadEl.style.left = x + 'px';
+			const sec = tlFrame / 24;
+			tlTimecodeEl.textContent = `${Math.floor(sec / 60)
+				.toString()
+				.padStart(2, '0')}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
+		}
+
+		// Drag keyframe
+		document.addEventListener('mousemove', (e) => {
+			if (!tlDraggingKf) return;
+			const wrap = document.getElementById('tlTracksWrap');
+			const rect = wrap.getBoundingClientRect();
+			const x = e.clientX - rect.left + wrap.scrollLeft;
+			const newFrame = clamp(Math.round(x / TL_FRAME_W), 0, TL_FRAMES);
+			const { layer, kf } = tlDraggingKf;
+			if (layer.keyframes.find((k) => k.f === newFrame && k !== kf)) return;
+			kf.f = newFrame;
+			buildTLLayers();
+			updatePlayhead();
+			tlRenderPreview();
+			document.getElementById('tlStatusBar').textContent =
+				`Moving: ${layer.label} → Frame ${newFrame}`;
+		});
+		document.addEventListener('mouseup', () => {
+			tlDraggingKf = null;
+		});
+
+		// Delete keyframe
+		document.addEventListener('keydown', (e) => {
+			if ((e.key === 'Delete' || e.key === 'Backspace') && tlSelectedKf) {
+				const { layer, kf } = tlSelectedKf;
+				layer.keyframes = layer.keyframes.filter((k) => k !== kf);
+				tlSelectedKf = null;
+				buildTLLayers();
+				tlRenderPreview();
+				document.getElementById('tlStatusBar').textContent = 'Keyframe deleted.';
+			}
+		});
+
+		// Transport
+		function tlTick(ts) {
+			if (!tlLastTs) tlLastTs = ts;
+			const dt = (ts - tlLastTs) / 1000;
+			tlLastTs = ts;
+			tlFrame = Math.min(TL_FRAMES, tlFrame + dt * 24);
+			if (tlFrame >= TL_FRAMES) {
+				tlFrame = 0;
+			}
+			updatePlayhead();
+			tlRenderPreview();
+			tlRaf = requestAnimationFrame(tlTick);
+		}
+		document.getElementById('tlPlayBtn').onclick = function () {
+			tlPlaying = !tlPlaying;
+			this.textContent = tlPlaying ? '⏸' : '▶';
+			this.classList.toggle('playing', tlPlaying);
+			if (tlPlaying) {
+				tlLastTs = null;
+				tlRaf = requestAnimationFrame(tlTick);
+			} else cancelAnimationFrame(tlRaf);
+		};
+		document.getElementById('tlToStart').onclick = () => {
+			tlFrame = 0;
+			updatePlayhead();
+			tlRenderPreview();
+		};
+		document.getElementById('tlToEnd').onclick = () => {
+			tlFrame = TL_FRAMES;
+			updatePlayhead();
+			tlRenderPreview();
+		};
+		document.getElementById('tlAddKf').onclick = () => {
+			const layer = TL_LAYERS.find((l) => l.id === tlSelectedLayer);
+			if (!layer) return;
+			const f = Math.round(tlFrame);
+			if (layer.keyframes.find((k) => k.f === f)) return;
+			layer.keyframes.push({ f, v: tlGetVal(tlSelectedLayer, f) ?? 0.5 });
+			buildTLLayers();
+			document.getElementById('tlStatusBar').textContent =
+				`Added keyframe: ${layer.label} @ Frame ${f}`;
+		};
+		document.getElementById('tlClearAll').onclick = () => {
+			const layer = TL_LAYERS.find((l) => l.id === tlSelectedLayer);
+			if (layer) {
+				layer.keyframes = [];
+				buildTLLayers();
+				tlRenderPreview();
+			}
+		};
+
+		// Ruler click to scrub
+		tlRulerEl.addEventListener('click', (e) => {
+			const rect = tlRulerEl.getBoundingClientRect();
+			tlFrame = clamp(Math.round((e.clientX - rect.left) / TL_FRAME_W), 0, TL_FRAMES);
+			updatePlayhead();
+			tlRenderPreview();
+		});
+
+		buildTLRuler();
+		buildTLLayers();
+		updatePlayhead();
+		tlRenderPreview();
+
+		/* ═══════════════════════════════════════
+   DEMO 5.3 — INTERPOLATION
+═══════════════════════════════════════ */
+		const INTERP_DEFS = {
+			smooth: {
+				fn: eio,
+				label: 'Smooth / Bezier',
+				desc: 'The default for almost all motion. Starts slow, peaks in the middle, decelerates to a stop. Matches how physical objects actually move.'
+			},
+			linear: {
+				fn: (t) => t,
+				label: 'Linear',
+				desc: 'Constant velocity from start to end. Useful for data-driven animation, mechanical motion, or when you specifically want an "unnatural" feel.'
+			},
+			hold: {
+				fn: (t) => (t < 1 ? 0 : 1),
+				label: 'Hold / Step',
+				desc: 'No interpolation at all — value jumps instantly from one keyframe to the next. Perfect for blinking lights, sprite frame changes, or instant toggles.'
+			},
+			easeIn: {
+				fn: ein,
+				label: 'Ease In',
+				desc: 'Starts slowly then accelerates away. Good for exits, launches, and impacts — things that build up energy before leaving.'
+			},
+			easeOut: {
+				fn: eout,
+				label: 'Ease Out',
+				desc: 'Arrives quickly then decelerates to a stop. Good for entrances, landings, and elements settling into place.'
+			},
+			bounce: {
+				fn: (t) => {
+					const s = eout(t);
+					if (t < 0.7) return s;
+					return s + Math.sin(((t - 0.7) / 0.3) * Math.PI * 2) * (1 - t) * 0.18;
+				},
+				label: 'Bounce / Spring',
+				desc: 'Overshoots the target and oscillates back. Adds life and elasticity. Use for UI feedback, lively character reactions, or springy diagram elements.'
+			}
+		};
+		let activeInterp = 'smooth';
+		let interpT = 0,
+			interpPlaying = false,
+			interpRaf = null,
+			interpLastTs = null;
+
+		const icCtx = document.getElementById('interpCurveCanvas').getContext('2d');
+		const ipCtx = document.getElementById('interpPreviewCanvas').getContext('2d');
+		const ICW = 240,
+			ICH = 180,
+			IPW = 240,
+			IPH = 180;
+
+		function drawInterpCurve(t) {
+			const def = INTERP_DEFS[activeInterp];
+			const pad = 22,
+				cW = ICW - pad * 2,
+				cH = ICH - pad * 2;
+			icCtx.clearRect(0, 0, ICW, ICH);
+
+			// Grid
+			icCtx.strokeStyle = C.border;
+			icCtx.lineWidth = 1;
+			for (let i = 0; i <= 4; i++) {
+				const x = pad + (i * cW) / 4,
+					y = pad + (i * cH) / 4;
+				icCtx.beginPath();
+				icCtx.moveTo(x, pad);
+				icCtx.lineTo(x, pad + cH);
+				icCtx.stroke();
+				icCtx.beginPath();
+				icCtx.moveTo(pad, y);
+				icCtx.lineTo(pad + cW, y);
+				icCtx.stroke();
+			}
+			// Curve
+			icCtx.strokeStyle = C.gold;
+			icCtx.lineWidth = 2;
+			icCtx.beginPath();
+			for (let i = 0; i <= 100; i++) {
+				const ti = i / 100,
+					v = def.fn(ti);
+				const x = pad + ti * cW,
+					y = pad + cH - clamp(v, -0.3, 1.5) * cH;
+				i === 0 ? icCtx.moveTo(x, y) : icCtx.lineTo(x, y);
+			}
+			icCtx.stroke();
+			// Current position dot
+			if (t > 0) {
+				const v = def.fn(clamp(t, 0, 1));
+				const x = pad + clamp(t, 0, 1) * cW,
+					y = pad + cH - clamp(v, -0.3, 1.5) * cH;
+				icCtx.fillStyle = C.coral;
+				icCtx.beginPath();
+				icCtx.arc(x, y, 4, 0, Math.PI * 2);
+				icCtx.fill();
+			}
+			// Axes
+			icCtx.fillStyle = C.dim;
+			icCtx.font = `8px 'JetBrains Mono'`;
+			icCtx.textAlign = 'center';
+			icCtx.fillText('Time →', ICW / 2, ICH - 4);
+			icCtx.save();
+			icCtx.translate(9, ICH / 2);
+			icCtx.rotate(-Math.PI / 2);
+			icCtx.fillText('Value ↑', 0, 0);
+			icCtx.restore();
+		}
+
+		function drawInterpPreview(t) {
+			ipCtx.clearRect(0, 0, IPW, IPH);
+			const def = INTERP_DEFS[activeInterp];
+			const pad = 24,
+				trackW = IPW - pad * 2,
+				cy = IPH / 2;
+			ipCtx.strokeStyle = C.border2;
+			ipCtx.lineWidth = 1;
+			ipCtx.setLineDash([3, 3]);
+			ipCtx.beginPath();
+			ipCtx.moveTo(pad, cy);
+			ipCtx.lineTo(IPW - pad, cy);
+			ipCtx.stroke();
+			ipCtx.setLineDash([]);
+
+			// Ghost dots
+			for (let i = 0; i <= 20; i++) {
+				const ti = i / 20,
+					v = def.fn(clamp(ti, 0, 1));
+				const x = pad + v * trackW;
+				ipCtx.globalAlpha = 0.3;
+				ipCtx.fillStyle = C.gold;
+				ipCtx.beginPath();
+				ipCtx.arc(x, cy, 2.5, 0, Math.PI * 2);
+				ipCtx.fill();
+			}
+			ipCtx.globalAlpha = 1;
+
+			const v = def.fn(clamp(t, 0, 1));
+			const bx = pad + v * trackW;
+			const grd = ipCtx.createRadialGradient(bx - 4, cy - 4, 1, bx, cy, 14);
+			grd.addColorStop(0, '#fff');
+			grd.addColorStop(0.3, C.gold);
+			grd.addColorStop(1, '#b07010');
+			ipCtx.fillStyle = grd;
+			ipCtx.beginPath();
+			ipCtx.arc(bx, cy, 14, 0, Math.PI * 2);
+			ipCtx.fill();
+
+			// Keyframe markers
+			ipCtx.fillStyle = C.lav;
+			ipCtx.strokeStyle = C.border2;
+			ipCtx.lineWidth = 1;
+			[pad, IPW - pad].forEach((x) => {
+				ipCtx.save();
+				ipCtx.translate(x, cy);
+				ipCtx.rotate(Math.PI / 4);
+				ipCtx.beginPath();
+				ipCtx.rect(-5, -5, 10, 10);
+				ipCtx.fill();
+				ipCtx.stroke();
+				ipCtx.restore();
+			});
+		}
+
+		function selectInterp(el, key) {
+			activeInterp = key;
+			document
+				.querySelectorAll('.interp-card')
+				.forEach((c) => c.classList.toggle('active', c.dataset.interp === key));
+			document.getElementById('interpDesc').textContent = INTERP_DEFS[key].desc;
+			interpT = 0;
+			drawInterpCurve(0);
+			drawInterpPreview(0);
+		}
+
+		function interpTick(ts) {
+			if (!interpLastTs) interpLastTs = ts;
+			interpT += ((ts - interpLastTs) / 1000) * 0.55;
+			interpLastTs = ts;
+			if (interpT > 1.4) {
+				interpT = 1.4;
+				interpPlaying = false;
+				document.getElementById('interpPlayBtn').textContent = '▶ Animate';
+				document.getElementById('interpPlayBtn').classList.remove('active');
+				interpLastTs = null;
+				return;
+			}
+			drawInterpCurve(interpT);
+			drawInterpPreview(interpT);
+			interpRaf = requestAnimationFrame(interpTick);
+		}
+
+		document.getElementById('interpPlayBtn').onclick = function () {
+			if (!interpPlaying) {
+				interpT = 0;
+				interpPlaying = true;
+				this.textContent = '⏸ Playing…';
+				this.classList.add('active');
+				interpLastTs = null;
+				interpRaf = requestAnimationFrame(interpTick);
+			}
+		};
+		document.getElementById('interpResetBtn').onclick = function () {
+			cancelAnimationFrame(interpRaf);
+			interpPlaying = false;
+			interpT = 0;
+			interpLastTs = null;
+			document.getElementById('interpPlayBtn').textContent = '▶ Animate';
+			document.getElementById('interpPlayBtn').classList.remove('active');
+			drawInterpCurve(0);
+			drawInterpPreview(0);
+		};
+
+		// Init
+		document.getElementById('interpDesc').textContent = INTERP_DEFS.smooth.desc;
+		drawInterpCurve(0);
+		drawInterpPreview(0);
+
+		/* ═══════════════════════════════════════
+   DEMO 5.4 — ONION SKINNING
+═══════════════════════════════════════ */
+		const onionCanvas = document.getElementById('onionCanvas');
+		const octx = onionCanvas.getContext('2d');
+		const OW = onionCanvas.width,
+			OH = onionCanvas.height;
+		const TOTAL_ONION_FRAMES = 24;
+
+		// Pre-bake ball path for onion skin demo
+		function onionBallPos(frame) {
+			const t = frame / TOTAL_ONION_FRAMES;
+			const x = lerp(40, OW - 40, eio(t));
+			const y = OH * 0.65 + (OH * 0.15 - OH * 0.65) * Math.sin(t * Math.PI);
+			return { x, y };
+		}
+
+		function renderOnion(currentFrame) {
+			octx.clearRect(0, 0, OW, OH);
+
+			// Ground
+			octx.strokeStyle = C.border2;
+			octx.lineWidth = 1;
+			octx.beginPath();
+			octx.moveTo(10, OH * 0.72);
+			octx.lineTo(OW - 10, OH * 0.72);
+			octx.stroke();
+
+			const enabled = document.getElementById('onionToggle').checked;
+			const before = parseInt(document.getElementById('onionBefore').value);
+			const after = parseInt(document.getElementById('onionAfter').value);
+			const opacity = parseFloat(document.getElementById('onionOpacity').value);
+
+			if (enabled) {
+				// Draw past frames (coral)
+				for (let i = before; i >= 1; i--) {
+					const f = currentFrame - i;
+					if (f < 0) continue;
+					const { x, y } = onionBallPos(f);
+					const a = opacity * (1 - i / (before + 1));
+					octx.globalAlpha = a;
+					octx.fillStyle = C.coral;
+					octx.beginPath();
+					octx.arc(x, y, 14, 0, Math.PI * 2);
+					octx.fill();
+				}
+				// Draw future frames (mint)
+				for (let i = 1; i <= after; i++) {
+					const f = currentFrame + i;
+					if (f > TOTAL_ONION_FRAMES) continue;
+					const { x, y } = onionBallPos(f);
+					const a = opacity * (1 - i / (after + 1));
+					octx.globalAlpha = a;
+					octx.fillStyle = C.mint;
+					octx.beginPath();
+					octx.arc(x, y, 14, 0, Math.PI * 2);
+					octx.fill();
+				}
+				octx.globalAlpha = 1;
+			}
+
+			// Current frame (solid)
+			const { x, y } = onionBallPos(currentFrame);
+			const grd = octx.createRadialGradient(x - 5, y - 5, 1, x, y, 16);
+			grd.addColorStop(0, '#fff');
+			grd.addColorStop(0.3, C.gold);
+			grd.addColorStop(1, '#b07010');
+			octx.globalAlpha = 1;
+			octx.fillStyle = grd;
+			octx.beginPath();
+			octx.arc(x, y, 16, 0, Math.PI * 2);
+			octx.fill();
+
+			// Frame number
+			octx.fillStyle = C.muted;
+			octx.font = `9px 'JetBrains Mono'`;
+			octx.textAlign = 'left';
+			octx.fillText(`Frame ${currentFrame} / ${TOTAL_ONION_FRAMES}`, 10, 14);
+		}
+
+		['onionFrame', 'onionBefore', 'onionAfter', 'onionOpacity', 'onionToggle'].forEach((id) => {
+			const el = document.getElementById(id);
+			el.addEventListener('change', updateOnion);
+			el.addEventListener('input', updateOnion);
+		});
+		function updateOnion() {
+			const f = parseInt(document.getElementById('onionFrame').value);
+			document.getElementById('onionFrameVal').textContent = f;
+			document.getElementById('onionBeforeVal').textContent =
+				document.getElementById('onionBefore').value;
+			document.getElementById('onionAfterVal').textContent =
+				document.getElementById('onionAfter').value;
+			document.getElementById('onionOpacityVal').textContent =
+				Math.round(parseFloat(document.getElementById('onionOpacity').value) * 100) + '%';
+			renderOnion(f);
+		}
+		renderOnion(8);
+
+		/* ═══════════════════════════════════════
+   DEMO 5.5 — MANUAL vs AUTO
+═══════════════════════════════════════ */
+		const manualCanvas = document.getElementById('manualCanvas');
+		const mctx = manualCanvas.getContext('2d');
+		const MW = manualCanvas.width,
+			MH = manualCanvas.height;
+		let manualT = 0,
+			manualPlaying = false,
+			manualRaf = null,
+			manualLastTs = null;
+		let arcHeight = 80,
+			arcBias = 0.5,
+			showKeysOn = true;
+
+		const startX = 50,
+			endX = MW - 50;
+		const autoY = MH * 0.65,
+			manualBaseY = MH * 0.65;
+
+		function manualAutoPos(t) {
+			return { x: lerp(startX, endX, eio(t)), y: autoY };
+		}
+		function manualManualPos(t) {
+			// Quadratic bezier through midpoint
+			const midX = lerp(startX, endX, arcBias);
+			const midY = manualBaseY - arcHeight;
+			const x = lerp(lerp(startX, midX, t), lerp(midX, endX, t), t);
+			const y = lerp(lerp(manualBaseY, midY, eio(t)), lerp(midY, manualBaseY, eio(t)), t);
+			return { x, y };
+		}
+
+		function renderManual(t) {
+			mctx.clearRect(0, 0, MW, MH);
+
+			// Ground lines
+			mctx.strokeStyle = C.border2;
+			mctx.lineWidth = 1;
+			[autoY + 16, manualBaseY + 16].forEach((y) => {
+				mctx.beginPath();
+				mctx.moveTo(startX - 10, y);
+				mctx.lineTo(endX + 10, y);
+				mctx.stroke();
+			});
+
+			// Labels
+			mctx.fillStyle = C.muted;
+			mctx.font = `9px 'JetBrains Mono'`;
+			mctx.textAlign = 'left';
+			mctx.fillStyle = C.coral;
+			mctx.fillText('AUTO TWEEN — straight line', startX, autoY - 26);
+			mctx.fillStyle = C.gold;
+			mctx.fillText('MANUAL KEYS — arc path', startX, manualBaseY - arcHeight - 14);
+
+			if (showKeysOn) {
+				// Auto path
+				mctx.strokeStyle = C.coral + '44';
+				mctx.lineWidth = 1.5;
+				mctx.setLineDash([3, 4]);
+				mctx.beginPath();
+				mctx.moveTo(startX, autoY);
+				mctx.lineTo(endX, autoY);
+				mctx.stroke();
+
+				// Manual arc path
+				mctx.strokeStyle = C.gold + '44';
+				mctx.lineWidth = 1.5;
+				mctx.beginPath();
+				for (let i = 0; i <= 60; i++) {
+					const p = manualManualPos(i / 60);
+					i === 0 ? mctx.moveTo(p.x, p.y) : mctx.lineTo(p.x, p.y);
+				}
+				mctx.stroke();
+				mctx.setLineDash([]);
+
+				// Keyframe diamonds
+				const midX = lerp(startX, endX, arcBias);
+				[
+					[startX, autoY],
+					[endX, autoY],
+					[startX, manualBaseY],
+					[midX, manualBaseY - arcHeight],
+					[endX, manualBaseY]
+				].forEach(([x, y]) => {
+					mctx.fillStyle = C.lav;
+					mctx.save();
+					mctx.translate(x, y);
+					mctx.rotate(Math.PI / 4);
+					mctx.beginPath();
+					mctx.rect(-5, -5, 10, 10);
+					mctx.fill();
+					mctx.restore();
+				});
+			}
+
+			// Draw frame dots
+			const DOTS = 16;
+			for (let i = 0; i <= DOTS; i++) {
+				const ti = i / DOTS;
+				const ap = manualAutoPos(ti),
+					mp = manualManualPos(ti);
+				mctx.globalAlpha = 0.4;
+				mctx.fillStyle = C.coral;
+				mctx.beginPath();
+				mctx.arc(ap.x, ap.y, 2.5, 0, Math.PI * 2);
+				mctx.fill();
+				mctx.fillStyle = C.gold;
+				mctx.beginPath();
+				mctx.arc(mp.x, mp.y, 2.5, 0, Math.PI * 2);
+				mctx.fill();
+			}
+			mctx.globalAlpha = 1;
+
+			// Balls
+			function ball(x, y, col) {
+				const grd = mctx.createRadialGradient(x - 4, y - 4, 1, x, y, 13);
+				grd.addColorStop(0, '#fff');
+				grd.addColorStop(0.3, col);
+				grd.addColorStop(1, '#000');
+				mctx.fillStyle = grd;
+				mctx.beginPath();
+				mctx.arc(x, y, 13, 0, Math.PI * 2);
+				mctx.fill();
+			}
+			const ap = manualAutoPos(t),
+				mp = manualManualPos(t);
+			ball(ap.x, ap.y, C.coral);
+			ball(mp.x, mp.y, C.gold);
+		}
+
+		document.getElementById('arcHeightSlider').oninput = function () {
+			arcHeight = parseInt(this.value);
+			document.getElementById('arcHeightVal').textContent = this.value;
+			renderManual(manualT);
+		};
+		document.getElementById('arcBiasSlider').oninput = function () {
+			arcBias = parseFloat(this.value);
+			document.getElementById('arcBiasVal').textContent = Math.round(this.value * 100) + '%';
+			renderManual(manualT);
+		};
+		document.getElementById('showKeys').onchange = function () {
+			showKeysOn = this.checked;
+			renderManual(manualT);
+		};
+
+		function manualTick(ts) {
+			if (!manualLastTs) manualLastTs = ts;
+			manualT = Math.min(1, manualT + ((ts - manualLastTs) / 1000) * 0.55);
+			manualLastTs = ts;
+			renderManual(manualT);
+			if (manualT < 1) manualRaf = requestAnimationFrame(manualTick);
+			else {
+				manualPlaying = false;
+				document.getElementById('manualPlayBtn').textContent = '▶ Animate Both';
+				document.getElementById('manualPlayBtn').classList.remove('active');
+				manualLastTs = null;
+			}
+		}
+		document.getElementById('manualPlayBtn').onclick = function () {
+			if (!manualPlaying) {
+				manualT = 0;
+				manualPlaying = true;
+				this.textContent = '⏸ Playing…';
+				this.classList.add('active');
+				manualLastTs = null;
+				manualRaf = requestAnimationFrame(manualTick);
+			}
+		};
+		document.getElementById('manualResetBtn').onclick = function () {
+			cancelAnimationFrame(manualRaf);
+			manualPlaying = false;
+			manualT = 0;
+			manualLastTs = null;
+			document.getElementById('manualPlayBtn').textContent = '▶ Animate Both';
+			document.getElementById('manualPlayBtn').classList.remove('active');
+			renderManual(0);
+		};
+		renderManual(0);
+
+		/* ═══════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════ */
+		let quizScores = {};
+		function answer(optEl, qId, result) {
+			const qEl = document.getElementById(qId);
+			if (qEl.querySelector('.option.correct') || qEl.querySelector('.option.wrong')) return;
+			const fb = document.getElementById(qId + '-feedback');
+			optEl.classList.add(result === 'correct' ? 'correct' : 'wrong');
+			qEl.querySelectorAll('.option').forEach((o) => o.classList.add('disabled'));
+			if (result === 'correct') {
+				fb.textContent = '✓ Correct.';
+				fb.className = 'feedback ok';
+				quizScores[qId] = true;
+			} else {
+				fb.textContent = '✗ Not quite — review the section above.';
+				fb.className = 'feedback bad';
+				quizScores[qId] = false;
+				qEl.querySelectorAll('.option').forEach((o) => {
+					if (!o.classList.contains('wrong')) o.classList.add('correct');
+				});
+			}
+			if (Object.keys(quizScores).length === 5) {
+				const c = Object.values(quizScores).filter(Boolean).length;
+				document.getElementById('scoreNum').textContent = `${c}/5`;
+				document.getElementById('scoreLbl').textContent =
+					c === 5
+						? 'Perfect — Module 5 Complete!'
+						: c >= 4
+							? 'Strong — review any you missed.'
+							: 'Good effort — re-read the sections.';
+				document.getElementById('quizScore').classList.add('visible');
+			}
+		}
+
+		/* eslint-disable no-undef */
+		if (typeof renderLayerCanvas === 'function') window.renderLayerCanvas = renderLayerCanvas;
+		if (typeof selectInterp === 'function') window.selectInterp = selectInterp;
+		if (typeof buildTLRuler === 'function') window.buildTLRuler = buildTLRuler;
+		if (typeof interpTick === 'function') window.interpTick = interpTick;
+		if (typeof manualAutoPos === 'function') window.manualAutoPos = manualAutoPos;
+		if (typeof updatePlayhead === 'function') window.updatePlayhead = updatePlayhead;
+		if (typeof buildLayerStack === 'function') window.buildLayerStack = buildLayerStack;
+		if (typeof tlRenderPreview === 'function') window.tlRenderPreview = tlRenderPreview;
+		if (typeof manualTick === 'function') window.manualTick = manualTick;
+		if (typeof ball === 'function') window.ball = ball;
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof updateOnion === 'function') window.updateOnion = updateOnion;
+		if (typeof renderManual === 'function') window.renderManual = renderManual;
+		if (typeof tlTick === 'function') window.tlTick = tlTick;
+		if (typeof tlGetVal === 'function') window.tlGetVal = tlGetVal;
+		if (typeof drawInterpCurve === 'function') window.drawInterpCurve = drawInterpCurve;
+		if (typeof renderOnion === 'function') window.renderOnion = renderOnion;
+		if (typeof buildTLLayers === 'function') window.buildTLLayers = buildTLLayers;
+		if (typeof drawInterpPreview === 'function') window.drawInterpPreview = drawInterpPreview;
+		if (typeof onionBallPos === 'function') window.onionBallPos = onionBallPos;
+		if (typeof manualManualPos === 'function') window.manualManualPos = manualManualPos;
+		/* eslint-enable no-undef */
+
+		return () => {};
+	});
+</script>
+
+<div class="page-wrapper">
+	<!-- ══ HERO ══ -->
+	<header class="module-hero">
+		<div class="hero-deco" id="heroDeco" aria-hidden="true"></div>
+		<div class="module-eyebrow">Animation Fundamentals · Module 05</div>
+		<h1 class="module-title">Digital <em>2D Animation</em> Tools</h1>
+		<p class="module-subtitle">
+			The workspace, the timeline, the keyframe — how software turns decisions into motion.
+		</p>
+		<div class="objectives">
+			<div class="obj-label">Learning Objectives</div>
+			<ul>
+				<li>Understand layers — what they are, how they stack, and why they matter</li>
+				<li>Read and write a timeline: keyframes, tweens, hold frames, playhead</li>
+				<li>Distinguish between keyframe interpolation types and when to use each</li>
+				<li>Understand onion skinning and how it guides in-between drawing</li>
+				<li>Know the difference between raster and vector layers in animation tools</li>
+			</ul>
+		</div>
+	</header>
+
+	<!-- ══ SECTION 1: THE DIGITAL WORKSPACE ══ -->
+	<section class="section" id="s1">
+		<div class="section-header">
+			<span class="section-num">01</span>
+			<h2 class="section-title">The Digital Workspace</h2>
+		</div>
+		<p>
+			Every 2D animation tool — Synfig, Blender Grease Pencil, Adobe Animate, Toon Boom, even After
+			Effects — is built on three core concepts that never change regardless of software:
+			<strong>layers</strong>, <strong>keyframes</strong>, and <strong>the timeline</strong>. Master
+			these in one tool and you can read any other tool's interface within minutes.
+		</p>
+		<p>
+			The typical workspace is divided into three zones: a <strong>canvas</strong> where you see and
+			draw your frames, a <strong>layer panel</strong> where you manage which elements are on which
+			layers, and a <strong>timeline</strong> where you place and manipulate keyframes over time. Everything
+			else — brushes, cameras, effects — is built on top of these three.
+		</p>
+		<div class="callout gold">
+			<div class="callout-label">Mental Model</div>
+			Think of layers like sheets of transparent acetate stacked on a light table — the classic setup
+			from hand-drawn animation studios. Each sheet can be moved, redrawn, or replaced without disturbing
+			what's on the other sheets. The timeline tells you<em>when</em> to show each combination of sheets.
+		</div>
+	</section>
+
+	<!-- ══ SECTION 2: LAYERS ══ -->
+	<section class="section" id="s2">
+		<div class="section-header">
+			<span class="section-num">02</span>
+			<h2 class="section-title">Layers — The Stack</h2>
+		</div>
+		<p>
+			Layers are the fundamental unit of organisation in any digital animation project. Each layer
+			contains one element — a character part, a background, a label — and layers are rendered in
+			order from bottom to top. What's on top covers what's below.
+		</p>
+		<p>
+			Good layer discipline separates professional from amateur work. Professionals keep every
+			independently moving element on its own layer, name them clearly, and group related layers
+			into folders. Bad layer hygiene — everything on one layer, unnamed, flattened — makes later
+			editing painful or impossible.
+		</p>
+
+		<!-- DEMO 5.1: Layer Stack -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 5.1 — Layer Stack</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Click a layer to select it. Toggle the eye icon to show/hide. Drag to reorder. Watch how
+					stacking order changes what's visible in the composite.
+				</p>
+				<div
+					style="
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 1.25rem;
+								align-items: start;
+								flex-wrap: wrap;
+							"
+				>
+					<!-- Layer panel -->
+					<div>
+						<div class="layer-stack" id="layerStack">
+							<div class="ls-header">
+								<span>Layers</span>
+								<span style="color: var(--dim); font-size: 9px">drag to reorder ↕</span>
+							</div>
+							<div id="lsLayers"></div>
+						</div>
+						<div
+							id="layerInfo"
+							style="
+										margin-top: 0.75rem;
+										padding: 0.75rem 1rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+										font-family: var(--ff-mono);
+										font-size: 11px;
+										color: var(--muted);
+										line-height: 1.7;
+										min-height: 3.2em;
+									"
+						></div>
+					</div>
+					<!-- Composite preview -->
+					<div>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--muted);
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+										margin-bottom: 0.5rem;
+									"
+						>
+							Composite Result
+						</div>
+						<canvas
+							id="layerCanvas"
+							width="300"
+							height="260"
+							style="
+										background: #111;
+										border: 1px solid var(--border);
+										width: 100%;
+										max-width: 300px;
+										display: block;
+									"
+						></canvas>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--dim);
+										margin-top: 0.35rem;
+									"
+						>
+							Layers render bottom → top
+						</div>
+					</div>
+				</div>
+
+				<div class="callout mint" style="margin-top: 1.25rem">
+					<div class="callout-label">Raster vs Vector Layers</div>
+					Most tools offer both.<strong>Raster layers</strong> contain pixel drawings — great for
+					textured brushwork, but resolution-dependent.
+					<strong>Vector layers</strong> contain mathematical paths — infinitely scalable, better for
+					rigging and clean motion-graphics work. For educational YouTube animation, vector layers are
+					usually the better choice for anything that will move.
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 3: THE TIMELINE ══ -->
+	<section class="section" id="s3">
+		<div class="section-header">
+			<span class="section-num">03</span>
+			<h2 class="section-title">The Timeline &amp; Keyframes</h2>
+		</div>
+		<p>
+			The timeline is the horizontal axis of time. Each column is one frame. You place
+			<strong>keyframes</strong> at moments where a property has a specific value — position,
+			rotation, scale, opacity. The software then <em>interpolates</em> all the frames between keyframes
+			automatically.
+		</p>
+		<p>
+			A keyframe is not a drawing — it is a <strong>recorded value</strong>. At frame 1, X-position
+			= 0. At frame 24, X-position = 400. The software calculates positions 2 through 23 based on
+			the interpolation curve you choose. This is the entire mechanism of tween-based animation.
+		</p>
+
+		<!-- DEMO 5.2: Interactive Timeline -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 5.2 — Interactive Timeline</span>
+				<span class="demo-badge coral">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					A working mini-timeline. <strong>Click on a track</strong> to add a keyframe.
+					<strong>Drag keyframes</strong> left/right to reposition them. Hit play to see the result animate
+					on the canvas. Click a keyframe and press Delete to remove it.
+				</p>
+
+				<!-- Preview canvas -->
+				<canvas
+					id="tlPreviewCanvas"
+					width="560"
+					height="120"
+					style="
+								background: var(--raised);
+								border: 1px solid var(--border);
+								max-width: 100%;
+								display: block;
+								margin-bottom: 0.75rem;
+							"
+				></canvas>
+
+				<!-- Timeline -->
+				<div class="timeline-shell" id="timelineShell">
+					<!-- Toolbar -->
+					<div class="tl-toolbar">
+						<span class="tl-toolbar-label">Transport</span>
+						<div class="tl-transport">
+							<button class="tl-btn" id="tlToStart" title="Go to start">⏮</button>
+							<button class="tl-btn" id="tlPlayBtn">▶</button>
+							<button class="tl-btn" id="tlToEnd" title="Go to end">⏭</button>
+						</div>
+						<span class="tl-timecode" id="tlTimecode">00:00</span>
+						<span class="tl-fps-badge">24 fps</span>
+						<div style="margin-left: auto; display: flex; gap: 0.4rem; flex-wrap: wrap">
+							<button class="tl-btn" id="tlAddKf">+ Keyframe</button>
+							<button
+								class="tl-btn"
+								id="tlClearAll"
+								style="color: var(--coral); border-color: var(--coral)"
+							>
+								Clear All
+							</button>
+						</div>
+					</div>
+					<!-- Body -->
+					<div class="tl-body" id="tlBody">
+						<div class="tl-layer-names" id="tlLayerNames"></div>
+						<div class="tl-tracks-wrap" id="tlTracksWrap">
+							<div class="tl-ruler" id="tlRuler"></div>
+							<div class="tl-track-rows" id="tlTrackRows">
+								<div class="tl-playhead" id="tlPlayhead">
+									<div class="tl-playhead-head"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div
+					style="
+								margin-top: 0.85rem;
+								padding: 0.75rem 1rem;
+								border: 1px solid var(--border);
+								background: var(--raised);
+								font-family: var(--ff-mono);
+								font-size: 11px;
+								color: var(--muted);
+							"
+					id="tlStatusBar"
+				>
+					Click a track row to add a keyframe at the current frame. Drag keyframes to move them.
+				</div>
+			</div>
+		</div>
+
+		<p>
+			Notice the key distinction:
+			<strong>keyframes on different tracks are independent</strong>. You can keyframe the position
+			of a shape without keyframing its colour, and vice versa. This granularity is what makes
+			software animation so powerful — every property of every layer can have its own independent
+			animation curve.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 4: INTERPOLATION TYPES ══ -->
+	<section class="section" id="s4">
+		<div class="section-header">
+			<span class="section-num">04</span>
+			<h2 class="section-title">Keyframe Interpolation Types</h2>
+		</div>
+		<p>
+			When software calculates the frames between two keyframes, it needs to know
+			<em>how</em> to blend between the values. This is <strong>interpolation</strong>, and your
+			choice has enormous visual consequences. Most software gives you at minimum four types.
+		</p>
+
+		<!-- Interp cards -->
+		<div class="interp-grid" id="interpGrid">
+			<div
+				class="interp-card active"
+				data-interp="smooth"
+				onclick={(e) => {
+					window.selectInterp(e.currentTarget, 'smooth');
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectInterp(e.currentTarget, 'smooth');
+				}}
+			>
+				<div class="interp-name">Smooth / Bezier</div>
+				<div class="interp-tag">Slow-in, slow-out</div>
+			</div>
+			<div
+				class="interp-card"
+				data-interp="linear"
+				onclick={(e) => {
+					window.selectInterp(e.currentTarget, 'linear');
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectInterp(e.currentTarget, 'linear');
+				}}
+			>
+				<div class="interp-name">Linear</div>
+				<div class="interp-tag">Constant velocity</div>
+			</div>
+			<div
+				class="interp-card"
+				data-interp="hold"
+				onclick={(e) => {
+					window.selectInterp(e.currentTarget, 'hold');
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectInterp(e.currentTarget, 'hold');
+				}}
+			>
+				<div class="interp-name">Hold / Step</div>
+				<div class="interp-tag">No interpolation</div>
+			</div>
+			<div
+				class="interp-card"
+				data-interp="easeIn"
+				onclick={(e) => {
+					window.selectInterp(e.currentTarget, 'easeIn');
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectInterp(e.currentTarget, 'easeIn');
+				}}
+			>
+				<div class="interp-name">Ease In</div>
+				<div class="interp-tag">Accelerate away</div>
+			</div>
+			<div
+				class="interp-card"
+				data-interp="easeOut"
+				onclick={(e) => {
+					window.selectInterp(e.currentTarget, 'easeOut');
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectInterp(e.currentTarget, 'easeOut');
+				}}
+			>
+				<div class="interp-name">Ease Out</div>
+				<div class="interp-tag">Decelerate to stop</div>
+			</div>
+			<div
+				class="interp-card"
+				data-interp="bounce"
+				onclick={(e) => {
+					window.selectInterp(e.currentTarget, 'bounce');
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') window.selectInterp(e.currentTarget, 'bounce');
+				}}
+			>
+				<div class="interp-name">Bounce / Spring</div>
+				<div class="interp-tag">Overshoot + settle</div>
+			</div>
+		</div>
+
+		<!-- DEMO 5.3: Interpolation Visualiser -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 5.3 — Interpolation Types</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1rem">
+					Select an interpolation type above, then hit Animate to see how the software fills in the
+					frames between two keyframes.
+				</p>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start">
+					<div>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--muted);
+										margin-bottom: 0.4rem;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+									"
+						>
+							Motion Graph
+						</div>
+						<canvas
+							id="interpCurveCanvas"
+							width="240"
+							height="180"
+							style="background: var(--raised); border: 1px solid var(--border); display: block"
+						></canvas>
+					</div>
+					<div>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--muted);
+										margin-bottom: 0.4rem;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+									"
+						>
+							Live Preview
+						</div>
+						<canvas
+							id="interpPreviewCanvas"
+							width="240"
+							height="180"
+							style="background: var(--raised); border: 1px solid var(--border); display: block"
+						></canvas>
+					</div>
+				</div>
+				<div
+					id="interpDesc"
+					style="
+								margin-top: 1rem;
+								padding: 0.75rem 1rem;
+								border: 1px solid var(--border);
+								background: var(--raised);
+								font-size: 12.5px;
+								line-height: 1.7;
+								color: var(--muted);
+							"
+				></div>
+				<div class="btn-row" style="margin-top: 0.85rem">
+					<button class="btn active" id="interpPlayBtn">▶ Animate</button>
+					<button class="btn" id="interpResetBtn">↺ Reset</button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 5: ONION SKINNING ══ -->
+	<section class="section" id="s5">
+		<div class="section-header">
+			<span class="section-num">05</span>
+			<h2 class="section-title">Onion Skinning</h2>
+		</div>
+		<p>
+			<strong>Onion skinning</strong> is a technique borrowed directly from hand-drawn animation on physical
+			light tables, where animators could see through several sheets of paper to trace and align drawings.
+			In digital tools, it works the same way: you see ghost images of the previous and next frames while
+			drawing the current one.
+		</p>
+		<p>
+			This is how animators ensure <em>consistent arcs</em>, <em>smooth spacing</em>, and
+			<em>correct proportions</em> across frames without having to flip back and forth constantly. The
+			onion skin frames are shown at reduced opacity — typically a different colour for "before" frames
+			and "after" frames so you can tell them apart at a glance.
+		</p>
+
+		<!-- DEMO 5.4: Onion Skin -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 5.4 — Onion Skinning</span>
+				<span class="demo-badge mint">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Scrub the frame slider to move through the animation. Toggle onion skin to see how ghost
+					frames guide alignment. Adjust how many frames back/forward are shown.
+				</p>
+
+				<div
+					style="
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 1.25rem;
+								align-items: start;
+							"
+				>
+					<!-- Canvas -->
+					<div>
+						<canvas
+							id="onionCanvas"
+							width="300"
+							height="260"
+							style="
+										background: var(--raised);
+										border: 1px solid var(--border);
+										display: block;
+										max-width: 100%;
+									"
+						></canvas>
+						<div class="ctrl-row" style="margin-top: 0.75rem">
+							<span class="ctrl-label">Current frame</span>
+							<input type="range" class="mint" id="onionFrame" min="0" max="23" value="8" />
+							<span class="ctrl-val" id="onionFrameVal" style="color: var(--mint)">8</span>
+						</div>
+					</div>
+					<!-- Controls -->
+					<div style="display: flex; flex-direction: column; gap: 0.85rem">
+						<label
+							style="
+										display: flex;
+										align-items: center;
+										gap: 0.65rem;
+										cursor: pointer;
+										font-family: var(--ff-mono);
+										font-size: 11px;
+									"
+						>
+							<input
+								type="checkbox"
+								id="onionToggle"
+								checked
+								style="accent-color: var(--mint); width: 14px; height: 14px"
+							/>
+							<span>Onion Skin Enabled</span>
+						</label>
+						<div class="ctrl-row">
+							<span class="ctrl-label">Frames before</span>
+							<input type="range" id="onionBefore" min="1" max="5" value="3" />
+							<span class="ctrl-val" id="onionBeforeVal">3</span>
+						</div>
+						<div class="ctrl-row">
+							<span class="ctrl-label">Frames after</span>
+							<input type="range" id="onionAfter" min="1" max="5" value="2" />
+							<span class="ctrl-val" id="onionAfterVal">2</span>
+						</div>
+						<div class="ctrl-row">
+							<span class="ctrl-label">Opacity</span>
+							<input type="range" id="onionOpacity" min="0.1" max="0.6" step="0.05" value="0.3" />
+							<span class="ctrl-val" id="onionOpacityVal">30%</span>
+						</div>
+
+						<div
+							style="
+										padding: 0.75rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+									"
+						>
+							<div
+								style="
+											font-family: var(--ff-mono);
+											font-size: 9px;
+											color: var(--muted);
+											letter-spacing: 0.1em;
+											text-transform: uppercase;
+											margin-bottom: 0.5rem;
+										"
+							>
+								Legend
+							</div>
+							<div
+								style="
+											display: flex;
+											flex-direction: column;
+											gap: 0.25rem;
+											font-family: var(--ff-mono);
+											font-size: 10px;
+										"
+							>
+								<div style="display: flex; align-items: center; gap: 0.5rem">
+									<div
+										style="
+													width: 12px;
+													height: 12px;
+													border-radius: 50%;
+													background: var(--coral);
+													opacity: 0.7;
+													flex-shrink: 0;
+												"
+									></div>
+									<span style="color: var(--muted)">Previous frames</span>
+								</div>
+								<div style="display: flex; align-items: center; gap: 0.5rem">
+									<div
+										style="
+													width: 12px;
+													height: 12px;
+													border-radius: 50%;
+													background: var(--mint);
+													opacity: 0.7;
+													flex-shrink: 0;
+												"
+									></div>
+									<span style="color: var(--muted)">Future frames</span>
+								</div>
+								<div style="display: flex; align-items: center; gap: 0.5rem">
+									<div
+										style="
+													width: 12px;
+													height: 12px;
+													border-radius: 50%;
+													background: #fff;
+													flex-shrink: 0;
+												"
+									></div>
+									<span style="color: var(--muted)">Current frame</span>
+								</div>
+							</div>
+						</div>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 11px;
+										color: var(--muted);
+										line-height: 1.7;
+									"
+						>
+							Notice how the spacing between ghost frames reveals the
+							<strong style="color: var(--gold)">easing</strong> — tightly packed ghosts mean slow motion,
+							spread-out ghosts mean fast.
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 6: MANUAL vs AUTO IN-BETWEENS ══ -->
+	<section class="section" id="s6">
+		<div class="section-header">
+			<span class="section-num">06</span>
+			<h2 class="section-title">Manual vs. Tweened In-Betweens</h2>
+		</div>
+		<p>
+			Software interpolation — tweening — is powerful but dumb. It finds the mathematically shortest
+			path between two keyframe values. For a position, that's a straight line. For a rotation,
+			that's the shortest angular direction. Real motion almost never takes the shortest path.
+		</p>
+		<p>
+			This is why professional animators don't rely purely on auto-tweens for character work. They <strong
+				>add intermediate keyframes</strong
+			> to define arcs, override linear paths, and inject personality. The tween handles spacing; the
+			animator handles shape.
+		</p>
+
+		<div class="callout coral">
+			<div class="callout-label">When to Tween, When to Hand-Key</div>
+			<div
+				style="
+							display: grid;
+							grid-template-columns: 1fr 1fr;
+							gap: 0.5rem 1.5rem;
+							font-size: 12px;
+							margin-top: 0.5rem;
+						"
+			>
+				<div>
+					<strong style="color: var(--mint)">Auto-tween works well for:</strong><br />
+					Simple object transitions<br />Diagram reveals &amp; label slides<br />Opacity fades<br
+					/>Camera moves<br />Scale pulses
+				</div>
+				<div>
+					<strong style="color: var(--gold)">Hand-key when you need:</strong><br />
+					Organic arcs (character limbs)<br />Weight and impact hits<br />Personality and timing
+					nuance<br />Complex overlapping motion<br />Lip sync phoneme timing
+				</div>
+			</div>
+		</div>
+
+		<!-- DEMO 5.5: Auto vs Manual -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 5.5 — Auto Tween vs. Manual Keys</span>
+				<span class="demo-badge coral">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Both balls start and end at the same positions. The auto-tween takes the straight line.
+					The manual version adds a keyframe mid-arc to create a natural curved path. Animate both
+					to feel the difference.
+				</p>
+
+				<canvas
+					id="manualCanvas"
+					width="560"
+					height="200"
+					style="
+								background: var(--raised);
+								border: 1px solid var(--border);
+								max-width: 100%;
+								display: block;
+							"
+				></canvas>
+
+				<div style="display: flex; gap: 1.5rem; margin-top: 0.75rem; flex-wrap: wrap">
+					<div
+						style="
+									display: flex;
+									align-items: center;
+									gap: 0.5rem;
+									font-family: var(--ff-mono);
+									font-size: 10px;
+									color: var(--muted);
+								"
+					>
+						<div
+							style="width: 14px; height: 14px; border-radius: 50%; background: var(--coral)"
+						></div>
+						Auto-tween (straight path)
+					</div>
+					<div
+						style="
+									display: flex;
+									align-items: center;
+									gap: 0.5rem;
+									font-family: var(--ff-mono);
+									font-size: 10px;
+									color: var(--muted);
+								"
+					>
+						<div
+							style="width: 14px; height: 14px; border-radius: 50%; background: var(--gold)"
+						></div>
+						Manual keys (arc path)
+					</div>
+				</div>
+
+				<div style="margin-top: 1rem">
+					<div class="ctrl-row">
+						<span class="ctrl-label">Arc height</span>
+						<input type="range" id="arcHeightSlider" min="0" max="140" value="80" />
+						<span class="ctrl-val" id="arcHeightVal">80</span>
+					</div>
+					<div class="ctrl-row">
+						<span class="ctrl-label">Mid-key bias</span>
+						<input type="range" id="arcBiasSlider" min="0.2" max="0.8" step="0.05" value="0.5" />
+						<span class="ctrl-val" id="arcBiasVal">50%</span>
+					</div>
+				</div>
+
+				<label
+					style="
+								display: flex;
+								align-items: center;
+								gap: 0.65rem;
+								cursor: pointer;
+								font-family: var(--ff-mono);
+								font-size: 11px;
+								margin-top: 0.75rem;
+							"
+				>
+					<input
+						type="checkbox"
+						id="showKeys"
+						checked
+						style="accent-color: var(--gold); width: 14px; height: 14px"
+					/>
+					Show keyframes &amp; path
+				</label>
+
+				<div class="btn-row" style="margin-top: 0.85rem">
+					<button class="btn" id="manualPlayBtn">▶ Animate Both</button>
+					<button class="btn" id="manualResetBtn">↺ Reset</button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ QUIZ ══ -->
+	<div class="quiz-section" id="quiz">
+		<div class="quiz-header-bar">
+			<div>
+				<div class="quiz-title">Module Check</div>
+				<div class="quiz-sub">5 questions · Tools &amp; technique</div>
+			</div>
+			<span class="demo-badge" style="border-color: var(--gold)">Assessment</span>
+		</div>
+		<div class="quiz-body">
+			<div class="question" id="q1">
+				<div class="q-num">Q1 of 5</div>
+				<div class="q-text">
+					In a layered animation project, Layer A is above Layer B in the stack. Layer A contains a
+					red circle and Layer B contains a blue square that is the same size and position. What do
+					you see in the composite?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						A blue square — lower layers cover higher ones
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+					>
+						A red circle — higher layers render on top of lower ones
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Both shapes blend together into a purple shape
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Neither — they cancel each other out
+					</div>
+				</div>
+				<div class="feedback" id="q1-feedback"></div>
+			</div>
+
+			<div class="question" id="q2">
+				<div class="q-num">Q2 of 5</div>
+				<div class="q-text">A keyframe is best described as:</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						A full drawing of a character at an important moment
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						The first and last frame of any animation
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+					>
+						A recorded value for a specific property at a specific point in time, from which the
+						software interpolates surrounding frames
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						A locked frame that cannot be edited
+					</div>
+				</div>
+				<div class="feedback" id="q2-feedback"></div>
+			</div>
+
+			<div class="question" id="q3">
+				<div class="q-num">Q3 of 5</div>
+				<div class="q-text">
+					You want to animate a light that turns on at frame 12 and off at frame 36 with no gradual
+					transition — just an instant switch. Which keyframe interpolation type should you use?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Smooth / Bezier
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Ease Out
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+					>
+						Hold / Step
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Linear
+					</div>
+				</div>
+				<div class="feedback" id="q3-feedback"></div>
+			</div>
+
+			<div class="question" id="q4">
+				<div class="q-num">Q4 of 5</div>
+				<div class="q-text">
+					When using onion skinning, previous frames are shown in red and future frames in green.
+					You are drawing frame 10. You see a dense cluster of red ghosts close together on the
+					left, and widely spaced green ghosts on the right. What does this tell you about the
+					motion?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						The animation is moving left to right and then reversing
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+					>
+						The object was moving slowly before frame 10 (tight past frames) and will accelerate
+						after it (spread future frames)
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						The onion skin settings are incorrectly configured
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						There are more keyframes before frame 10 than after it
+					</div>
+				</div>
+				<div class="feedback" id="q4-feedback"></div>
+			</div>
+
+			<div class="question" id="q5">
+				<div class="q-num">Q5 of 5</div>
+				<div class="q-text">
+					You auto-tween a character's hand from position A to position B. The hand travels in a
+					perfectly straight line and looks robotic. What is the most direct fix?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Change the layer type from raster to vector
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Increase the frame rate from 24 to 60 fps
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+					>
+						Add one or more intermediate keyframes between A and B to define an arc path that the
+						hand follows
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						Enable onion skinning for that layer
+					</div>
+				</div>
+				<div class="feedback" id="q5-feedback"></div>
+			</div>
+		</div>
+		<div class="quiz-score" id="quizScore">
+			<div class="score-big" id="scoreNum">0/5</div>
+			<div class="score-lbl" id="scoreLbl">Module 5 Complete</div>
+		</div>
+	</div>
+
+	<!-- ══ NAV ══ -->
+	<nav class="nav-links">
+		<a href="/courses/animation/04" class="prev-link">← Module 4: Drawing for Animation</a>
+		<a href="/courses/animation/06" class="next-module">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">Rigging for 2D Characters</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</nav>
+</div>
+
+<style>
+	.page-wrapper {
+		background: var(--anim-bg);
+		color: var(--anim-text);
+		font-family: var(--ff-body);
+		font-size: 15px;
+		line-height: 1.8;
+	}
+
+	h1,
+	h2,
+	:global(h3) {
+		font-family: var(--ff-display);
+		font-weight: 800;
+		line-height: 1.15;
+		color: #fff;
+	}
+	p {
+		margin-bottom: 1.1rem;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--anim-gold);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: italic;
+	}
+	:global(code) {
+		font-family: var(--ff-mono);
+		font-size: 12px;
+		background: var(--anim-raised);
+		border: 1px solid var(--anim-border2);
+		padding: 1px 6px;
+		color: var(--anim-mint);
+	}
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 8rem;
+	}
+
+	/* ── HERO ── */
+	.module-hero {
+		padding: 5rem 0 4rem;
+		border-bottom: 1px solid var(--anim-border);
+		margin-bottom: 4rem;
+		position: relative;
+		overflow: hidden;
+	}
+	.module-eyebrow {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-gold);
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.module-eyebrow::before,
+	.module-eyebrow::after {
+		content: '';
+		display: inline-block;
+		width: 24px;
+		height: 1px;
+		background: var(--anim-gold);
+	}
+	.module-title {
+		font-size: clamp(28px, 5vw, 54px);
+		color: #fff;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+	.module-title em {
+		color: var(--anim-gold);
+		font-style: italic;
+	}
+	.module-subtitle {
+		font-size: 16px;
+		color: var(--anim-muted);
+		font-weight: 400;
+		margin-bottom: 2.5rem;
+	}
+	.objectives {
+		border: 1px solid var(--anim-border);
+		border-left: 3px solid var(--anim-gold);
+		background: var(--anim-surface);
+		padding: 1.5rem 2rem;
+	}
+	.obj-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-gold);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.25rem 0 0.25rem 1.5rem;
+		position: relative;
+		font-size: 14px;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--anim-coral);
+	}
+
+	/* hero deco — timeline bars */
+	.hero-deco {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: 220px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 8px;
+		padding: 2rem;
+		opacity: 0.06;
+		pointer-events: none;
+	}
+	:global(.hero-bar) {
+		height: 8px;
+		background: var(--anim-gold);
+		border-radius: 2px;
+	}
+
+	/* ── SECTIONS ── */
+	.section {
+		margin: 5rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.section-num {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-coral);
+		letter-spacing: 0.1em;
+	}
+	.section-title {
+		font-family: var(--ff-display);
+		font-size: 26px;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	/* ── CALLOUT ── */
+	.callout {
+		margin: 1.75rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
+		font-size: 13.5px;
+	}
+	.callout.gold {
+		border-color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
+	}
+	.callout.coral {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
+	}
+	.callout.mint {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
+	}
+	.callout-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		margin-bottom: 0.4rem;
+		font-weight: 500;
+		color: var(--anim-lavender);
+	}
+	.callout.gold .callout-label {
+		color: var(--anim-gold);
+	}
+	.callout.coral .callout-label {
+		color: var(--anim-coral);
+	}
+	.callout.mint .callout-label {
+		color: var(--anim-mint);
+	}
+
+	/* ── DEMO BOX ── */
+	.demo-box {
+		background: var(--anim-surface);
+		border: 1px solid var(--anim-border);
+		margin: 2.5rem 0;
+	}
+	.demo-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.demo-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.demo-badge {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid var(--anim-gold);
+		color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 10%, transparent);
+	}
+	.demo-badge.coral {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+	}
+	.demo-badge.mint {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+
+	canvas {
+		display: block;
+	}
+
+	/* ── BUTTONS / CONTROLS ── */
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-text);
+		padding: 5px 14px;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.15s;
+		letter-spacing: 0.05em;
+		user-select: none;
+	}
+	:global(.btn:hover) {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+	}
+	:global(.btn.active) {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 12%, transparent);
+	}
+	:global(.btn.coral:hover),
+	:global(.btn.coral.active) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	:global(.btn.coral.active) {
+		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
+	}
+	:global(.btn.mint:hover),
+	:global(.btn.mint.active) {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+	}
+	:global(.btn.mint.active) {
+		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
+	}
+	:global(.btn.danger) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	:global(.btn.danger:hover) {
+		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-row) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.35rem 0;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-label) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 84px;
+	}
+	:global(.ctrl-val) {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-gold);
+		font-weight: 500;
+		min-width: 44px;
+	}
+	:global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 2px;
+		background: var(--anim-border2);
+		outline: none;
+		min-width: 80px;
+	}
+	:global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--anim-gold);
+		cursor: pointer;
+		border: 2px solid var(--anim-bg);
+	}
+	input[type='range'].mint::-webkit-slider-thumb {
+		background: var(--anim-mint);
+	}
+	:global(input[type='range'].coral::-webkit-slider-thumb) {
+		background: var(--anim-coral);
+	}
+
+	/* ══════════════════════════
+   TIMELINE WIDGET
+══════════════════════════ */
+	.timeline-shell {
+		background: var(--anim-bg);
+		border: 1px solid var(--anim-border2);
+		font-family: var(--ff-mono);
+	}
+	.tl-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+		flex-wrap: wrap;
+	}
+	.tl-toolbar-label {
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--anim-dim);
+		margin-right: 0.25rem;
+	}
+	.tl-transport {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+	.tl-btn {
+		background: none;
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-muted);
+		padding: 3px 9px;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.12s;
+	}
+	.tl-btn:hover {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+	}
+	:global(.tl-btn.playing) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	.tl-timecode {
+		font-size: 11px;
+		color: var(--anim-gold);
+		min-width: 52px;
+		text-align: right;
+		padding: 0 0.5rem;
+	}
+	.tl-fps-badge {
+		font-size: 9px;
+		color: var(--anim-dim);
+		border: 1px solid var(--anim-border);
+		padding: 2px 6px;
+	}
+
+	.tl-body {
+		display: grid;
+		grid-template-columns: 120px 1fr;
+		overflow: hidden;
+	}
+	.tl-layer-names {
+		border-right: 1px solid var(--anim-border2);
+	}
+	:global(.tl-layer-name-row) {
+		height: 32px;
+		display: flex;
+		align-items: center;
+		padding: 0 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+		font-size: 10px;
+		letter-spacing: 0.06em;
+		gap: 0.4rem;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	:global(.tl-layer-name-row:hover) {
+		background: var(--anim-raised);
+	}
+	:global(.tl-layer-name-row.selected) {
+		background: color-mix(in srgb, var(--anim-gold) 6%, var(--anim-raised));
+	}
+	:global(.tl-layer-swatch) {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	:global(.tl-layer-label) {
+		color: var(--anim-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	:global(.tl-layer-name-row.selected) :global(.tl-layer-label) {
+		color: var(--anim-text);
+	}
+	:global(.tl-layer-eye) {
+		margin-left: auto;
+		font-size: 12px;
+		opacity: 0.4;
+		cursor: pointer;
+	}
+	:global(.tl-layer-eye:hover) {
+		opacity: 1;
+	}
+
+	.tl-tracks-wrap {
+		overflow-x: auto;
+		position: relative;
+	}
+	.tl-ruler {
+		height: 20px;
+		border-bottom: 1px solid var(--anim-border2);
+		position: relative;
+		background: var(--anim-bg);
+	}
+	:global(.tl-ruler-tick) {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		align-items: center;
+	}
+	:global(.tl-ruler-num) {
+		font-size: 8px;
+		color: var(--anim-dim);
+		padding-bottom: 2px;
+		user-select: none;
+	}
+	:global(.tl-ruler-line) {
+		width: 1px;
+		background: var(--anim-border);
+		height: 6px;
+	}
+	:global(.tl-ruler-line.major) {
+		height: 10px;
+		background: var(--anim-border2);
+	}
+	.tl-playhead {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 1px;
+		background: var(--anim-coral);
+		pointer-events: none;
+		z-index: 10;
+	}
+	.tl-playhead-head {
+		position: absolute;
+		top: 0;
+		left: -4px;
+		width: 9px;
+		height: 9px;
+		background: var(--anim-coral);
+		clip-path: polygon(50% 100%, 0 0, 100% 0);
+	}
+
+	.tl-track-rows {
+		position: relative;
+	}
+	:global(.tl-track-row) {
+		height: 32px;
+		border-bottom: 1px solid var(--anim-border);
+		display: flex;
+		align-items: center;
+		position: relative;
+	}
+	:global(.tl-track-bg) {
+		position: absolute;
+		inset: 0;
+	}
+	:global(.tl-keyframe) {
+		position: absolute;
+		top: 50%;
+		width: 10px;
+		height: 10px;
+		transform: translate(-50%, -50%) rotate(45deg);
+		cursor: pointer;
+		transition: background 0.12s;
+		z-index: 5;
+	}
+	:global(.tl-keyframe:hover) {
+		outline: 1px solid #fff4;
+	}
+	:global(.tl-tween-bar) {
+		position: absolute;
+		top: 50%;
+		height: 4px;
+		transform: translateY(-50%);
+		border-radius: 2px;
+		opacity: 0.55;
+	}
+	:global(.tl-tween-bar.hold) {
+		border-top: 1px dashed;
+		background: transparent !important;
+	}
+
+	/* ══════════════════════════
+   LAYER STACK WIDGET
+══════════════════════════ */
+	.layer-stack {
+		border: 1px solid var(--anim-border);
+		background: var(--anim-bg);
+	}
+	.ls-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.5rem 0.85rem;
+		border-bottom: 1px solid var(--anim-border);
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+	:global(.ls-layer) {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.45rem 0.85rem;
+		border-bottom: 1px solid var(--anim-border);
+		cursor: grab;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		transition: background 0.12s;
+		user-select: none;
+	}
+	:global(.ls-layer:hover) {
+		background: var(--anim-raised);
+	}
+	:global(.ls-layer.selected) {
+		background: color-mix(in srgb, var(--anim-gold) 6%, var(--anim-raised));
+	}
+	:global(.ls-layer.dragging) {
+		opacity: 0.4;
+	}
+	:global(.ls-swatch) {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	:global(.ls-name) {
+		color: var(--anim-muted);
+		flex: 1;
+	}
+	:global(.ls-layer.selected) :global(.ls-name) {
+		color: var(--anim-text);
+	}
+	:global(.ls-type) {
+		font-size: 9px;
+		color: var(--anim-dim);
+		border: 1px solid var(--anim-border);
+		padding: 1px 5px;
+	}
+	:global(.ls-eye) {
+		font-size: 12px;
+		opacity: 0.35;
+		cursor: pointer;
+	}
+	:global(.ls-eye:hover),
+	.ls-layer.visible :global(.ls-eye) {
+		opacity: 1;
+	}
+	:global(.ls-lock) {
+		font-size: 11px;
+		opacity: 0.25;
+		cursor: pointer;
+	}
+	:global(.ls-lock:hover) {
+		opacity: 0.7;
+	}
+	:global(.ls-preview) {
+		width: 28px;
+		height: 20px;
+		background: var(--anim-raised);
+		border: 1px solid var(--anim-border);
+		flex-shrink: 0;
+		overflow: hidden;
+		position: relative;
+	}
+
+	/* ══════════════════════════
+   ONION SKIN
+══════════════════════════ */
+	:global(.onion-shell) {
+		border: 1px solid var(--anim-border);
+		background: var(--anim-bg);
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1px;
+		background: var(--anim-border);
+	}
+	@media (max-width: 560px) {
+		:global(.onion-shell) {
+			grid-template-columns: 1fr;
+		}
+	}
+	:global(.onion-panel) {
+		background: var(--anim-surface);
+		padding: 1rem;
+	}
+	:global(.onion-panel-label) {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-bottom: 0.5rem;
+	}
+
+	/* ══════════════════════════
+   INTERPOLATION EXPLORER
+══════════════════════════ */
+	.interp-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+		margin: 1rem 0;
+	}
+	@media (max-width: 560px) {
+		.interp-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	.interp-card {
+		background: var(--anim-surface);
+		padding: 0.85rem;
+		cursor: pointer;
+		transition: background 0.12s;
+		position: relative;
+	}
+	.interp-card:hover {
+		background: var(--anim-raised);
+	}
+	.interp-card.active {
+		background: color-mix(in srgb, var(--anim-gold) 6%, var(--anim-raised));
+	}
+	.interp-card.active::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--anim-gold);
+	}
+	.interp-name {
+		font-family: var(--ff-display);
+		font-size: 14px;
+		font-weight: 600;
+		color: #fff;
+		margin-bottom: 0.15rem;
+	}
+	.interp-tag {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-muted);
+	}
+
+	/* ══════════════════════════
+   QUIZ
+══════════════════════════ */
+	.quiz-section {
+		margin: 5rem 0;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+	}
+	.quiz-header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 1.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.quiz-title {
+		font-family: var(--ff-display);
+		font-size: 22px;
+		font-weight: 800;
+		color: #fff;
+	}
+	.quiz-sub {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.2rem;
+	}
+	.quiz-body {
+		padding: 1.75rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	.question:first-child {
+		margin-top: 0;
+	}
+	:global(.q-num) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		color: var(--anim-gold);
+		margin-bottom: 0.4rem;
+	}
+	:global(.q-text) {
+		font-size: 14px;
+		color: #fff;
+		margin-bottom: 0.75rem;
+		line-height: 1.6;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	:global(.option) {
+		padding: 0.65rem 1rem;
+		border: 1px solid var(--anim-border);
+		cursor: pointer;
+		font-size: 13px;
+		font-family: var(--ff-body);
+		transition: all 0.15s;
+		user-select: none;
+		background: var(--anim-bg);
+	}
+	:global(.option:hover) {
+		border-color: var(--anim-border2);
+		background: var(--anim-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+		color: var(--anim-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+		color: var(--anim-coral);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.6rem;
+		min-height: 1.4em;
+		font-family: var(--ff-mono);
+		color: var(--anim-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--anim-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--anim-coral);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 2rem;
+		border: 1px solid var(--anim-border);
+		text-align: center;
+		background: var(--anim-raised);
+		display: none;
+	}
+	:global(.quiz-score.visible) {
+		display: block;
+	}
+	.score-big {
+		font-family: var(--ff-display);
+		font-size: 52px;
+		font-weight: 800;
+		color: var(--anim-gold);
+		line-height: 1;
+	}
+	.score-lbl {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.5rem;
+	}
+
+	/* ── NAV ── */
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 4rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.prev-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		color: var(--anim-muted);
+		font-family: var(--ff-mono);
+		font-size: 11px;
+	}
+	.prev-link:hover {
+		border-color: var(--anim-muted);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		min-width: 260px;
+	}
+	.next-module:hover {
+		border-color: var(--anim-gold);
+	}
+	.next-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.next-title {
+		font-family: var(--ff-display);
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.2rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--anim-gold);
+		flex-shrink: 0;
+	}
+	@media (max-width: 640px) {
+		.page-wrapper {
+			padding: 0 1.25rem 6rem;
+		}
+	}
+</style>

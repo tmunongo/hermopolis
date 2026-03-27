@@ -71,7 +71,7 @@ export const gameDevModules: Module[] = [
 		number: 5,
 		title: 'Textures and Sampling',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent2',
 		description:
 			'Load images onto GPU memory, sample them in shaders, and control filtering and wrapping modes.'
@@ -81,7 +81,7 @@ export const gameDevModules: Module[] = [
 		number: 6,
 		title: 'Lighting and Shading Models',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent3',
 		description:
 			'Implement ambient, diffuse, and specular lighting. Understand normal vectors and Phong shading.'
@@ -204,7 +204,7 @@ export const animationModules: Module[] = [
 		number: 4,
 		title: 'Drawing for Animation',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-gold',
 		description:
 			'Breaking characters into simple forms, line-of-action, silhouette clarity, and designing diagram elements for motion.'
@@ -214,7 +214,7 @@ export const animationModules: Module[] = [
 		number: 5,
 		title: 'Digital 2D Tools',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-coral',
 		description:
 			'Layers, keyframes, tweens, onion skinning, and the timeline — a hands-on introduction to 2D animation software.'
