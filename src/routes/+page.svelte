@@ -90,27 +90,36 @@
 			</div>
 		</a>
 
-		<!-- Coming Soon: Graphic Design -->
-		<div class="course-card soon">
+		<!-- Active: Graphic Design -->
+		<a href="/courses/graphic-design" class="course-card graphic-design">
+			<div class="card-accent-bar gd-bar"></div>
 			<div class="card-body">
-				<div class="card-eyebrow" style="color: var(--muted)">
-					{graphicDesignCourse.totalModules} Modules · COMING SOON
+				<div class="card-eyebrow" style="color: var(--gd-rose)">
+					{graphicDesignCourse.totalModules} Modules · Theory + Practice
 				</div>
-				<h2 class="card-title" style="color: var(--muted)">{graphicDesignCourse.title}</h2>
-				<p class="card-subtitle" style="color: var(--muted)">{graphicDesignCourse.subtitle}</p>
-				<p class="card-desc" style="color: var(--muted)">
+				<h2 class="card-title">{graphicDesignCourse.title}</h2>
+				<p class="card-subtitle" style="color: var(--gd-rose)">{graphicDesignCourse.subtitle}</p>
+				<p class="card-desc">
 					{graphicDesignCourse.description}
 				</p>
-				<div class="card-meta" style="opacity: 0.5;">
+				<div class="card-meta">
 					<div class="meta-modules">
 						{#each graphicDesignModules as mod}
-							<div class="meta-dot" title={mod.title}></div>
+							<div
+								class="meta-dot gd"
+								class:active={mod.status === 'available'}
+								title={mod.title}
+							></div>
 						{/each}
 					</div>
-					<span class="meta-count">In Development</span>
+					<span class="meta-count"
+						>{graphicDesignModules.filter((m) => m.status === 'available').length} / {graphicDesignModules.length}
+						modules available</span
+					>
 				</div>
+				<div class="card-cta gd-cta">Start Learning →</div>
 			</div>
-		</div>
+		</a>
 
 		<!-- Placeholder for future courses -->
 		<div class="course-card soon">
@@ -302,5 +311,22 @@
 	}
 	.course-card.animation:not(.soon):hover .card-cta.anim-cta {
 		background: color-mix(in srgb, var(--anim-gold) 15%, transparent);
+	}
+
+	.card-accent-bar.gd-bar {
+		background: linear-gradient(90deg, var(--gd-rose), var(--gd-violet), var(--gd-sky));
+	}
+	.course-card.graphic-design:not(.soon):hover {
+		border-color: var(--gd-rose);
+	}
+	.meta-dot.gd.active {
+		background: var(--gd-rose);
+	}
+	.card-cta.gd-cta {
+		color: var(--gd-rose);
+		border-color: var(--gd-rose);
+	}
+	.course-card.graphic-design:not(.soon):hover .card-cta.gd-cta {
+		background: color-mix(in srgb, var(--gd-rose) 15%, transparent);
 	}
 </style>
