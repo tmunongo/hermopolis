@@ -1,0 +1,3003 @@
+<script>
+	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		/* ═══════════ UTILS ═══════════ */
+		const C = {
+			gold: '#f0a830',
+			coral: '#e8553a',
+			mint: '#4ecbb4',
+			lav: '#c4a8f0',
+			muted: '#7a6e5e',
+			border: '#28221a',
+			border2: '#3c342a',
+			raised: '#1c1812',
+			surface: '#131009',
+			bg: '#0b0906',
+			dim: '#4a4035',
+			text: '#ede5d4'
+		};
+		const lerp = (a, b, t) => a + (b - a) * t;
+		const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+		const eio = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
+		const eout = (t) => 1 - Math.pow(1 - t, 3);
+		const ein = (t) => t * t * t;
+
+		/* ═══════════ HERO DECO ═══════════ */
+		(() => {
+			const el = document.getElementById('heroDeco');
+			for (let r = 0; r < 5; r++) {
+				const row = document.createElement('div');
+				row.className = 'hero-deco-row';
+				const n1 = document.createElement('div');
+				n1.className = 'hero-node';
+				const a = document.createElement('div');
+				a.className = 'hero-arrow';
+				const n2 = document.createElement('div');
+				n2.className = 'hero-node';
+				n2.style.opacity = 0.4 + r * 0.12;
+				row.appendChild(n1);
+				row.appendChild(a);
+				row.appendChild(n2);
+				el.appendChild(row);
+			}
+		})();
+
+		/* ══════════════════════════════════
+   DEMO 8.1 — REVEAL TECHNIQUES
+══════════════════════════════════ */
+		const rCanvas = document.getElementById('revealCanvas');
+		const rctx = rCanvas.getContext('2d');
+		const RW = rCanvas.width,
+			RH = rCanvas.height;
+		let revealTech = 'fade',
+			revealT = 0,
+			revealPlaying = false,
+			revealRaf = null,
+			revealLastTs = null;
+
+		const REVEAL_DESCS = {
+			fade: 'Fade in: opacity rises from 0→1. Best for labels, callouts, and background fills. Feels like the element materialises from nothing.',
+			drawon:
+				'Draw-on: the shape traces itself from start to finish. Best for arrows and connector lines — visually traces the path being described.',
+			scale:
+				'Scale up: element grows from a point. Best for nodes, icons, and data points. Implies the element is emerging or growing in importance.',
+			wipe: 'Wipe: element reveals left-to-right behind a masking edge. Best for progress bars, timelines, and horizontal processes.',
+			slide:
+				'Slide in: element enters from off-screen. Best for new sections, list items appearing in sequence, or side-panel reveals.'
+		};
+
+		// 4 diagram elements to reveal: box, arrow, label, icon
+		const ELEMENTS = [
+			{ x: 60, y: RH / 2 - 25, w: 80, h: 50, label: 'Input', color: C.mint },
+			{ x: 220, y: RH / 2 - 25, w: 80, h: 50, label: 'Process', color: C.gold },
+			{ x: 380, y: RH / 2 - 25, w: 80, h: 50, label: 'Output', color: C.coral }
+		];
+		const ARROWS = [
+			{ x1: 140, y1: RH / 2, x2: 220, y2: RH / 2 },
+			{ x1: 300, y1: RH / 2, x2: 380, y2: RH / 2 }
+		];
+
+		function setRevealTech(tab, tech) {
+			revealTech = tech;
+			document
+				.querySelectorAll('.reveal-tab')
+				.forEach((t) => t.classList.toggle('active', t.dataset.tech === tech));
+			document.getElementById('revealTechDesc').textContent = REVEAL_DESCS[tech];
+			cancelAnimationFrame(revealRaf);
+			revealPlaying = false;
+			revealT = 0;
+			revealLastTs = null;
+			document.getElementById('revealPlayBtn').textContent = '▶ Animate';
+			document.getElementById('revealPlayBtn').classList.remove('active');
+			renderReveal(0);
+		}
+
+		function revealElem(ctx, elem, t, tech) {
+			ctx.save();
+			if (tech === 'fade') {
+				ctx.globalAlpha = eout(t);
+				drawBox(ctx, elem, 1);
+			} else if (tech === 'drawon') {
+				// Clip to a rect that grows left to right
+				ctx.beginPath();
+				ctx.rect(elem.x, elem.y - 10, elem.w * eout(t), elem.h + 20);
+				ctx.clip();
+				ctx.globalAlpha = 1;
+				drawBox(ctx, elem, 1);
+			} else if (tech === 'scale') {
+				const s = eout(t);
+				ctx.translate(elem.x + elem.w / 2, elem.y + elem.h / 2);
+				ctx.scale(s, s);
+				ctx.translate(-(elem.x + elem.w / 2), -(elem.y + elem.h / 2));
+				drawBox(ctx, elem, 1);
+			} else if (tech === 'wipe') {
+				ctx.beginPath();
+				ctx.rect(elem.x, elem.y, elem.w * eout(t), elem.h);
+				ctx.clip();
+				drawBox(ctx, elem, 1);
+			} else if (tech === 'slide') {
+				const off = (1 - eout(t)) * 70;
+				ctx.translate(-off, 0);
+				drawBox(ctx, elem, 1);
+			}
+			ctx.restore();
+		}
+
+		function revealArrow(ctx, arr, t, tech) {
+			ctx.save();
+			const cx = (arr.x1 + arr.x2) / 2,
+				cy = (arr.y1 + arr.y2) / 2;
+			if (tech === 'fade') ctx.globalAlpha = eout(t);
+			else if (tech === 'scale') {
+				ctx.translate(cx, cy);
+				ctx.scale(eout(t), eout(t));
+				ctx.translate(-cx, -cy);
+			} else if (tech === 'slide') {
+				ctx.translate(-(1 - eout(t)) * 30, 0);
+			}
+
+			const progress = tech === 'drawon' ? eout(t) : 1;
+			const ex = lerp(arr.x1, arr.x2, progress),
+				ey = lerp(arr.y1, arr.y2, progress);
+			ctx.strokeStyle = C.muted + 'cc';
+			ctx.lineWidth = 2;
+			ctx.lineCap = 'round';
+			ctx.beginPath();
+			ctx.moveTo(arr.x1, arr.y1);
+			ctx.lineTo(ex, ey);
+			ctx.stroke();
+			if (progress > 0.9) {
+				ctx.fillStyle = C.muted + 'cc';
+				ctx.beginPath();
+				ctx.moveTo(ex, ey);
+				ctx.lineTo(ex - 8, ey - 5);
+				ctx.lineTo(ex - 8, ey + 5);
+				ctx.closePath();
+				ctx.fill();
+			}
+			ctx.restore();
+		}
+
+		function drawBox(ctx, elem, alpha = 1) {
+			ctx.globalAlpha = alpha;
+			ctx.fillStyle = elem.color + '22';
+			ctx.strokeStyle = elem.color + '88';
+			ctx.lineWidth = 1.5;
+			ctx.beginPath();
+			ctx.rect(elem.x, elem.y, elem.w, elem.h);
+			ctx.fill();
+			ctx.stroke();
+			ctx.fillStyle = elem.color;
+			ctx.font = `500 11px 'JetBrains Mono'`;
+			ctx.textAlign = 'center';
+			ctx.fillText(elem.label, elem.x + elem.w / 2, elem.y + elem.h / 2 + 4);
+			ctx.globalAlpha = 1;
+		}
+
+		function renderReveal(t) {
+			rctx.clearRect(0, 0, RW, RH);
+			// Stagger each element's start
+			const nElem = ELEMENTS.length + ARROWS.length;
+			const allItems = [
+				{ type: 'elem', data: ELEMENTS[0], start: 0 },
+				{ type: 'arrow', data: ARROWS[0], start: 0.18 },
+				{ type: 'elem', data: ELEMENTS[1], start: 0.32 },
+				{ type: 'arrow', data: ARROWS[1], start: 0.52 },
+				{ type: 'elem', data: ELEMENTS[2], start: 0.66 }
+			];
+			allItems.forEach((item) => {
+				const localT = clamp(((t - item.start) / (1 - item.start)) * 1.5, 0, 1);
+				if (localT <= 0) return;
+				if (item.type === 'elem') revealElem(rctx, item.data, localT, revealTech);
+				else revealArrow(rctx, item.data, localT, revealTech);
+			});
+			// Labels for still elements
+			rctx.fillStyle = C.muted;
+			rctx.font = `9px 'JetBrains Mono'`;
+			rctx.textAlign = 'center';
+			rctx.fillText(`Technique: ${revealTech.toUpperCase()}`, RW / 2, RH - 8);
+		}
+
+		function revealTick(ts) {
+			if (!revealLastTs) revealLastTs = ts;
+			revealT = Math.min(1, revealT + ((ts - revealLastTs) / 1000) * 0.55);
+			revealLastTs = ts;
+			renderReveal(revealT);
+			if (revealT < 1) revealRaf = requestAnimationFrame(revealTick);
+			else {
+				revealPlaying = false;
+				document.getElementById('revealPlayBtn').textContent = '▶ Animate';
+				document.getElementById('revealPlayBtn').classList.remove('active');
+				revealLastTs = null;
+			}
+		}
+		document.getElementById('revealPlayBtn').onclick = function () {
+			if (!revealPlaying) {
+				revealT = 0;
+				revealPlaying = true;
+				this.textContent = '⏸ Playing…';
+				this.classList.add('active');
+				revealLastTs = null;
+				revealRaf = requestAnimationFrame(revealTick);
+			}
+		};
+		document.getElementById('revealResetBtn').onclick = () => {
+			cancelAnimationFrame(revealRaf);
+			revealPlaying = false;
+			revealT = 0;
+			revealLastTs = null;
+			document.getElementById('revealPlayBtn').textContent = '▶ Animate';
+			document.getElementById('revealPlayBtn').classList.remove('active');
+			renderReveal(0);
+		};
+		document.getElementById('revealTechDesc').textContent = REVEAL_DESCS.fade;
+		renderReveal(0);
+
+		/* ══════════════════════════════════
+   DEMO 8.2 — SEQUENTIAL FLOW
+══════════════════════════════════ */
+		const flowCanvas = document.getElementById('flowCanvas');
+		const fctx = flowCanvas.getContext('2d');
+		const FCW = flowCanvas.width,
+			FCH = flowCanvas.height;
+
+		const FLOW_STEPS = [
+			{ label: 'Input', sublabel: 'Raw data in', color: C.mint, x: 52 },
+			{ label: 'Parse', sublabel: 'Structure it', color: C.gold, x: 164 },
+			{ label: 'Validate', sublabel: 'Check rules', color: C.lav, x: 276 },
+			{ label: 'Store', sublabel: 'Write to DB', color: C.coral, x: 388 },
+			{ label: 'Confirm', sublabel: 'Send response', color: C.mint, x: 500 }
+		];
+		const STEP_DESCS = [
+			'Step 1 — Input: raw data enters the system. Nothing else is visible yet. The viewer focuses entirely on the entry point.',
+			'Step 2 — Parse: the data is read and given structure. The arrow makes the flow direction explicit.',
+			'Step 3 — Validate: rules are checked. Business logic lives here.',
+			'Step 4 — Store: validated data is written to the database.',
+			'Step 5 — Confirm: a response is sent back. The full flow is now visible.'
+		];
+
+		let flowStep = 0,
+			flowAutoPlay = true,
+			flowRaf = null,
+			flowLastTs = null,
+			flowHoldT = 0;
+		let flowDelay = 1.2;
+		let flowAnimT = 0; // 0→1 for current step animation
+
+		function renderFlow(step, animT) {
+			fctx.clearRect(0, 0, FCW, FCH);
+			const cy = FCH / 2,
+				nodeW = 80,
+				nodeH = 50;
+
+			FLOW_STEPS.forEach((s, i) => {
+				const t = i < step ? 1 : i === step ? eout(clamp(animT, 0, 1)) : 0;
+				if (t <= 0) return;
+
+				fctx.save();
+				fctx.globalAlpha = t;
+				// Node
+				fctx.fillStyle = s.color + '1a';
+				fctx.strokeStyle = s.color + (i === step ? 'ff' : '88');
+				fctx.lineWidth = i === step ? 2 : 1.5;
+				fctx.beginPath();
+				fctx.rect(s.x - nodeW / 2, cy - nodeH / 2, nodeW, nodeH);
+				fctx.fill();
+				fctx.stroke();
+				// Labels
+				fctx.fillStyle = i === step ? '#fff' : s.color;
+				fctx.font = `500 11px 'JetBrains Mono'`;
+				fctx.textAlign = 'center';
+				fctx.fillText(s.label, s.x, cy - 4);
+				fctx.fillStyle = C.muted;
+				fctx.font = `9px 'JetBrains Mono'`;
+				fctx.fillText(s.sublabel, s.x, cy + 12);
+				fctx.restore();
+
+				// Arrow to next
+				if (i < FLOW_STEPS.length - 1 && i < step) {
+					const next = FLOW_STEPS[i + 1];
+					const arrT = i + 1 < step ? 1 : i + 1 === step ? eout(clamp(animT * 1.5, 0, 1)) : 0;
+					if (arrT > 0) {
+						const x1 = s.x + nodeW / 2,
+							x2 = next.x - nodeW / 2;
+						const ex = lerp(x1, x2, arrT);
+						fctx.strokeStyle = C.muted + '88';
+						fctx.lineWidth = 1.5;
+						fctx.lineCap = 'round';
+						fctx.beginPath();
+						fctx.moveTo(x1, cy);
+						fctx.lineTo(ex, cy);
+						fctx.stroke();
+						if (arrT > 0.9) {
+							fctx.fillStyle = C.muted + '88';
+							fctx.beginPath();
+							fctx.moveTo(ex, cy);
+							fctx.lineTo(ex - 7, cy - 4);
+							fctx.lineTo(ex - 7, cy + 4);
+							fctx.closePath();
+							fctx.fill();
+						}
+					}
+				}
+			});
+
+			// Step counter
+			fctx.fillStyle = C.muted;
+			fctx.font = `9px 'JetBrains Mono'`;
+			fctx.textAlign = 'left';
+			fctx.fillText(`Step ${Math.min(step + 1, 5)} / 5`, 12, FCH - 8);
+		}
+
+		function setFlowStep(s) {
+			flowStep = clamp(s, 0, FLOW_STEPS.length - 1);
+			document.getElementById('flowStepDesc').textContent = STEP_DESCS[flowStep];
+			renderFlow(flowStep, 1);
+		}
+
+		function flowAutoTick(ts) {
+			if (!flowLastTs) flowLastTs = ts;
+			const dt = (ts - flowLastTs) / 1000;
+			flowLastTs = ts;
+
+			if (flowHoldT > 0) {
+				flowHoldT -= dt;
+				flowRaf = requestAnimationFrame(flowAutoTick);
+				return;
+			}
+
+			flowAnimT = Math.min(1, flowAnimT + dt * 1.8);
+			renderFlow(flowStep, flowAnimT);
+
+			if (flowAnimT >= 1) {
+				if (flowStep < FLOW_STEPS.length - 1) {
+					flowHoldT = flowDelay;
+					flowStep++;
+					flowAnimT = 0;
+					document.getElementById('flowStepDesc').textContent = STEP_DESCS[flowStep];
+				} else {
+					flowAutoPlay = false;
+					document.getElementById('flowPlayBtn').textContent = '▶ Auto';
+					document.getElementById('flowPlayBtn').classList.remove('active');
+					flowLastTs = null;
+					return;
+				}
+			}
+			flowRaf = requestAnimationFrame(flowAutoTick);
+		}
+
+		document.getElementById('flowDelay').oninput = function () {
+			flowDelay = parseFloat(this.value);
+			document.getElementById('flowDelayVal').textContent = this.value + 's';
+		};
+		document.getElementById('flowPlayBtn').onclick = function () {
+			flowAutoPlay = !flowAutoPlay;
+			this.textContent = flowAutoPlay ? '⏸ Pause' : '▶ Auto';
+			this.classList.toggle('active', flowAutoPlay);
+			if (flowAutoPlay) {
+				if (flowStep >= FLOW_STEPS.length - 1) {
+					flowStep = 0;
+					flowAnimT = 0;
+					flowHoldT = 0;
+				}
+				flowLastTs = null;
+				flowRaf = requestAnimationFrame(flowAutoTick);
+			} else cancelAnimationFrame(flowRaf);
+		};
+		document.getElementById('flowPrevBtn').onclick = () => {
+			cancelAnimationFrame(flowRaf);
+			flowAutoPlay = false;
+			document.getElementById('flowPlayBtn').textContent = '▶ Auto';
+			document.getElementById('flowPlayBtn').classList.remove('active');
+			setFlowStep(flowStep - 1);
+		};
+		document.getElementById('flowNextBtn').onclick = () => {
+			cancelAnimationFrame(flowRaf);
+			flowAutoPlay = false;
+			document.getElementById('flowPlayBtn').textContent = '▶ Auto';
+			document.getElementById('flowPlayBtn').classList.remove('active');
+			setFlowStep(flowStep + 1);
+		};
+		document.getElementById('flowResetBtn').onclick = () => {
+			cancelAnimationFrame(flowRaf);
+			flowAutoPlay = false;
+			flowStep = 0;
+			flowAnimT = 0;
+			flowHoldT = 0;
+			flowLastTs = null;
+			document.getElementById('flowPlayBtn').textContent = '▶ Auto';
+			document.getElementById('flowPlayBtn').classList.remove('active');
+			renderFlow(0, 0);
+			document.getElementById('flowStepDesc').textContent = STEP_DESCS[0];
+		};
+		renderFlow(0, 0);
+		document.getElementById('flowStepDesc').textContent = STEP_DESCS[0];
+		setTimeout(() => {
+			flowLastTs = null;
+			flowRaf = requestAnimationFrame(flowAutoTick);
+		}, 300);
+
+		/* ══════════════════════════════════
+   DEMO 8.3 — HIGHLIGHT
+══════════════════════════════════ */
+		const hlCanvas = document.getElementById('hlCanvas');
+		const hctx = hlCanvas.getContext('2d');
+		const HLW = hlCanvas.width,
+			HLH = hlCanvas.height;
+
+		const HL_STEPS = [
+			{ label: 'Input', color: C.mint, x: 50, y: HLH / 2 - 22, w: 70, h: 44 },
+			{ label: 'Process', color: C.gold, x: 140, y: HLH / 2 - 22, w: 70, h: 44 },
+			{ label: 'Filter', color: C.lav, x: 230, y: HLH / 2 - 22, w: 70, h: 44 },
+			{ label: 'Output', color: C.coral, x: 320, y: HLH / 2 - 22, w: 70, h: 44 }
+		];
+		let hlActive = 1,
+			hlMethod = 'dim',
+			hlIntensity = 0.7,
+			hlPulseT = 0,
+			hlRaf = null,
+			hlLastTs = null;
+
+		const HL_METHODS = [
+			{
+				id: 'dim',
+				name: 'Dim Others',
+				desc: 'Non-active elements reduce to low opacity, focusing the eye on the highlighted step. Clean and unobtrusive.'
+			},
+			{
+				id: 'glow',
+				name: 'Glow',
+				desc: 'Active element gains a coloured outer glow. Works well on dark backgrounds. Avoid on light ones — it bleeds.'
+			},
+			{
+				id: 'outline',
+				name: 'Bold Outline',
+				desc: 'Active element gets a thick contrasting border. Subtle, elegant, and clear. Works at any scale.'
+			},
+			{
+				id: 'pulse',
+				name: 'Single Pulse',
+				desc: 'Active element scales up briefly then settles back — a one-time "ping" to attract the eye. Do not loop continuously.'
+			}
+		];
+
+		const hlMethodList = document.getElementById('hlMethodList');
+		HL_METHODS.forEach((m) => {
+			const btn = document.createElement('button');
+			btn.className = 'btn' + (m.id === hlMethod ? ' active' : '');
+			btn.dataset.id = m.id;
+			btn.textContent = m.name;
+			btn.onclick = () => {
+				hlMethod = m.id;
+				hlPulseT = 0;
+				document
+					.querySelectorAll('#hlMethodList .btn')
+					.forEach((b) => b.classList.toggle('active', b.dataset.id === m.id));
+				document.getElementById('hlMethodDesc').textContent = m.desc;
+			};
+			hlMethodList.appendChild(btn);
+		});
+		document.getElementById('hlMethodDesc').textContent = HL_METHODS[0].desc;
+
+		document.getElementById('hlIntensity').oninput = function () {
+			hlIntensity = parseFloat(this.value);
+			document.getElementById('hlIntensityVal').textContent = Math.round(hlIntensity * 100) + '%';
+		};
+
+		hlCanvas.addEventListener('click', (e) => {
+			const r = hlCanvas.getBoundingClientRect(),
+				sc = HLW / r.width;
+			const mx = (e.clientX - r.left) * sc,
+				my = (e.clientY - r.top) * sc;
+			HL_STEPS.forEach((s, i) => {
+				if (mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h) {
+					hlActive = i;
+					hlPulseT = 0;
+				}
+			});
+		});
+
+		function renderHL(pulseScale = 1) {
+			hctx.clearRect(0, 0, HLW, HLH);
+			HL_STEPS.forEach((s, i) => {
+				const isActive = i === hlActive;
+				let alpha = 1,
+					scale = 1,
+					strokeW = 1.5,
+					strokeCol = s.color + '66',
+					glowR = 0;
+
+				if (hlMethod === 'dim') {
+					alpha = isActive ? 1 : 1 - hlIntensity * 0.7;
+				} else if (hlMethod === 'glow') {
+					glowR = isActive ? 10 : 0;
+				} else if (hlMethod === 'outline') {
+					strokeW = isActive ? 3 : 1;
+					strokeCol = isActive ? s.color : s.color + '44';
+				} else if (hlMethod === 'pulse') {
+					scale = isActive ? pulseScale : 1;
+				}
+
+				hctx.save();
+				hctx.globalAlpha = alpha;
+				if (scale !== 1) {
+					hctx.translate(s.x + s.w / 2, s.y + s.h / 2);
+					hctx.scale(scale, scale);
+					hctx.translate(-(s.x + s.w / 2), -(s.y + s.h / 2));
+				}
+				if (glowR > 0) {
+					hctx.shadowColor = s.color;
+					hctx.shadowBlur = glowR * hlIntensity * 20;
+				}
+				hctx.fillStyle = s.color + '1a';
+				hctx.strokeStyle = isActive ? s.color : strokeCol;
+				hctx.lineWidth = strokeW;
+				hctx.beginPath();
+				hctx.rect(s.x, s.y, s.w, s.h);
+				hctx.fill();
+				hctx.stroke();
+				hctx.shadowBlur = 0;
+				hctx.fillStyle = isActive ? '#fff' : s.color + (alpha < 0.5 ? '66' : '');
+				hctx.font = `${isActive ? '500' : '400'} 11px 'JetBrains Mono'`;
+				hctx.textAlign = 'center';
+				hctx.fillText(s.label, s.x + s.w / 2, s.y + s.h / 2 + 4);
+				hctx.restore();
+
+				// Arrow
+				if (i < HL_STEPS.length - 1) {
+					const next = HL_STEPS[i + 1];
+					const arrowAlpha =
+						hlMethod === 'dim'
+							? i === hlActive || i + 1 === hlActive
+								? 1
+								: 1 - hlIntensity * 0.6
+							: 1;
+					hctx.globalAlpha = arrowAlpha;
+					hctx.strokeStyle = C.muted + '66';
+					hctx.lineWidth = 1.5;
+					hctx.lineCap = 'round';
+					hctx.beginPath();
+					hctx.moveTo(s.x + s.w, HLH / 2);
+					hctx.lineTo(next.x, HLH / 2);
+					hctx.stroke();
+					hctx.fillStyle = C.muted + '66';
+					hctx.beginPath();
+					hctx.moveTo(next.x, HLH / 2);
+					hctx.lineTo(next.x - 6, HLH / 2 - 3);
+					hctx.lineTo(next.x - 6, HLH / 2 + 3);
+					hctx.closePath();
+					hctx.fill();
+					hctx.globalAlpha = 1;
+				}
+			});
+		}
+
+		function hlTick(ts) {
+			if (!hlLastTs) hlLastTs = ts;
+			hlPulseT += ((ts - hlLastTs) / 1000) * 3;
+			hlLastTs = ts;
+			let ps = 1;
+			if (hlMethod === 'pulse') {
+				ps = 1 + Math.max(0, Math.sin(hlPulseT * Math.PI) * 0.12 * (1 - clamp(hlPulseT, 0, 1)));
+			}
+			renderHL(ps);
+			hlRaf = requestAnimationFrame(hlTick);
+		}
+		hlRaf = requestAnimationFrame(hlTick);
+
+		/* ══════════════════════════════════
+   DEMO 8.4 — TRANSFORMS
+══════════════════════════════════ */
+		const txCanvas = document.getElementById('transformCanvas');
+		const txctx = txCanvas.getContext('2d');
+		const TXW = txCanvas.width,
+			TXH = txCanvas.height;
+
+		const TX_TYPES = [
+			{
+				id: 'bar',
+				name: 'Bar Chart',
+				color: C.mint,
+				desc: 'Bars grow from zero — directly maps data magnitude to visual size. Sync the growth to the spoken number for maximum impact.'
+			},
+			{
+				id: 'pie',
+				name: 'Pie Slice',
+				color: C.gold,
+				desc: 'Arc fills from 0° to the target angle. Shows proportions and parts of a whole. Animate slices in order of magnitude for clarity.'
+			},
+			{
+				id: 'state',
+				name: 'State Change',
+				color: C.coral,
+				desc: 'Colour morphs from one state to another. Shows system status transitions (off→on, error→ok). Use very distinct colour pairs.'
+			},
+			{
+				id: 'count',
+				name: 'Counter Fill',
+				color: C.lav,
+				desc: 'A ring or progress bar fills toward a target. Shows progress toward a goal. Works for percentages, steps complete, or loading.'
+			}
+		];
+
+		let txT = 0,
+			txPlaying = false,
+			txRaf = null,
+			txLastTs = null;
+
+		const txTypeGrid = document.getElementById('transformTypeGrid');
+		TX_TYPES.forEach((tx) => {
+			const card = document.createElement('div');
+			card.style.cssText = `background:var(--surface);padding:.6rem .75rem;border-right:1px solid var(--border);`;
+			card.innerHTML = `<div style="font-family:var(--ff-mono);font-size:9px;color:${tx.color};margin-bottom:.2rem;">${tx.name}</div><div style="font-family:var(--ff-mono);font-size:8px;color:var(--dim);line-height:1.4;">${tx.desc.substring(0, 45)}…</div>`;
+			txTypeGrid.appendChild(card);
+		});
+
+		function drawTransforms(t) {
+			txctx.clearRect(0, 0, TXW, TXH);
+			const pad = 20,
+				sectionW = (TXW - pad * 2) / 4,
+				cy = TXH / 2;
+			const cols = [C.mint, C.gold, C.coral, C.lav];
+
+			// 1. Bar chart
+			const bx = pad + sectionW * 0.5,
+				by = TXH - 30;
+			const barH = eout(t) * (TXH - 60);
+			txctx.fillStyle = C.mint + '33';
+			txctx.strokeStyle = C.mint + '88';
+			txctx.lineWidth = 1;
+			txctx.beginPath();
+			txctx.rect(bx - 18, by - barH, 36, barH);
+			txctx.fill();
+			txctx.stroke();
+			txctx.fillStyle = C.mint;
+			txctx.font = `9px 'JetBrains Mono'`;
+			txctx.textAlign = 'center';
+			txctx.fillText(Math.round(eout(t) * 100) + '%', bx, by - barH - 6);
+			txctx.fillText('Growth', bx, TXH - 10);
+
+			// 2. Pie
+			const px = pad + sectionW * 1.5,
+				pr = 38;
+			const angle = eout(t) * Math.PI * 1.6;
+			txctx.fillStyle = C.raised;
+			txctx.beginPath();
+			txctx.arc(px, cy, pr, 0, Math.PI * 2);
+			txctx.fill();
+			txctx.fillStyle = C.gold + '44';
+			txctx.strokeStyle = C.gold + '88';
+			txctx.lineWidth = 1.5;
+			txctx.beginPath();
+			txctx.moveTo(px, cy);
+			txctx.arc(px, cy, pr, -Math.PI / 2, -Math.PI / 2 + angle);
+			txctx.closePath();
+			txctx.fill();
+			txctx.stroke();
+			txctx.strokeStyle = C.dim;
+			txctx.lineWidth = 1;
+			txctx.beginPath();
+			txctx.arc(px, cy, pr, 0, Math.PI * 2);
+			txctx.stroke();
+			txctx.fillStyle = C.gold;
+			txctx.font = `9px 'JetBrains Mono'`;
+			txctx.textAlign = 'center';
+			txctx.fillText(Math.round(eout(t) * 80) + '%', px, cy + 4);
+			txctx.fillStyle = C.muted;
+			txctx.fillText('Share', px, TXH - 10);
+
+			// 3. State change
+			const sx = pad + sectionW * 2.5;
+			const fromCol = [30, 60, 80],
+				toCol = [78, 203, 180]; // raised → mint
+			const rc = fromCol.map((f, i) => Math.round(lerp(f, toCol[i], eout(t))));
+			txctx.fillStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},.4)`;
+			txctx.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},.9)`;
+			txctx.lineWidth = 1.5;
+			txctx.beginPath();
+			txctx.rect(sx - 28, cy - 20, 56, 40);
+			txctx.fill();
+			txctx.stroke();
+			txctx.fillStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},1)`;
+			txctx.font = `500 10px 'JetBrains Mono'`;
+			txctx.textAlign = 'center';
+			txctx.fillText(t < 0.5 ? 'OFF' : 'ON', sx, cy + 4);
+			txctx.fillStyle = C.muted;
+			txctx.font = `9px 'JetBrains Mono'`;
+			txctx.fillText('State', sx, TXH - 10);
+
+			// 4. Counter/ring
+			const rx = pad + sectionW * 3.5,
+				rr = 36;
+			const progress = eout(t);
+			txctx.strokeStyle = C.border2;
+			txctx.lineWidth = 7;
+			txctx.lineCap = 'round';
+			txctx.beginPath();
+			txctx.arc(rx, cy, rr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2);
+			txctx.stroke();
+			txctx.strokeStyle = C.lav;
+			txctx.beginPath();
+			txctx.arc(rx, cy, rr, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+			txctx.stroke();
+			txctx.fillStyle = C.lav;
+			txctx.font = `bold 12px 'JetBrains Mono'`;
+			txctx.textAlign = 'center';
+			txctx.fillText(Math.round(progress * 100) + '%', rx, cy + 5);
+			txctx.fillStyle = C.muted;
+			txctx.font = `9px 'JetBrains Mono'`;
+			txctx.fillText('Progress', rx, TXH - 10);
+
+			// Section labels
+			txctx.fillStyle = C.border2;
+			txctx.lineWidth = 1;
+			[sectionW, sectionW * 2, sectionW * 3].forEach((x) => {
+				txctx.beginPath();
+				txctx.moveTo(pad + x, 8);
+				txctx.lineTo(pad + x, TXH - 20);
+				txctx.stroke();
+			});
+		}
+
+		function txTick(ts) {
+			if (!txLastTs) txLastTs = ts;
+			txT = Math.min(1, txT + ((ts - txLastTs) / 1000) * 0.5);
+			txLastTs = ts;
+			drawTransforms(txT);
+			if (txT < 1) txRaf = requestAnimationFrame(txTick);
+			else {
+				txPlaying = false;
+				document.getElementById('transformPlayBtn').textContent = '▶ Animate All';
+				document.getElementById('transformPlayBtn').classList.remove('active');
+				txLastTs = null;
+			}
+		}
+		document.getElementById('transformPlayBtn').onclick = function () {
+			if (!txPlaying) {
+				txT = 0;
+				txPlaying = true;
+				this.textContent = '⏸ Playing…';
+				this.classList.add('active');
+				txLastTs = null;
+				txRaf = requestAnimationFrame(txTick);
+			}
+		};
+		document.getElementById('transformResetBtn').onclick = () => {
+			cancelAnimationFrame(txRaf);
+			txPlaying = false;
+			txT = 0;
+			txLastTs = null;
+			document.getElementById('transformPlayBtn').textContent = '▶ Animate All';
+			document.getElementById('transformPlayBtn').classList.remove('active');
+			drawTransforms(0);
+		};
+		drawTransforms(0);
+
+		/* ══════════════════════════════════
+   DEMO 8.5 — CLUTTER METER
+══════════════════════════════════ */
+		const clutterCanvas = document.getElementById('clutterCanvas');
+		const clctx = clutterCanvas.getContext('2d');
+		const CLW = clutterCanvas.width,
+			CLH = clutterCanvas.height;
+		let clutterCount = 3,
+			clutterPhase = 0,
+			clutterRaf = null,
+			clutterLastTs = null;
+
+		// Predefine 12 possible animated elements with different animations
+		const CLUTTER_ELEMS = Array.from({ length: 12 }, (v, i) => ({
+			x: 40 + ((i % 6) * (CLW - 80)) / 5,
+			y: i < 6 ? CLH * 0.3 : CLH * 0.72,
+			r: 16,
+			phase: i * 0.7,
+			col: [C.mint, C.gold, C.coral, C.lav, C.mint + 'aa', C.gold + 'aa'][i % 6],
+			type: ['bounce', 'spin', 'pulse', 'drift', 'wobble', 'blink'][i % 6]
+		}));
+
+		function renderClutter(phase) {
+			clctx.clearRect(0, 0, CLW, CLH);
+			const active = clutterCount;
+
+			// Background grid
+			clctx.strokeStyle = C.border + '88';
+			clctx.lineWidth = 1;
+			clctx.beginPath();
+			clctx.moveTo(0, CLH / 2);
+			clctx.lineTo(CLW, CLH / 2);
+			clctx.stroke();
+			clctx.setLineDash([3, 3]);
+			for (let x = 0; x < CLW; x += 80) {
+				clctx.beginPath();
+				clctx.moveTo(x, 0);
+				clctx.lineTo(x, CLH);
+				clctx.stroke();
+			}
+			clctx.setLineDash([]);
+
+			CLUTTER_ELEMS.forEach((el, i) => {
+				if (i >= active) return;
+				const t = phase + el.phase;
+				let dx = 0,
+					dy = 0,
+					scale = 1,
+					alpha = 1,
+					rot = 0;
+
+				if (el.type === 'bounce') {
+					dy = Math.sin(t * 2) * 14;
+				} else if (el.type === 'spin') {
+					rot = t;
+				} else if (el.type === 'pulse') {
+					scale = 1 + Math.sin(t * 3) * 0.18;
+				} else if (el.type === 'drift') {
+					dx = Math.sin(t * 1.4) * 18;
+					dy = Math.cos(t * 1.1) * 10;
+				} else if (el.type === 'wobble') {
+					dx = Math.sin(t * 4) * 8;
+					rot = Math.sin(t * 3) * 0.2;
+				} else if (el.type === 'blink') {
+					alpha = t % 1 < 0.5 ? 1 : 0.2;
+				}
+
+				clctx.save();
+				clctx.globalAlpha = alpha;
+				clctx.translate(el.x + dx, el.y + dy);
+				if (rot) clctx.rotate(rot);
+				if (scale !== 1) clctx.scale(scale, scale);
+				clctx.fillStyle = el.col + '33';
+				clctx.strokeStyle = el.col;
+				clctx.lineWidth = 1.5;
+				clctx.beginPath();
+				clctx.rect(-el.r, -el.r / 2, el.r * 2, el.r);
+				clctx.fill();
+				clctx.stroke();
+				clctx.restore();
+			});
+
+			// Count label
+			clctx.fillStyle = active <= 3 ? C.mint : active <= 6 ? C.gold : C.coral;
+			clctx.font = `bold 11px 'JetBrains Mono'`;
+			clctx.textAlign = 'right';
+			clctx.fillText(`${active} simultaneous animations`, CLW - 10, 16);
+		}
+
+		function updateClutterMeters() {
+			const n = clutterCount;
+			const cogLoad = Math.min(100, Math.round((n / 12) * 130));
+			const focus = Math.max(0, Math.round(100 - (n / 12) * 110));
+			const fatigue = Math.min(100, Math.round(n > 2 ? ((n - 2) / 10) * 90 : 0));
+			const col = n <= 3 ? C.mint : n <= 7 ? C.gold : C.coral;
+
+			const set = (id, v, c) => {
+				document.getElementById(id + 'Fill').style.width = v + '%';
+				document.getElementById(id + 'Fill').style.background = c;
+				document.getElementById(id + 'Val').textContent = v + '%';
+				document.getElementById(id + 'Val').style.color = c;
+			};
+			set('cogLoad', cogLoad, col);
+			set('focus', focus, n <= 3 ? C.mint : n <= 7 ? C.gold : C.coral);
+			set('fatigue', fatigue, col);
+
+			const verdicts = [
+				[
+					1,
+					3,
+					'✓ Ideal — one or two moving elements give clear focal point. Viewer tracks effortlessly.'
+				],
+				[
+					4,
+					6,
+					"⚠ Crowded — the viewer's eye is pulled between elements. Consider staggering reveals."
+				],
+				[
+					7,
+					9,
+					'✗ Overwhelming — no clear focal point. Viewer stops tracking and likely stops listening.'
+				],
+				[
+					10,
+					12,
+					'✗ Hostile — chaotic. Every animation competes. Cognitive overload. Viewer disengages.'
+				]
+			];
+			const v = verdicts.find(([min, max]) => n >= min && n <= max);
+			document.getElementById('clutterVerdict').textContent = v ? v[2] : '';
+		}
+
+		document.getElementById('clutterSlider').oninput = function () {
+			clutterCount = parseInt(this.value);
+			document.getElementById('clutterCount').textContent = clutterCount;
+			updateClutterMeters();
+		};
+
+		function clutterTick(ts) {
+			if (!clutterLastTs) clutterLastTs = ts;
+			clutterPhase += ((ts - clutterLastTs) / 1000) * 1.4;
+			clutterLastTs = ts;
+			renderClutter(clutterPhase);
+			clutterRaf = requestAnimationFrame(clutterTick);
+		}
+		updateClutterMeters();
+		clutterRaf = requestAnimationFrame(clutterTick);
+
+		/* ══════════════════════════════════
+   DEMO 8.6 — BEFORE / AFTER
+══════════════════════════════════ */
+		const baBefore = document.getElementById('baBeforeCanvas');
+		const baAfter = document.getElementById('baAfterCanvas');
+		const baCtxB = baBefore.getContext('2d');
+		const baCtxA = baAfter.getContext('2d');
+		const BAW = baBefore.width,
+			BAH = baBefore.height;
+		let baT = 0,
+			baPlaying = false,
+			baRaf = null,
+			baLastTs = null,
+			baAfterStep = 0,
+			baAfterHold = 0,
+			baAfterAnimT = 0;
+
+		const BA_NODES = [
+			{ x: 40, y: BAH / 2, label: 'A', col: C.mint },
+			{ x: 110, y: BAH / 2, label: 'B', col: C.gold },
+			{ x: 180, y: BAH / 2, label: 'C', col: C.coral },
+			{ x: 250, y: BAH / 2, label: 'D', col: C.lav },
+			{ x: 220, y: BAH * 0.25, label: 'E', col: C.mint }
+		];
+
+		function drawBANode(ctx, n, alpha, scale = 1, glow = false) {
+			ctx.save();
+			ctx.globalAlpha = alpha;
+			ctx.translate(n.x, n.y);
+			ctx.scale(scale, scale);
+			ctx.translate(-n.x, -n.y);
+			if (glow) {
+				ctx.shadowColor = n.col;
+				ctx.shadowBlur = 15;
+			}
+			ctx.fillStyle = n.col + '22';
+			ctx.strokeStyle = n.col + '99';
+			ctx.lineWidth = 1.5;
+			ctx.beginPath();
+			ctx.rect(n.x - 22, n.y - 18, 44, 36);
+			ctx.fill();
+			ctx.stroke();
+			ctx.shadowBlur = 0;
+			ctx.fillStyle = n.col;
+			ctx.font = `500 11px 'JetBrains Mono'`;
+			ctx.textAlign = 'center';
+			ctx.fillText(n.label, n.x, n.y + 4);
+			ctx.restore();
+		}
+
+		function renderBefore(t) {
+			baCtxB.clearRect(0, 0, BAW, BAH);
+			// Everything animates simultaneously + continuously bouncing/pulsing
+			BA_NODES.forEach((n, i) => {
+				const bounce = Math.sin(t * 3 + i * 1.2) * 8;
+				const pulse = 1 + Math.sin(t * 2.5 + i) * 0.12;
+				const alpha = 0.6 + Math.sin(t * 2 + i) * 0.4;
+				const nn = { ...n, y: n.y + bounce };
+				drawBANode(baCtxB, nn, alpha, pulse, Math.sin(t + i) > 0.6);
+			});
+			// Spinning arrows
+			[
+				[40, 110],
+				[110, 180],
+				[180, 250],
+				[110, 220]
+			].forEach(([xi, xj], i) => {
+				const n1 = BA_NODES[i],
+					n2 = BA_NODES[(i + 1) % BA_NODES.length];
+				const angle = t * 2 + i;
+				const mx = (n1.x + n2.x) / 2,
+					my = (n1.y + n2.y) / 2;
+				baCtxB.save();
+				baCtxB.translate(mx, my);
+				baCtxB.rotate(Math.sin(angle) * 0.3);
+				baCtxB.strokeStyle = C.muted + '88';
+				baCtxB.lineWidth = 1.5;
+				baCtxB.beginPath();
+				baCtxB.moveTo(n1.x - mx, n1.y - my);
+				baCtxB.lineTo(n2.x - mx, n2.y - my);
+				baCtxB.stroke();
+				baCtxB.restore();
+			});
+			// Bouncing label
+			const labelY = BAH - 14 + Math.sin(t * 4) * 4;
+			baCtxB.fillStyle = C.coral;
+			baCtxB.font = `bold 9px 'JetBrains Mono'`;
+			baCtxB.textAlign = 'center';
+			baCtxB.fillText('SYSTEM FLOW', BAW / 2, labelY);
+		}
+
+		function renderAfter(step, animT) {
+			baCtxA.clearRect(0, 0, BAW, BAH);
+			// Sequential reveal, still holds, no continuous motion
+			BA_NODES.forEach((n, i) => {
+				const t = i < step ? 1 : i === step ? eout(animT) : 0;
+				if (t <= 0) return;
+				drawBANode(baCtxA, n, t, lerp(0.8, 1, t), false);
+			});
+			// Static arrows (draw-on)
+			[
+				[0, 1],
+				[1, 2],
+				[2, 3],
+				[1, 4]
+			].forEach(([ai, bi]) => {
+				const n1 = BA_NODES[ai],
+					n2 = BA_NODES[bi];
+				const arrowStep = Math.max(ai, bi);
+				const at = arrowStep < step ? 1 : arrowStep === step ? eout(animT) : 0;
+				if (at <= 0) return;
+				const ex = lerp(n1.x + 22, n2.x - 22, at);
+				const ey = lerp(n1.y, n2.y, at);
+				baCtxA.strokeStyle = C.muted + '66';
+				baCtxA.lineWidth = 1.5;
+				baCtxA.lineCap = 'round';
+				baCtxA.beginPath();
+				baCtxA.moveTo(n1.x + 22, n1.y);
+				baCtxA.lineTo(ex, ey);
+				baCtxA.stroke();
+				if (at > 0.9) {
+					baCtxA.fillStyle = C.muted + '66';
+					const da = Math.atan2(n2.y - n1.y, n2.x - n1.x);
+					baCtxA.save();
+					baCtxA.translate(n2.x - 22, n2.y);
+					baCtxA.rotate(da);
+					baCtxA.beginPath();
+					baCtxA.moveTo(0, 0);
+					baCtxA.lineTo(-8, -4);
+					baCtxA.lineTo(-8, 4);
+					baCtxA.closePath();
+					baCtxA.fill();
+					baCtxA.restore();
+				}
+			});
+			// Static label
+			baCtxA.fillStyle = C.mint;
+			baCtxA.font = `9px 'JetBrains Mono'`;
+			baCtxA.textAlign = 'center';
+			baCtxA.fillText('SYSTEM FLOW', BAW / 2, BAH - 10);
+		}
+
+		function baTick(ts) {
+			if (!baLastTs) baLastTs = ts;
+			const dt = (ts - baLastTs) / 1000;
+			baLastTs = ts;
+			baT += dt * 2;
+			renderBefore(baT);
+
+			// After: step-by-step
+			if (baAfterHold > 0) {
+				baAfterHold -= dt;
+			} else {
+				baAfterAnimT = Math.min(1, baAfterAnimT + dt * 1.8);
+				if (baAfterAnimT >= 1) {
+					if (baAfterStep < BA_NODES.length - 1) {
+						baAfterHold = 1.4;
+						baAfterStep++;
+						baAfterAnimT = 0;
+					}
+				}
+			}
+			renderAfter(baAfterStep, baAfterAnimT);
+			baRaf = requestAnimationFrame(baTick);
+		}
+
+		document.getElementById('baPlayBtn').onclick = function () {
+			baPlaying = !baPlaying;
+			this.textContent = baPlaying ? '⏸ Pause' : '▶ Play Both';
+			this.classList.toggle('active', baPlaying);
+			if (baPlaying) {
+				baLastTs = null;
+				baRaf = requestAnimationFrame(baTick);
+			} else cancelAnimationFrame(baRaf);
+		};
+		document.getElementById('baResetBtn').onclick = () => {
+			cancelAnimationFrame(baRaf);
+			baPlaying = false;
+			baT = 0;
+			baLastTs = null;
+			baAfterStep = 0;
+			baAfterHold = 0;
+			baAfterAnimT = 0;
+			document.getElementById('baPlayBtn').textContent = '▶ Play Both';
+			document.getElementById('baPlayBtn').classList.remove('active');
+			renderBefore(0);
+			renderAfter(0, 0);
+		};
+		renderBefore(0);
+		renderAfter(0, 0);
+		setTimeout(() => {
+			baPlaying = true;
+			baLastTs = null;
+			baRaf = requestAnimationFrame(baTick);
+			document.getElementById('baPlayBtn').textContent = '⏸ Pause';
+			document.getElementById('baPlayBtn').classList.add('active');
+		}, 400);
+
+		/* ══════════════════════════════════
+   PRINCIPLES SUMMARY
+══════════════════════════════════ */
+		const PRINCIPLES = [
+			{
+				num: '01',
+				name: 'One Thing at a Time',
+				desc: 'Never animate more than one new element simultaneously. The viewer can only track one focal point. Stagger every reveal by at least 0.5 seconds.'
+			},
+			{
+				num: '02',
+				name: 'Rest After Every Reveal',
+				desc: 'Every reveal must be followed by stillness. Budget at least 1 second of no new animation for simple elements, 2+ seconds for complex ones. Stillness is not empty — it is processing time.'
+			},
+			{
+				num: '03',
+				name: 'Motion Earns Attention',
+				desc: 'Anything that moves immediately captures attention. Only move something when you want the viewer looking at it. Ambient or decorative motion is attention theft.'
+			},
+			{
+				num: '04',
+				name: 'Match Audio Exactly',
+				desc: 'The moment of change — a bar growing, an arrow appearing, a highlight lighting up — should coincide exactly with the spoken word it illustrates. Off-sync visuals and audio fight each other.'
+			},
+			{
+				num: '05',
+				name: 'Highlights Are Temporary',
+				desc: 'A highlight that stays on permanently becomes part of the background. It must appear when relevant and disappear when the topic moves on. Never loop a highlight continuously.'
+			},
+			{
+				num: '06',
+				name: 'Technique Serves Meaning',
+				desc: 'Choose your reveal/highlight/transform type because it reinforces the concept, not because it looks interesting. A draw-on arrow says "this is a connection." A fade-in label says "this is additional information."'
+			}
+		];
+
+		const cards = document.getElementById('principleCards');
+		let activePrinciple = 0;
+		PRINCIPLES.forEach((p, i) => {
+			const card = document.createElement('div');
+			card.className = 'principle-card' + (i === 0 ? ' active' : '');
+			card.innerHTML = `<div class="principle-card-num">${p.num}</div><div class="principle-card-name">${p.name}</div><div class="principle-card-desc">${p.desc.substring(0, 55)}…</div>`;
+			card.onclick = () => {
+				activePrinciple = i;
+				document
+					.querySelectorAll('.principle-card')
+					.forEach((c, j) => c.classList.toggle('active', j === i));
+				document.getElementById('principleDetail').textContent = p.desc;
+			};
+			cards.appendChild(card);
+		});
+		document.getElementById('principleDetail').textContent = PRINCIPLES[0].desc;
+
+		/* ══════════════════════════════════
+   QUIZ
+══════════════════════════════════ */
+		let quizScores = {};
+		function answer(optEl, qId, result) {
+			const qEl = document.getElementById(qId);
+			if (qEl.querySelector('.option.correct') || qEl.querySelector('.option.wrong')) return;
+			const fb = document.getElementById(qId + '-feedback');
+			optEl.classList.add(result === 'correct' ? 'correct' : 'wrong');
+			qEl.querySelectorAll('.option').forEach((o) => o.classList.add('disabled'));
+			if (result === 'correct') {
+				fb.textContent = '✓ Correct.';
+				fb.className = 'feedback ok';
+				quizScores[qId] = true;
+			} else {
+				fb.textContent = '✗ Not quite — review the section above.';
+				fb.className = 'feedback bad';
+				quizScores[qId] = false;
+				qEl.querySelectorAll('.option').forEach((o) => {
+					if (!o.classList.contains('wrong')) o.classList.add('correct');
+				});
+			}
+			if (Object.keys(quizScores).length === 5) {
+				const c = Object.values(quizScores).filter(Boolean).length;
+				document.getElementById('scoreNum').textContent = `${c}/5`;
+				document.getElementById('scoreLbl').textContent =
+					c === 5
+						? 'Perfect — Module 8 Complete!'
+						: c >= 4
+							? 'Strong — review any you missed.'
+							: 'Good effort — re-read the sections.';
+				document.getElementById('quizScore').classList.add('visible');
+			}
+		}
+
+		/* eslint-disable no-undef */
+		if (typeof renderClutter === 'function') window.renderClutter = renderClutter;
+		if (typeof hlTick === 'function') window.hlTick = hlTick;
+		if (typeof revealElem === 'function') window.revealElem = revealElem;
+		if (typeof revealTick === 'function') window.revealTick = revealTick;
+		if (typeof renderHL === 'function') window.renderHL = renderHL;
+		if (typeof renderBefore === 'function') window.renderBefore = renderBefore;
+		if (typeof revealArrow === 'function') window.revealArrow = revealArrow;
+		if (typeof setRevealTech === 'function') window.setRevealTech = setRevealTech;
+		if (typeof drawTransforms === 'function') window.drawTransforms = drawTransforms;
+		if (typeof renderAfter === 'function') window.renderAfter = renderAfter;
+		if (typeof baTick === 'function') window.baTick = baTick;
+		if (typeof drawBANode === 'function') window.drawBANode = drawBANode;
+		if (typeof updateClutterMeters === 'function') window.updateClutterMeters = updateClutterMeters;
+		if (typeof drawBox === 'function') window.drawBox = drawBox;
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof setFlowStep === 'function') window.setFlowStep = setFlowStep;
+		if (typeof clutterTick === 'function') window.clutterTick = clutterTick;
+		if (typeof renderReveal === 'function') window.renderReveal = renderReveal;
+		if (typeof txTick === 'function') window.txTick = txTick;
+		if (typeof renderFlow === 'function') window.renderFlow = renderFlow;
+		if (typeof flowAutoTick === 'function') window.flowAutoTick = flowAutoTick;
+		/* eslint-enable no-undef */
+
+		return () => {};
+	});
+</script>
+
+<div class="page-wrapper">
+	<!-- ══ HERO ══ -->
+	<header class="module-hero">
+		<div class="hero-deco" aria-hidden="true" id="heroDeco"></div>
+		<div class="module-eyebrow">Animation Fundamentals · Module 08</div>
+		<h1 class="module-title">Diagram &amp; Concept <em>Animation</em><br />for Education</h1>
+		<p class="module-subtitle">
+			Motion as a teaching tool — how to reveal, emphasise, and connect without overwhelming.
+		</p>
+		<div class="objectives">
+			<div class="obj-label">Learning Objectives</div>
+			<ul>
+				<li>Apply the three fundamental animation verbs: Reveal, Highlight, and Transform</li>
+				<li>Select the right reveal technique for each type of diagram element</li>
+				<li>Build a step-by-step animated process flow that guides attention sequentially</li>
+				<li>Identify and fix over-animated diagrams that hurt comprehension</li>
+				<li>Set appropriate pacing — knowing when motion should stop entirely</li>
+			</ul>
+		</div>
+	</header>
+
+	<!-- ══ SECTION 1: MOTION AS LANGUAGE ══ -->
+	<section class="section" id="s1">
+		<div class="section-header">
+			<span class="section-num">01</span>
+			<h2 class="section-title">Motion as a Teaching Tool</h2>
+		</div>
+		<p>
+			In entertainment animation, motion exists to entertain. In educational animation, motion has a
+			specific job: to
+			<strong
+				>direct the viewer's attention, reveal structure over time, and make abstract relationships
+				visible</strong
+			>. Every animation choice in an educational video should serve at least one of these three
+			purposes. If it doesn't, it is clutter.
+		</p>
+		<p>
+			The human visual system is exquisitely sensitive to motion. Anything that moves in a static
+			scene immediately captures attention. This is not a bug — it is a feature to exploit
+			deliberately. In a busy diagram, you can guide a viewer's eye from one element to the next
+			simply by deciding what animates and <em>when</em>. The still elements wait. The moving
+			element speaks.
+		</p>
+		<div class="callout mint">
+			<div class="callout-label">The Three Animation Verbs</div>
+			Every effective diagram animation uses one or more of these actions:
+			<div
+				style="
+							display: grid;
+							grid-template-columns: repeat(3, 1fr);
+							gap: 0.5rem 1rem;
+							margin-top: 0.6rem;
+							font-size: 12px;
+						"
+			>
+				<div>
+					<strong style="color: var(--gold)">Reveal</strong> — bring something new into view. Signals:
+					"pay attention, this is new."
+				</div>
+				<div>
+					<strong style="color: var(--coral)">Highlight</strong> — draw attention to something already
+					visible. Signals: "look at this specifically."
+				</div>
+				<div>
+					<strong style="color: var(--mint)">Transform</strong> — change a shape or value to show change
+					over time or state. Signals: "something has changed."
+				</div>
+			</div>
+		</div>
+		<p>
+			These three verbs — Reveal, Highlight, Transform — are your complete vocabulary for diagram
+			animation. A complex educational sequence is just a series of these three actions, ordered to
+			match the narrative of the voiceover.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 2: REVEAL TECHNIQUES ══ -->
+	<section class="section" id="s2">
+		<div class="section-header">
+			<span class="section-num">02</span>
+			<h2 class="section-title">Reveal Techniques</h2>
+		</div>
+		<p>
+			The <strong>Reveal</strong> is the most common operation in diagram animation. A new label appears.
+			A new arrow draws in. A new box fades up. How you reveal an element communicates a different relationship
+			to what's already on screen.
+		</p>
+		<p>
+			Each technique carries a subtle meaning: a <em>fade</em> suggests the element is floating in
+			from nowhere — good for labels and callouts. A <em>draw-on</em> follows the path of an arrow —
+			perfect for showing flows and connections. A <em>scale-up</em> suggests the element is growing
+			or emerging — good for nodes and icons. A <em>wipe</em> suggests direction — good for horizontal
+			processes.
+		</p>
+
+		<!-- DEMO 8.1 -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 8.1 — Reveal Techniques</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1rem">
+					Select a technique, then hit Animate to see how it reveals the same set of diagram
+					elements.
+				</p>
+				<div class="reveal-tabs" id="revealTabs">
+					<div
+						class="reveal-tab active"
+						data-tech="fade"
+						onclick={(e) => {
+							window.setRevealTech(e.currentTarget, 'fade');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'fade');
+						}}
+					>
+						Fade
+					</div>
+					<div
+						class="reveal-tab"
+						data-tech="drawon"
+						onclick={(e) => {
+							window.setRevealTech(e.currentTarget, 'drawon');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'drawon');
+						}}
+					>
+						Draw-On
+					</div>
+					<div
+						class="reveal-tab"
+						data-tech="scale"
+						onclick={(e) => {
+							window.setRevealTech(e.currentTarget, 'scale');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'scale');
+						}}
+					>
+						Scale Up
+					</div>
+					<div
+						class="reveal-tab"
+						data-tech="wipe"
+						onclick={(e) => {
+							window.setRevealTech(e.currentTarget, 'wipe');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'wipe');
+						}}
+					>
+						Wipe
+					</div>
+					<div
+						class="reveal-tab"
+						data-tech="slide"
+						onclick={(e) => {
+							window.setRevealTech(e.currentTarget, 'slide');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'slide');
+						}}
+					>
+						Slide In
+					</div>
+				</div>
+				<canvas
+					id="revealCanvas"
+					width="560"
+					height="220"
+					style="
+								background: var(--raised);
+								border: 1px solid var(--border);
+								border-top: none;
+								max-width: 100%;
+							"
+				></canvas>
+				<div
+					style="
+								margin-top: 0.75rem;
+								display: flex;
+								align-items: center;
+								gap: 1rem;
+								flex-wrap: wrap;
+							"
+				>
+					<div class="btn-row">
+						<button class="btn active" id="revealPlayBtn">▶ Animate</button>
+						<button class="btn" id="revealResetBtn">↺ Reset</button>
+					</div>
+					<div
+						style="font-family: var(--ff-mono); font-size: 10px; color: var(--muted)"
+						id="revealTechDesc"
+					></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="callout gold">
+			<div class="callout-label">Technique Selection Guide</div>
+			<div
+				style="
+							display: grid;
+							grid-template-columns: 1fr 1fr;
+							gap: 0.3rem 0.75rem;
+							font-size: 12px;
+							margin-top: 0.4rem;
+						"
+			>
+				<div>
+					<strong style="color: var(--mint)">Fade in</strong> — labels, callouts, annotations, background
+					fills
+				</div>
+				<div>
+					<strong style="color: var(--mint)">Draw-on</strong> — arrows, connector lines, paths, borders
+				</div>
+				<div>
+					<strong style="color: var(--mint)">Scale up</strong> — icons, nodes, data points, emphasis circles
+				</div>
+				<div>
+					<strong style="color: var(--mint)">Wipe</strong> — progress bars, horizontal flows, timelines
+				</div>
+				<div>
+					<strong style="color: var(--mint)">Slide in</strong> — new sections, side panels, list items
+				</div>
+				<div>
+					<strong style="color: var(--coral)">Never mix</strong> — more than two reveal types in one diagram
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 3: SEQUENTIAL REVEAL ══ -->
+	<section class="section" id="s3">
+		<div class="section-header">
+			<span class="section-num">03</span>
+			<h2 class="section-title">Sequential Reveal — Building Understanding Step by Step</h2>
+		</div>
+		<p>
+			The most powerful technique in educational diagram animation is
+			<strong>sequential reveal</strong>: showing elements one at a time, timed to match the
+			voiceover, so the viewer is never looking at more information than they need to understand the
+			current point.
+		</p>
+		<p>
+			Showing all elements simultaneously is the most common mistake in educational animation. The
+			viewer scans the whole diagram at once, gets confused by relationships they haven't been
+			introduced to yet, and stops listening to the voiceover.
+			<strong>Never show it all. Build it up.</strong>
+		</p>
+
+		<!-- DEMO 8.2 — Process Flow Builder -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 8.2 — Sequential Flow Builder</span>
+				<span class="demo-badge coral">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					A five-step process diagram builds itself step by step. Use the controls to step through
+					manually or play it automatically. Notice how each step is fully absorbed before the next
+					arrives.
+				</p>
+				<canvas
+					id="flowCanvas"
+					width="560"
+					height="200"
+					style="background: var(--raised); border: 1px solid var(--border); max-width: 100%"
+				></canvas>
+
+				<div
+					style="
+								margin-top: 0.85rem;
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 0.5rem 1.25rem;
+							"
+				>
+					<div>
+						<div class="btn-row">
+							<button class="btn" id="flowPrevBtn">← Step</button>
+							<button class="btn" id="flowNextBtn">Step →</button>
+							<button class="btn gold active" id="flowPlayBtn">▶ Auto</button>
+							<button class="btn" id="flowResetBtn">↺</button>
+						</div>
+						<div class="ctrl-row" style="margin-top: 0.75rem">
+							<span class="ctrl-label">Step delay</span>
+							<input
+								type="range"
+								class="gold"
+								id="flowDelay"
+								min="0.4"
+								max="2.5"
+								step="0.1"
+								value="1.2"
+							/>
+							<span class="ctrl-val" id="flowDelayVal" style="color: var(--gold)">1.2s</span>
+						</div>
+					</div>
+					<div
+						style="
+									padding: 0.75rem;
+									border: 1px solid var(--border);
+									background: var(--raised);
+									font-family: var(--ff-mono);
+									font-size: 11px;
+									color: var(--muted);
+									line-height: 1.65;
+								"
+						id="flowStepDesc"
+					>
+						Hit Play to build the diagram automatically. The delay between steps is how long the
+						viewer has to absorb each stage.
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<p>
+			Notice how a longer delay between steps feels more respectful of the viewer's processing time.
+			For a dense technical diagram, budget <strong>at least 1.5 seconds</strong> per new element before
+			introducing the next. For simple diagrams or when the voiceover is fast, 0.8 seconds can work.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 4: HIGHLIGHT ══ -->
+	<section class="section" id="s4">
+		<div class="section-header">
+			<span class="section-num">04</span>
+			<h2 class="section-title">Highlight — Directing Attention Within a Diagram</h2>
+		</div>
+		<p>
+			Once a diagram is fully visible, you often need to call attention back to a specific element —
+			a step in a process, a data point on a chart, a region on a map — without removing or
+			re-building everything else. This is the <strong>Highlight</strong> operation.
+		</p>
+		<p>
+			Highlights must be <em>temporary</em> and <em>purposeful</em>. An element that pulses
+			continuously becomes background noise within seconds. The highlight should appear when the
+			voiceover mentions the element and disappear when the topic moves on. The contrast between the
+			highlighted element and the dimmed rest of the diagram creates a visual focus that mirrors the
+			audio focus.
+		</p>
+
+		<!-- DEMO 8.3 — Highlight Techniques -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 8.3 — Highlight Techniques</span>
+				<span class="demo-badge mint">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1rem">
+					Click any step in the diagram to highlight it. Compare the three highlight methods using
+					the selector.
+				</p>
+				<div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-start">
+					<div style="flex: 1; min-width: 280px">
+						<canvas
+							id="hlCanvas"
+							width="340"
+							height="220"
+							style="
+										background: var(--raised);
+										border: 1px solid var(--border);
+										display: block;
+										max-width: 100%;
+										cursor: pointer;
+									"
+						></canvas>
+						<div
+							style="
+										margin-top: 0.5rem;
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+									"
+						>
+							Click a step to highlight it
+						</div>
+					</div>
+					<div style="display: flex; flex-direction: column; gap: 0.75rem; min-width: 180px">
+						<div>
+							<div
+								style="
+											font-family: var(--ff-mono);
+											font-size: 10px;
+											color: var(--muted);
+											margin-bottom: 0.4rem;
+											letter-spacing: 0.1em;
+											text-transform: uppercase;
+										"
+							>
+								Highlight Method
+							</div>
+							<div
+								style="display: flex; flex-direction: column; gap: 0.3rem"
+								id="hlMethodList"
+							></div>
+						</div>
+						<div
+							style="
+										padding: 0.75rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										line-height: 1.65;
+									"
+							id="hlMethodDesc"
+						>
+							Select a highlight method above.
+						</div>
+						<div>
+							<div class="ctrl-row">
+								<span class="ctrl-label">Intensity</span>
+								<input
+									type="range"
+									class="mint"
+									id="hlIntensity"
+									min="0.3"
+									max="1"
+									step="0.05"
+									value="0.7"
+								/>
+								<span class="ctrl-val" id="hlIntensityVal">70%</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 5: TRANSFORM ══ -->
+	<section class="section" id="s5">
+		<div class="section-header">
+			<span class="section-num">05</span>
+			<h2 class="section-title">Transform — Showing Change Over Time</h2>
+		</div>
+		<p>
+			The <strong>Transform</strong> operation animates a change in an element's state — its value,
+			its shape, its colour, its size. It answers the question:
+			<em>what changed, and by how much?</em> Bar charts that grow, pie slices that expand, nodes that
+			change colour to show state transitions, progress indicators that fill — all transforms.
+		</p>
+		<p>
+			Transforms are most powerful when they are <strong>directly tied to narration</strong>.
+			"Revenue doubled in Q3" lands hardest when the bar doubles in height exactly on the word
+			"doubled." This synchrony between audio and visual is what makes data animation so memorable —
+			it creates a multi-sensory reinforcement of the same fact.
+		</p>
+
+		<!-- DEMO 8.4 — Transform Types -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 8.4 — Transform Animations</span>
+				<span class="demo-badge gold">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1rem">
+					Four transform types side by side. Hit Animate to run all simultaneously, or click a type
+					name to isolate it.
+				</p>
+				<canvas
+					id="transformCanvas"
+					width="560"
+					height="220"
+					style="background: var(--raised); border: 1px solid var(--border); max-width: 100%"
+				></canvas>
+				<div class="btn-row" style="margin-top: 0.75rem">
+					<button class="btn gold active" id="transformPlayBtn">▶ Animate All</button>
+					<button class="btn" id="transformResetBtn">↺ Reset</button>
+				</div>
+				<div
+					style="
+								display: grid;
+								grid-template-columns: repeat(4, 1fr);
+								gap: 1px;
+								background: var(--border);
+								border: 1px solid var(--border);
+								margin-top: 0.75rem;
+							"
+					id="transformTypeGrid"
+				></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 6: PACING & CLUTTER ══ -->
+	<section class="section" id="s6">
+		<div class="section-header">
+			<span class="section-num">06</span>
+			<h2 class="section-title">Pacing &amp; the Problem of Clutter</h2>
+		</div>
+		<p>
+			Animation is only effective when it contrasts with stillness. A diagram where everything is
+			always moving has no visual focus — everything competes equally for attention and nothing
+			wins. <strong>The still elements give the moving elements their power.</strong>
+		</p>
+		<p>
+			Clutter in educational animation comes from two sources: too many simultaneous animations, and
+			animations that continue when they should have stopped. Both destroy comprehension. The fix is
+			simple but requires discipline:
+			<strong>after a reveal or highlight, let everything rest.</strong> The viewer needs still time to
+			read, process, and catch up to the voiceover.
+		</p>
+
+		<!-- DEMO 8.5 — Clutter Meter -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 8.5 — Animation Clutter Meter</span>
+				<span class="demo-badge coral">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Drag the slider to increase the number of simultaneous animations. Watch how comprehension
+					collapses once clutter exceeds the viewer's attention budget. The meter shows cognitive
+					load in real time.
+				</p>
+				<canvas
+					id="clutterCanvas"
+					width="560"
+					height="200"
+					style="background: var(--raised); border: 1px solid var(--border); max-width: 100%"
+				></canvas>
+
+				<div style="margin-top: 1rem">
+					<div class="ctrl-row">
+						<span class="ctrl-label">Active anims</span>
+						<input
+							type="range"
+							class="coral"
+							id="clutterSlider"
+							min="1"
+							max="12"
+							value="3"
+							step="1"
+						/>
+						<span class="ctrl-val" id="clutterCount" style="color: var(--coral)">3</span>
+					</div>
+
+					<div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem">
+						<div class="clutter-meter">
+							<span class="clutter-label">Cognitive load</span>
+							<div class="clutter-track"><div class="clutter-fill" id="cogLoadFill"></div></div>
+							<span class="clutter-val" id="cogLoadVal"></span>
+						</div>
+						<div class="clutter-meter">
+							<span class="clutter-label">Focus clarity</span>
+							<div class="clutter-track"><div class="clutter-fill" id="focusFill"></div></div>
+							<span class="clutter-val" id="focusVal"></span>
+						</div>
+						<div class="clutter-meter">
+							<span class="clutter-label">Viewer fatigue</span>
+							<div class="clutter-track"><div class="clutter-fill" id="fatigueFill"></div></div>
+							<span class="clutter-val" id="fatigueVal"></span>
+						</div>
+					</div>
+
+					<div
+						style="
+									margin-top: 0.75rem;
+									padding: 0.75rem 1rem;
+									border: 1px solid var(--border);
+									background: var(--raised);
+									font-family: var(--ff-mono);
+									font-size: 11px;
+									color: var(--muted);
+									line-height: 1.65;
+								"
+						id="clutterVerdict"
+					></div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 7: BEFORE / AFTER ══ -->
+	<section class="section" id="s7">
+		<div class="section-header">
+			<span class="section-num">07</span>
+			<h2 class="section-title">Before &amp; After — Fixing an Over-Animated Diagram</h2>
+		</div>
+		<p>
+			The best way to internalise diagram animation principles is to see a broken diagram fixed. The
+			"before" version below has every classic mistake: simultaneous reveals, continuous looping
+			animations, no rest periods, inconsistent easing, and competing focal points. The "after"
+			version applies sequential reveal, purposeful highlights, and disciplined stillness.
+		</p>
+
+		<!-- DEMO 8.6 — Before / After -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 8.6 — Before / After Comparison</span>
+				<span class="demo-badge gold">interactive</span>
+			</div>
+			<div class="demo-body">
+				<div class="ba-grid">
+					<div class="ba-panel">
+						<div class="ba-header">
+							<span class="ba-label" style="color: var(--coral)">✗ Before — Over-animated</span>
+							<span style="font-family: var(--ff-mono); font-size: 9px; color: var(--dim)"
+								>Everything moves at once</span
+							>
+						</div>
+						<canvas
+							id="baBeforeCanvas"
+							width="280"
+							height="220"
+							style="background: var(--raised); display: block; width: 100%"
+						></canvas>
+					</div>
+					<div class="ba-panel">
+						<div class="ba-header">
+							<span class="ba-label" style="color: var(--mint)">✓ After — Purposeful</span>
+							<span style="font-family: var(--ff-mono); font-size: 9px; color: var(--dim)"
+								>Sequential, intentional</span
+							>
+						</div>
+						<canvas
+							id="baAfterCanvas"
+							width="280"
+							height="220"
+							style="background: var(--raised); display: block; width: 100%"
+						></canvas>
+					</div>
+				</div>
+				<div
+					style="
+								margin-top: 1px;
+								padding: 0.85rem 1rem;
+								border: 1px solid var(--border);
+								border-top: none;
+								background: var(--raised);
+							"
+				>
+					<div
+						style="
+									display: grid;
+									grid-template-columns: 1fr 1fr;
+									gap: 0.4rem 1.5rem;
+									font-family: var(--ff-mono);
+									font-size: 10px;
+								"
+					>
+						<div>
+							<span style="color: var(--coral)">✗</span>
+							<span style="color: var(--muted)">All 5 nodes animate simultaneously</span>
+						</div>
+						<div>
+							<span style="color: var(--mint)">✓</span>
+							<span style="color: var(--muted)">Nodes reveal one at a time</span>
+						</div>
+						<div>
+							<span style="color: var(--coral)">✗</span>
+							<span style="color: var(--muted)">Arrows spin/pulse continuously</span>
+						</div>
+						<div>
+							<span style="color: var(--mint)">✓</span>
+							<span style="color: var(--muted)">Arrows draw once, then hold still</span>
+						</div>
+						<div>
+							<span style="color: var(--coral)">✗</span>
+							<span style="color: var(--muted)">Labels bounce to call attention</span>
+						</div>
+						<div>
+							<span style="color: var(--mint)">✓</span>
+							<span style="color: var(--muted)">Labels fade in cleanly, stay put</span>
+						</div>
+						<div>
+							<span style="color: var(--coral)">✗</span>
+							<span style="color: var(--muted)">No rest — motion never stops</span>
+						</div>
+						<div>
+							<span style="color: var(--mint)">✓</span>
+							<span style="color: var(--muted)">1.5s still hold between steps</span>
+						</div>
+					</div>
+				</div>
+				<div class="btn-row" style="margin-top: 0.75rem">
+					<button class="btn coral active" id="baPlayBtn">▶ Play Both</button>
+					<button class="btn" id="baResetBtn">↺ Reset</button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 8: PRINCIPLES SUMMARY ══ -->
+	<section class="section" id="s8">
+		<div class="section-header">
+			<span class="section-num">08</span>
+			<h2 class="section-title">The Six Principles of Diagram Animation</h2>
+		</div>
+		<p>
+			These six principles summarise everything in this module. They are design rules, not technical
+			ones — they apply regardless of which software you use.
+		</p>
+
+		<div class="principle-row" id="principleCards"></div>
+		<div
+			style="
+						padding: 1rem 1.25rem;
+						border: 1px solid var(--border);
+						border-top: none;
+						background: var(--raised);
+						font-family: var(--ff-mono);
+						font-size: 11px;
+						color: var(--muted);
+						line-height: 1.7;
+						min-height: 3.5em;
+					"
+			id="principleDetail"
+		>
+			Click a principle to read more.
+		</div>
+	</section>
+
+	<!-- ══ QUIZ ══ -->
+	<div class="quiz-section" id="quiz">
+		<div class="quiz-header-bar">
+			<div>
+				<div class="quiz-title">Module Check</div>
+				<div class="quiz-sub">5 questions · Diagram animation judgment</div>
+			</div>
+			<span class="demo-badge">Assessment</span>
+		</div>
+		<div class="quiz-body">
+			<div class="question" id="q1">
+				<div class="q-num">Q1 of 5</div>
+				<div class="q-text">
+					A narrator says: "The data was processed, then validated, then stored." The animator
+					reveals all three steps simultaneously as the sentence begins. What is wrong with this
+					approach?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						The animation is too slow — the reveal should happen faster
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+					>
+						The viewer sees all three steps before hearing about them, destroying the sequential
+						logic and causing the viewer to scan ahead rather than follow the narration
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						Simultaneous reveals are fine — the viewer can process multiple things at once
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+					>
+						The issue is the reveal technique — they should use a wipe instead of a fade
+					</div>
+				</div>
+				<div class="feedback" id="q1-feedback"></div>
+			</div>
+
+			<div class="question" id="q2">
+				<div class="q-num">Q2 of 5</div>
+				<div class="q-text">
+					You need to animate an arrow that shows data flowing from a database to a server. Which
+					reveal technique is most semantically appropriate, and why?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						Fade in — because arrows should always fade to avoid distraction
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+					>
+						Draw-on — because the arrow traces the path of the data flow, visually reinforcing the
+						direction and journey of the connection
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						Scale up — because it draws the most attention to the arrow
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+					>
+						Slide in — because horizontal slides always work for arrows
+					</div>
+				</div>
+				<div class="feedback" id="q2-feedback"></div>
+			</div>
+
+			<div class="question" id="q3">
+				<div class="q-num">Q3 of 5</div>
+				<div class="q-text">
+					After fully building a complex diagram on screen, the narrator wants to discuss step 3
+					specifically. What is the correct approach?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Remove all other steps so only step 3 is visible, then rebuild the rest afterwards
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Add a large blinking arrow pointing at step 3 and keep it blinking throughout the
+						discussion
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+					>
+						Highlight step 3 (glow, pulse once, or dim the others) while the narrator discusses it —
+						then release the highlight when moving on
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+					>
+						Zoom the camera into step 3 until the other steps are off-screen
+					</div>
+				</div>
+				<div class="feedback" id="q3-feedback"></div>
+			</div>
+
+			<div class="question" id="q4">
+				<div class="q-num">Q4 of 5</div>
+				<div class="q-text">
+					A diagram has seven elements all animating with different easing types, speeds, and
+					directions simultaneously. A reviewer says it "feels chaotic and hard to watch." What is
+					the most likely root cause?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						The colour palette is too bright and needs to be muted
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+					>
+						Animation clutter — too many simultaneous motions with no unified focal point, exceeding
+						the viewer's attention budget and destroying visual hierarchy
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						The frame rate is too low — increasing to 60fps will fix the chaos
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+					>
+						The animations are too short — they need to be longer so viewers can track them
+					</div>
+				</div>
+				<div class="feedback" id="q4-feedback"></div>
+			</div>
+
+			<div class="question" id="q5">
+				<div class="q-num">Q5 of 5</div>
+				<div class="q-text">
+					The voiceover says "revenue doubled in Q3" and a bar chart bar grows to twice its height.
+					For maximum impact, when should the bar's growth begin?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						5 seconds before "doubled" — give viewers time to anticipate
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						3 seconds after "doubled" — let the word land first
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+					>
+						On or just before the word "doubled" — the visual change synchronised with the spoken
+						word creates multi-sensory reinforcement and makes the fact memorable
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+					>
+						At the very start of the sentence — the visual should always precede the audio
+					</div>
+				</div>
+				<div class="feedback" id="q5-feedback"></div>
+			</div>
+		</div>
+		<div class="quiz-score" id="quizScore">
+			<div class="score-big" id="scoreNum">0/5</div>
+			<div class="score-lbl" id="scoreLbl">Module 8 Complete</div>
+		</div>
+	</div>
+
+	<!-- ══ NAV ══ -->
+	<nav class="nav-links">
+		<a href="/courses/animation/07" class="prev-link">← Module 7: Lip Sync &amp; Expression</a>
+		<a href="/courses/animation/09" class="next-module">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">Layout, Staging &amp; Scenes</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</nav>
+</div>
+
+<!-- /page-wrapper -->
+
+<style>
+	.page-wrapper {
+		background: var(--anim-bg);
+		color: var(--anim-text);
+		font-family: var(--ff-body);
+		font-size: 15px;
+		line-height: 1.8;
+	}
+
+	h1,
+	h2,
+	:global(h3) {
+		font-family: var(--ff-display);
+		font-weight: 800;
+		line-height: 1.15;
+		color: #fff;
+	}
+	p {
+		margin-bottom: 1.1rem;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--anim-gold);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: italic;
+	}
+	:global(code) {
+		font-family: var(--ff-mono);
+		font-size: 12px;
+		background: var(--anim-raised);
+		border: 1px solid var(--anim-border2);
+		padding: 1px 6px;
+		color: var(--anim-mint);
+	}
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 8rem;
+	}
+
+	/* ── HERO ── */
+	.module-hero {
+		padding: 5rem 0 4rem;
+		border-bottom: 1px solid var(--anim-border);
+		margin-bottom: 4rem;
+		position: relative;
+		overflow: hidden;
+	}
+	.module-eyebrow {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-gold);
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.module-eyebrow::before,
+	.module-eyebrow::after {
+		content: '';
+		display: inline-block;
+		width: 24px;
+		height: 1px;
+		background: var(--anim-gold);
+	}
+	.module-title {
+		font-size: clamp(26px, 4.8vw, 52px);
+		color: #fff;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+	.module-title em {
+		color: var(--anim-mint);
+		font-style: italic;
+	}
+	.module-subtitle {
+		font-size: 16px;
+		color: var(--anim-muted);
+		font-weight: 400;
+		margin-bottom: 2.5rem;
+	}
+	.objectives {
+		border: 1px solid var(--anim-border);
+		border-left: 3px solid var(--anim-mint);
+		background: var(--anim-surface);
+		padding: 1.5rem 2rem;
+	}
+	.obj-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-mint);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.25rem 0 0.25rem 1.5rem;
+		position: relative;
+		font-size: 14px;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--anim-gold);
+	}
+
+	/* hero deco */
+	.hero-deco {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: 220px;
+		opacity: 0.05;
+		pointer-events: none;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 16px;
+		padding: 2rem;
+	}
+	.hero-deco-row {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+	.hero-node {
+		width: 36px;
+		height: 36px;
+		border: 1px solid var(--anim-mint);
+		border-radius: 4px;
+		flex-shrink: 0;
+	}
+	.hero-arrow {
+		flex: 1;
+		height: 1px;
+		background: var(--anim-mint);
+	}
+
+	/* ── SECTIONS ── */
+	.section {
+		margin: 5rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.section-num {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-gold);
+		letter-spacing: 0.1em;
+	}
+	.section-title {
+		font-family: var(--ff-display);
+		font-size: 26px;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	/* ── CALLOUT ── */
+	.callout {
+		margin: 1.75rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
+		font-size: 13.5px;
+	}
+	.callout.gold {
+		border-color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
+	}
+	.callout.coral {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
+	}
+	.callout.mint {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
+	}
+	.callout-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		margin-bottom: 0.4rem;
+		font-weight: 500;
+		color: var(--anim-lavender);
+	}
+	.callout.gold .callout-label {
+		color: var(--anim-gold);
+	}
+	.callout.coral .callout-label {
+		color: var(--anim-coral);
+	}
+	.callout.mint .callout-label {
+		color: var(--anim-mint);
+	}
+
+	/* ── DEMO BOX ── */
+	.demo-box {
+		background: var(--anim-surface);
+		border: 1px solid var(--anim-border);
+		margin: 2.5rem 0;
+	}
+	.demo-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.demo-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.demo-badge {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+	}
+	.demo-badge.gold {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 10%, transparent);
+	}
+	.demo-badge.coral {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+	canvas {
+		display: block;
+	}
+
+	/* ── CONTROLS ── */
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-text);
+		padding: 5px 14px;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.15s;
+		letter-spacing: 0.05em;
+		user-select: none;
+	}
+	:global(.btn:hover) {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+	}
+	:global(.btn.active) {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
+	}
+	.btn.gold:hover,
+	:global(.btn.gold.active) {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+	}
+	:global(.btn.gold.active) {
+		background: color-mix(in srgb, var(--anim-gold) 12%, transparent);
+	}
+	:global(.btn.coral:hover),
+	:global(.btn.coral.active) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	:global(.btn.coral.active) {
+		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-row) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.35rem 0;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-label) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 88px;
+	}
+	:global(.ctrl-val) {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-mint);
+		font-weight: 500;
+		min-width: 44px;
+	}
+	:global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 2px;
+		background: var(--anim-border2);
+		outline: none;
+		min-width: 80px;
+	}
+	:global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--anim-mint);
+		cursor: pointer;
+		border: 2px solid var(--anim-bg);
+	}
+	input[type='range'].gold::-webkit-slider-thumb {
+		background: var(--anim-gold);
+	}
+	:global(input[type='range'].coral::-webkit-slider-thumb) {
+		background: var(--anim-coral);
+	}
+
+	/* ── REVEAL TECHNIQUE TABS ── */
+	.reveal-tabs {
+		display: flex;
+		gap: 0;
+		border: 1px solid var(--anim-border);
+		overflow: hidden;
+	}
+	.reveal-tab {
+		flex: 1;
+		padding: 0.5rem 0.75rem;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		cursor: pointer;
+		text-align: center;
+		border-right: 1px solid var(--anim-border);
+		color: var(--anim-muted);
+		transition: all 0.15s;
+		user-select: none;
+	}
+	.reveal-tab:last-child {
+		border-right: none;
+	}
+	.reveal-tab:hover {
+		color: var(--anim-text);
+	}
+	.reveal-tab.active {
+		background: color-mix(in srgb, var(--anim-mint) 8%, var(--anim-raised));
+		color: var(--anim-mint);
+	}
+
+	/* ── CLUTTER METER ── */
+	.clutter-meter {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.75rem 0;
+	}
+	.clutter-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 80px;
+	}
+	.clutter-track {
+		flex: 1;
+		height: 8px;
+		background: var(--anim-border2);
+		border-radius: 4px;
+		overflow: hidden;
+	}
+	.clutter-fill {
+		height: 100%;
+		border-radius: 4px;
+		transition:
+			width 0.3s ease,
+			background 0.3s;
+	}
+	.clutter-val {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		font-weight: 600;
+		min-width: 36px;
+		text-align: right;
+	}
+
+	/* ── PRINCIPLE CARDS ── */
+	.principle-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+		margin: 1.5rem 0;
+	}
+	@media (max-width: 580px) {
+		.principle-row {
+			grid-template-columns: 1fr;
+		}
+	}
+	.principle-card {
+		background: var(--anim-surface);
+		padding: 1rem 1.25rem;
+		cursor: pointer;
+		transition: background 0.12s;
+		border-bottom: 2px solid transparent;
+	}
+	.principle-card:hover {
+		background: var(--anim-raised);
+	}
+	.principle-card.active {
+		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-raised));
+		border-bottom-color: var(--anim-mint);
+	}
+	.principle-card-num {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-dim);
+		letter-spacing: 0.1em;
+		margin-bottom: 0.25rem;
+	}
+	.principle-card-name {
+		font-family: var(--ff-display);
+		font-size: 15px;
+		font-weight: 700;
+		color: #fff;
+		margin-bottom: 0.2rem;
+	}
+	.principle-card.active .principle-card-name {
+		color: var(--anim-mint);
+	}
+	.principle-card-desc {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-muted);
+		line-height: 1.5;
+	}
+
+	/* ── BEFORE / AFTER ── */
+	.ba-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+	}
+	@media (max-width: 540px) {
+		.ba-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	.ba-panel {
+		background: var(--anim-surface);
+	}
+	.ba-header {
+		padding: 0.6rem 1rem;
+		border-bottom: 1px solid var(--anim-border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.ba-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	/* ── QUIZ ── */
+	.quiz-section {
+		margin: 5rem 0;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+	}
+	.quiz-header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 1.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.quiz-title {
+		font-family: var(--ff-display);
+		font-size: 22px;
+		font-weight: 800;
+		color: #fff;
+	}
+	.quiz-sub {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.2rem;
+	}
+	.quiz-body {
+		padding: 1.75rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	.question:first-child {
+		margin-top: 0;
+	}
+	:global(.q-num) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		color: var(--anim-mint);
+		margin-bottom: 0.4rem;
+	}
+	:global(.q-text) {
+		font-size: 14px;
+		color: #fff;
+		margin-bottom: 0.75rem;
+		line-height: 1.6;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	:global(.option) {
+		padding: 0.65rem 1rem;
+		border: 1px solid var(--anim-border);
+		cursor: pointer;
+		font-size: 13px;
+		font-family: var(--ff-body);
+		transition: all 0.15s;
+		user-select: none;
+		background: var(--anim-bg);
+	}
+	:global(.option:hover) {
+		border-color: var(--anim-border2);
+		background: var(--anim-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+		color: var(--anim-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+		color: var(--anim-coral);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.6rem;
+		min-height: 1.4em;
+		font-family: var(--ff-mono);
+		color: var(--anim-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--anim-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--anim-coral);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 2rem;
+		border: 1px solid var(--anim-border);
+		text-align: center;
+		background: var(--anim-raised);
+		display: none;
+	}
+	:global(.quiz-score.visible) {
+		display: block;
+	}
+	.score-big {
+		font-family: var(--ff-display);
+		font-size: 52px;
+		font-weight: 800;
+		color: var(--anim-gold);
+		line-height: 1;
+	}
+	.score-lbl {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.5rem;
+	}
+
+	/* ── NAV ── */
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 4rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.prev-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		color: var(--anim-muted);
+		font-family: var(--ff-mono);
+		font-size: 11px;
+	}
+	.prev-link:hover {
+		border-color: var(--anim-muted);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		min-width: 260px;
+	}
+	.next-module:hover {
+		border-color: var(--anim-gold);
+	}
+	.next-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.next-title {
+		font-family: var(--ff-display);
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.2rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--anim-gold);
+		flex-shrink: 0;
+	}
+	@media (max-width: 640px) {
+		.page-wrapper {
+			padding: 0 1.25rem 6rem;
+		}
+	}
+</style>

@@ -91,7 +91,7 @@ export const gameDevModules: Module[] = [
 		number: 7,
 		title: 'Sprite Animation and Tilemaps',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent',
 		description:
 			'Build sprite sheets, animate frame sequences, and render tile-based worlds efficiently.'
@@ -101,7 +101,7 @@ export const gameDevModules: Module[] = [
 		number: 8,
 		title: 'Input and Game Loop',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent2',
 		description:
 			'Implement a fixed-timestep game loop, handle keyboard and mouse input, and manage game state.'
@@ -111,7 +111,7 @@ export const gameDevModules: Module[] = [
 		number: 9,
 		title: '2D Physics Fundamentals',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent3',
 		description:
 			'Integrate velocity and acceleration, detect collisions between shapes, and resolve them correctly.'
@@ -224,7 +224,7 @@ export const animationModules: Module[] = [
 		number: 6,
 		title: 'Rigging for 2D Characters',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-mint',
 		description:
 			'Build a basic 2D rig with bones, hierarchies, constraints, and controllers. Animate a walk cycle.'
@@ -234,7 +234,7 @@ export const animationModules: Module[] = [
 		number: 7,
 		title: 'Lip Sync & Expression',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-gold',
 		description:
 			'Phoneme shapes, matching sound to frames, expressive timing, and body language for emotional clarity.'
@@ -244,7 +244,7 @@ export const animationModules: Module[] = [
 		number: 8,
 		title: 'Diagram & Concept Animation',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--anim-coral',
 		description:
 			'Animate arrows, labels, highlights, and flows to explain ideas. Reveal, transform, and focus with motion.'
@@ -270,3 +270,22 @@ export const animationModules: Module[] = [
 			'Produce a 15–30 second explainer combining character, diagrams, narration, and final polish for publishing.'
 	}
 ];
+
+export const graphicDesignCourse: Course = {
+	id: 'graphic-design',
+	title: 'Graphic Design & Visual Storytelling',
+	subtitle: 'Building a Personal Creative Identity',
+	description:
+		'This course teaches the foundational skills of graphic design for people who want to build their own visual identity but do not yet feel artistic. Students explore the underlying principles of design, color, composition, typography, branding, and visual storytelling.',
+	totalModules: 10
+};
+
+export const graphicDesignModules: Module[] = Array.from({ length: 10 }, (_, i) => ({
+	id: String(i + 1).padStart(2, '0'),
+	number: i + 1,
+	title: `Module ${i + 1}`,
+	subtitle: 'Theory + Practice',
+	status: 'coming-soon',
+	accentVar: '--accent',
+	description: 'Coming soon...'
+}));

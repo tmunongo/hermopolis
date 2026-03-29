@@ -4,6 +4,9 @@
 	import Module03 from '$lib/modules/animation/Module03.svelte';
 	import Module04 from '$lib/modules/animation/Module04.svelte';
 	import Module05 from '$lib/modules/animation/Module05.svelte';
+	import Module06 from '$lib/modules/animation/Module06.svelte';
+	import Module07 from '$lib/modules/animation/Module07.svelte';
+	import Module08 from '$lib/modules/animation/Module08.svelte';
 	import ScrollProgress from '$lib/components/ScrollProgress.svelte';
 	import type { PageData } from './$types';
 
@@ -44,6 +47,12 @@
 		<Module04 />
 	{:else if mod.id === '05'}
 		<Module05 />
+	{:else if mod.id === '06'}
+		<Module06 />
+	{:else if mod.id === '07'}
+		<Module07 />
+	{:else if mod.id === '08'}
+		<Module08 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--anim-muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

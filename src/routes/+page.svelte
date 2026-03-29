@@ -3,7 +3,9 @@
 		gameDevCourse,
 		gameDevModules,
 		animationCourse,
-		animationModules
+		animationModules,
+		graphicDesignCourse,
+		graphicDesignModules
 	} from '$lib/data/courses';
 	const course = gameDevCourse;
 	const modules = gameDevModules;
@@ -87,6 +89,28 @@
 				<div class="card-cta anim-cta">Start Learning →</div>
 			</div>
 		</a>
+
+		<!-- Coming Soon: Graphic Design -->
+		<div class="course-card soon">
+			<div class="card-body">
+				<div class="card-eyebrow" style="color: var(--muted)">
+					{graphicDesignCourse.totalModules} Modules · COMING SOON
+				</div>
+				<h2 class="card-title" style="color: var(--muted)">{graphicDesignCourse.title}</h2>
+				<p class="card-subtitle" style="color: var(--muted)">{graphicDesignCourse.subtitle}</p>
+				<p class="card-desc" style="color: var(--muted)">
+					{graphicDesignCourse.description}
+				</p>
+				<div class="card-meta" style="opacity: 0.5;">
+					<div class="meta-modules">
+						{#each graphicDesignModules as mod}
+							<div class="meta-dot" title={mod.title}></div>
+						{/each}
+					</div>
+					<span class="meta-count">Waitlist Open</span>
+				</div>
+			</div>
+		</div>
 
 		<!-- Placeholder for future courses -->
 		<div class="course-card soon">
