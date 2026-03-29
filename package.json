@@ -37,6 +37,10 @@
 		"*.{js,ts,svelte}": [
 			"eslint --fix",
 			"prettier --write"
+		],
+		"*.py": [
+			"uvx ruff check scripts/convert_module.py",
+			"uvx ruff format scripts/convert_module.py"
 		]
 	}
 }

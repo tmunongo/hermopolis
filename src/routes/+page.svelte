@@ -107,7 +107,7 @@
 							<div class="meta-dot" title={mod.title}></div>
 						{/each}
 					</div>
-					<span class="meta-count">Waitlist Open</span>
+					<span class="meta-count">In Development</span>
 				</div>
 			</div>
 		</div>

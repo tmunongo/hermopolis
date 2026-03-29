@@ -1,5 +1,5 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
 	onMount(() => {
@@ -729,7 +729,6 @@
 			for (let i = 0; i < SEG; i++) {
 				const t = i / SEG;
 				const { upper, lower, hand } = getWeight(t, 1);
-				const col = (bone) => ('upper' ? weightColor(upper, 'upper') : weightColor(lower, 'lower'));
 
 				let x1, y1, x2, y2;
 				if (t < 0.4) {
@@ -1560,7 +1559,8 @@
 				fb.className = 'feedback bad';
 				quizScores[qId] = false;
 				qEl.querySelectorAll('.option').forEach((o) => {
-					if (!o.classList.contains('wrong')) o.classList.add('correct');
+					if (o.getAttribute('onclick') && o.getAttribute('onclick').includes("'correct'"))
+						o.classList.add('correct');
 				});
 			}
 			if (Object.keys(quizScores).length === 5) {
@@ -1577,42 +1577,47 @@
 		}
 
 		/* eslint-disable no-undef */
+		if (typeof renderWeight === 'function') window.renderWeight = renderWeight;
+		if (typeof renderCtrl === 'function') window.renderCtrl = renderCtrl;
+		if (typeof drawCtrlCharacter === 'function') window.drawCtrlCharacter = drawCtrlCharacter;
 		if (typeof toggleRigView === 'function') window.toggleRigView = toggleRigView;
+		if (typeof drawFK === 'function') window.drawFK = drawFK;
+		if (typeof buildHierTree === 'function') window.buildHierTree = buildHierTree;
+		if (typeof lerpAngle === 'function') window.lerpAngle = lerpAngle;
+		if (typeof drawWalkTimeline === 'function') window.drawWalkTimeline = drawWalkTimeline;
+		if (typeof getIKPos === 'function') window.getIKPos = getIKPos;
+		if (typeof renderNode === 'function') window.renderNode = renderNode;
+		if (typeof weightColor === 'function') window.weightColor = weightColor;
 		if (typeof getFKPos === 'function') window.getFKPos = getFKPos;
 		if (typeof toggleFKAnim === 'function') window.toggleFKAnim = toggleFKAnim;
-		if (typeof drawFKPanel === 'function') window.drawFKPanel = drawFKPanel;
-		if (typeof fkIdleTick === 'function') window.fkIdleTick = fkIdleTick;
-		if (typeof computeFK === 'function') window.computeFK = computeFK;
-		if (typeof drawRigOverlay === 'function') window.drawRigOverlay = drawRigOverlay;
-		if (typeof lerpPose === 'function') window.lerpPose = lerpPose;
-		if (typeof getWeight === 'function') window.getWeight = getWeight;
-		if (typeof renderWeight === 'function') window.renderWeight = renderWeight;
-		if (typeof computeBoneEndWorld === 'function') window.computeBoneEndWorld = computeBoneEndWorld;
-		if (typeof answer === 'function') window.answer = answer;
-		if (typeof buildHierTree === 'function') window.buildHierTree = buildHierTree;
-		if (typeof walkTick === 'function') window.walkTick = walkTick;
-		if (typeof getIKPos === 'function') window.getIKPos = getIKPos;
-		if (typeof drawCtrlCharacter === 'function') window.drawCtrlCharacter = drawCtrlCharacter;
-		if (typeof drawWalkChar === 'function') window.drawWalkChar = drawWalkChar;
-		if (typeof buildCtrlList === 'function') window.buildCtrlList = buildCtrlList;
-		if (typeof drawWalkTimeline === 'function') window.drawWalkTimeline = drawWalkTimeline;
-		if (typeof renderNode === 'function') window.renderNode = renderNode;
-		if (typeof resetFK === 'function') window.resetFK = resetFK;
-		if (typeof solveIK2Bone === 'function') window.solveIK2Bone = solveIK2Bone;
-		if (typeof selectWeightBone === 'function') window.selectWeightBone = selectWeightBone;
-		if (typeof drawIKPanel === 'function') window.drawIKPanel = drawIKPanel;
-		if (typeof lerpAngle === 'function') window.lerpAngle = lerpAngle;
-		if (typeof drawControllers === 'function') window.drawControllers = drawControllers;
-		if (typeof getCtrlPos === 'function') window.getCtrlPos = getCtrlPos;
-		if (typeof renderFKPanel === 'function') window.renderFKPanel = renderFKPanel;
-		if (typeof renderCtrl === 'function') window.renderCtrl = renderCtrl;
-		if (typeof drawFK === 'function') window.drawFK = drawFK;
-		if (typeof setWalkPose === 'function') window.setWalkPose = setWalkPose;
 		if (typeof resetCtrl === 'function') window.resetCtrl = resetCtrl;
-		if (typeof weightColor === 'function') window.weightColor = weightColor;
+		if (typeof renderFKPanel === 'function') window.renderFKPanel = renderFKPanel;
+		if (typeof walkTick === 'function') window.walkTick = walkTick;
+		if (typeof drawFKPanel === 'function') window.drawFKPanel = drawFKPanel;
+		if (typeof selectWeightBone === 'function') window.selectWeightBone = selectWeightBone;
+		if (typeof drawRigOverlay === 'function') window.drawRigOverlay = drawRigOverlay;
+		if (typeof drawControllers === 'function') window.drawControllers = drawControllers;
+		if (typeof drawIKPanel === 'function') window.drawIKPanel = drawIKPanel;
+		if (typeof computeFK === 'function') window.computeFK = computeFK;
+		if (typeof getWeight === 'function') window.getWeight = getWeight;
+		if (typeof buildCtrlList === 'function') window.buildCtrlList = buildCtrlList;
+		if (typeof fkIdleTick === 'function') window.fkIdleTick = fkIdleTick;
+		if (typeof solveIK2Bone === 'function') window.solveIK2Bone = solveIK2Bone;
+		if (typeof setWalkPose === 'function') window.setWalkPose = setWalkPose;
+		if (typeof lerpPose === 'function') window.lerpPose = lerpPose;
+		if (typeof drawWalkChar === 'function') window.drawWalkChar = drawWalkChar;
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof computeBoneEndWorld === 'function') window.computeBoneEndWorld = computeBoneEndWorld;
+		if (typeof resetFK === 'function') window.resetFK = resetFK;
+		if (typeof getCtrlPos === 'function') window.getCtrlPos = getCtrlPos;
 		/* eslint-enable no-undef */
 
-		return () => {};
+		return () => {
+			if (typeof fkAnimRaf !== 'undefined' && fkAnimRaf) cancelAnimationFrame(fkAnimRaf);
+			if (typeof walkRaf !== 'undefined' && walkRaf) cancelAnimationFrame(walkRaf);
+			// Note: window event listeners use anonymous functions and cannot be auto-removed.
+			// Consider refactoring to named handlers for proper cleanup.
+		};
 	});
 </script>
 
@@ -2447,7 +2452,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
 						}}
 					>
 						Only the pelvis itself — child bones must be moved independently
@@ -2460,7 +2468,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'correct');
+							}
 						}}
 					>
 						All bones that are children of the pelvis — the entire lower body moves with it
@@ -2473,7 +2484,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
 						}}
 					>
 						The parent of the pelvis — rotation propagates upward, not downward
@@ -2486,7 +2500,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
 						}}
 					>
 						No other bones — hierarchy only matters for translation, not rotation
@@ -2510,7 +2527,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
 						}}
 					>
 						FK — because rotating from the shoulder gives the most control over the arm's shape
@@ -2523,7 +2543,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'correct');
+							}
 						}}
 					>
 						IK — because the hand (end effector) has a fixed target position, and IK automatically
@@ -2537,7 +2560,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
 						}}
 					>
 						FK — IK is only for legs and feet, never arms
@@ -2550,7 +2576,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
 						}}
 					>
 						Neither — you should hand-draw every frame when precision is needed
@@ -2574,7 +2603,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
 						}}
 					>
 						It moves exactly as if rotated 90° — any weight above 0 means full influence
@@ -2587,7 +2619,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'correct');
+							}
 						}}
 					>
 						It moves partially — blending 70% of the upper arm's transform and 30% of the lower
@@ -2601,7 +2636,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
 						}}
 					>
 						It does not move at all — it primarily belongs to the upper arm bone
@@ -2614,7 +2652,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
 						}}
 					>
 						It moves twice as far as intended — weights above 1.0 amplify motion
@@ -2637,7 +2678,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
 						}}
 					>
 						It renders as a visible part of the final character design
@@ -2650,7 +2694,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'correct');
+							}
 						}}
 					>
 						It is a non-rendered UI shape that makes bones easier to select and manipulate — it
@@ -2664,7 +2711,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
 						}}
 					>
 						It automatically generates in-between frames between keyframes
@@ -2677,7 +2727,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
 						}}
 					>
 						It locks a bone so that it cannot be accidentally moved
@@ -2698,7 +2751,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
 						}}
 					>
 						Both feet are together and the body is at its highest point
@@ -2711,7 +2767,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'correct');
+							}
 						}}
 					>
 						The leading foot heel strikes the ground — the stride is at maximum width and the body
@@ -2725,7 +2784,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
 						}}
 					>
 						One foot is entirely off the ground and passing beneath the body
@@ -2738,7 +2800,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
 						}}
 					>
 						The body is at its lowest point, compressing under the weight of the step

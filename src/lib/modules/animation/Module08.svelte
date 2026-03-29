@@ -1,5 +1,5 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
 	onMount(() => {
@@ -1209,31 +1209,36 @@
 			}
 		}
 
-		/* eslint-disable no-undef */
-		if (typeof renderClutter === 'function') window.renderClutter = renderClutter;
-		if (typeof hlTick === 'function') window.hlTick = hlTick;
-		if (typeof revealElem === 'function') window.revealElem = revealElem;
-		if (typeof revealTick === 'function') window.revealTick = revealTick;
-		if (typeof renderHL === 'function') window.renderHL = renderHL;
-		if (typeof renderBefore === 'function') window.renderBefore = renderBefore;
 		if (typeof revealArrow === 'function') window.revealArrow = revealArrow;
-		if (typeof setRevealTech === 'function') window.setRevealTech = setRevealTech;
-		if (typeof drawTransforms === 'function') window.drawTransforms = drawTransforms;
-		if (typeof renderAfter === 'function') window.renderAfter = renderAfter;
-		if (typeof baTick === 'function') window.baTick = baTick;
-		if (typeof drawBANode === 'function') window.drawBANode = drawBANode;
 		if (typeof updateClutterMeters === 'function') window.updateClutterMeters = updateClutterMeters;
-		if (typeof drawBox === 'function') window.drawBox = drawBox;
-		if (typeof answer === 'function') window.answer = answer;
-		if (typeof setFlowStep === 'function') window.setFlowStep = setFlowStep;
-		if (typeof clutterTick === 'function') window.clutterTick = clutterTick;
-		if (typeof renderReveal === 'function') window.renderReveal = renderReveal;
-		if (typeof txTick === 'function') window.txTick = txTick;
+		if (typeof revealElem === 'function') window.revealElem = revealElem;
 		if (typeof renderFlow === 'function') window.renderFlow = renderFlow;
+		if (typeof revealTick === 'function') window.revealTick = revealTick;
+		if (typeof renderClutter === 'function') window.renderClutter = renderClutter;
+		if (typeof drawBox === 'function') window.drawBox = drawBox;
+		if (typeof renderReveal === 'function') window.renderReveal = renderReveal;
 		if (typeof flowAutoTick === 'function') window.flowAutoTick = flowAutoTick;
-		/* eslint-enable no-undef */
+		if (typeof answer === 'function') window.answer = answer;
+		if (typeof clutterTick === 'function') window.clutterTick = clutterTick;
+		if (typeof hlTick === 'function') window.hlTick = hlTick;
+		if (typeof txTick === 'function') window.txTick = txTick;
+		if (typeof renderHL === 'function') window.renderHL = renderHL;
+		if (typeof setRevealTech === 'function') window.setRevealTech = setRevealTech;
+		if (typeof baTick === 'function') window.baTick = baTick;
+		if (typeof setFlowStep === 'function') window.setFlowStep = setFlowStep;
+		if (typeof drawTransforms === 'function') window.drawTransforms = drawTransforms;
+		if (typeof renderBefore === 'function') window.renderBefore = renderBefore;
+		if (typeof renderAfter === 'function') window.renderAfter = renderAfter;
+		if (typeof drawBANode === 'function') window.drawBANode = drawBANode;
 
-		return () => {};
+		return () => {
+			if (typeof baRaf !== 'undefined' && baRaf) cancelAnimationFrame(baRaf);
+			if (typeof clutterRaf !== 'undefined' && clutterRaf) cancelAnimationFrame(clutterRaf);
+			if (typeof flowRaf !== 'undefined' && flowRaf) cancelAnimationFrame(flowRaf);
+			if (typeof hlRaf !== 'undefined' && hlRaf) cancelAnimationFrame(hlRaf);
+			if (typeof revealRaf !== 'undefined' && revealRaf) cancelAnimationFrame(revealRaf);
+			if (typeof txRaf !== 'undefined' && txRaf) cancelAnimationFrame(txRaf);
+		};
 	});
 </script>
 
@@ -1353,7 +1358,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'fade');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.setRevealTech(e.currentTarget, 'fade');
+							}
 						}}
 					>
 						Fade
@@ -1367,7 +1375,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'drawon');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.setRevealTech(e.currentTarget, 'drawon');
+							}
 						}}
 					>
 						Draw-On
@@ -1381,7 +1392,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'scale');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.setRevealTech(e.currentTarget, 'scale');
+							}
 						}}
 					>
 						Scale Up
@@ -1395,7 +1409,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'wipe');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.setRevealTech(e.currentTarget, 'wipe');
+							}
 						}}
 					>
 						Wipe
@@ -1409,7 +1426,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.setRevealTech(e.currentTarget, 'slide');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.setRevealTech(e.currentTarget, 'slide');
+							}
 						}}
 					>
 						Slide In
@@ -1993,7 +2013,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
 						}}
 					>
 						The animation is too slow — the reveal should happen faster
@@ -2006,7 +2029,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'correct');
+							}
 						}}
 					>
 						The viewer sees all three steps before hearing about them, destroying the sequential
@@ -2020,7 +2046,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
 						}}
 					>
 						Simultaneous reveals are fine — the viewer can process multiple things at once
@@ -2033,7 +2062,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q1', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
 						}}
 					>
 						The issue is the reveal technique — they should use a wipe instead of a fade
@@ -2057,7 +2089,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
 						}}
 					>
 						Fade in — because arrows should always fade to avoid distraction
@@ -2070,7 +2105,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'correct');
+							}
 						}}
 					>
 						Draw-on — because the arrow traces the path of the data flow, visually reinforcing the
@@ -2084,7 +2122,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
 						}}
 					>
 						Scale up — because it draws the most attention to the arrow
@@ -2097,7 +2138,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q2', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
 						}}
 					>
 						Slide in — because horizontal slides always work for arrows
@@ -2121,7 +2165,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
 						}}
 					>
 						Remove all other steps so only step 3 is visible, then rebuild the rest afterwards
@@ -2134,7 +2181,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
 						}}
 					>
 						Add a large blinking arrow pointing at step 3 and keep it blinking throughout the
@@ -2148,7 +2198,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'correct');
+							}
 						}}
 					>
 						Highlight step 3 (glow, pulse once, or dim the others) while the narrator discusses it —
@@ -2162,7 +2215,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q3', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
 						}}
 					>
 						Zoom the camera into step 3 until the other steps are off-screen
@@ -2187,7 +2243,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
 						}}
 					>
 						The colour palette is too bright and needs to be muted
@@ -2200,7 +2259,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'correct');
+							}
 						}}
 					>
 						Animation clutter — too many simultaneous motions with no unified focal point, exceeding
@@ -2214,7 +2276,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
 						}}
 					>
 						The frame rate is too low — increasing to 60fps will fix the chaos
@@ -2227,7 +2292,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q4', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
 						}}
 					>
 						The animations are too short — they need to be longer so viewers can track them
@@ -2251,7 +2319,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
 						}}
 					>
 						5 seconds before "doubled" — give viewers time to anticipate
@@ -2264,7 +2335,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
 						}}
 					>
 						3 seconds after "doubled" — let the word land first
@@ -2277,7 +2351,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'correct');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'correct');
+							}
 						}}
 					>
 						On or just before the word "doubled" — the visual change synchronised with the spoken
@@ -2291,7 +2368,10 @@
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.answer(e.currentTarget, 'q5', 'wrong');
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
 						}}
 					>
 						At the very start of the sentence — the visual should always precede the audio

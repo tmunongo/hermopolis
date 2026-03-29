@@ -472,38 +472,38 @@
 					grid-template-columns: 1fr;
 				}
 			}
-			.principle-card {
+			:global(.principle-card) {
 				background: var(--surface);
 				padding: 1rem 1.25rem;
 				cursor: pointer;
 				transition: background 0.12s;
 				border-bottom: 2px solid transparent;
 			}
-			.principle-card:hover {
+			:global(.principle-card:hover) {
 				background: var(--raised);
 			}
-			.principle-card.active {
+			:global(.principle-card.active) {
 				background: color-mix(in srgb, var(--mint) 5%, var(--raised));
 				border-bottom-color: var(--mint);
 			}
-			.principle-card-num {
+			:global(.principle-card-num) {
 				font-family: var(--ff-mono);
 				font-size: 9px;
 				color: var(--dim);
 				letter-spacing: 0.1em;
 				margin-bottom: 0.25rem;
 			}
-			.principle-card-name {
+			:global(.principle-card-name) {
 				font-family: var(--ff-display);
 				font-size: 15px;
 				font-weight: 700;
 				color: #fff;
 				margin-bottom: 0.2rem;
 			}
-			.principle-card.active .principle-card-name {
+			:global(.principle-card.active .principle-card-name) {
 				color: var(--mint);
 			}
-			.principle-card-desc {
+			:global(.principle-card-desc) {
 				font-family: var(--ff-mono);
 				font-size: 9px;
 				color: var(--muted);

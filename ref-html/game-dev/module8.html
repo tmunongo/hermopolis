@@ -1607,17 +1607,12 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 				logEvent('release', `keyup: ${k}`);
 				updateStateTable();
 				updateKbVis();
-				// Flash just-released for one real second then clear
-				setTimeout(() => {
-					justReleased.delete(k);
-					updateKbVis();
-					updateStateTable();
-				}, 300);
 			});
 
 			// Clear per-frame sets periodically (simulate frame boundary)
 			setInterval(() => {
 				justPressed.clear();
+				justReleased.clear();
 				mousePressedThisFrame.clear();
 				mouseReleasedThisFrame.clear();
 				mouseRawDelta = { x: 0, y: 0 };
@@ -2008,7 +2003,7 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 					let dx = (right ? 1 : 0) - (left ? 1 : 0);
 					let dy = (down ? 1 : 0) - (up ? 1 : 0);
 					const len = Math.sqrt(dx * dx + dy * dy) || 1;
-					return { dx: dx / len, dy: (dy / len) * (dx !== 0 && dy !== 0 ? 1 : 1) };
+					return { dx: dx / len, dy: dy / len };
 				}
 			}
 
@@ -2184,8 +2179,8 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 				const jumpForce = parseInt(document.getElementById('g-jump').value);
 				const gravity = parseInt(document.getElementById('g-gravity').value);
 
-				// Check "R" for reset
-				if (heldKeys.has('r') || heldKeys.has('R')) gcReset();
+				// Check "R" for reset (one-shot)
+				if (justPressed.has('r') || justPressed.has('R')) gcReset();
 
 				// Horizontal
 				const left = heldKeys.has('ArrowLeft') || heldKeys.has('a') || heldKeys.has('A');

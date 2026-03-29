@@ -280,12 +280,120 @@ export const graphicDesignCourse: Course = {
 	totalModules: 10
 };
 
-export const graphicDesignModules: Module[] = Array.from({ length: 10 }, (_, i) => ({
-	id: String(i + 1).padStart(2, '0'),
-	number: i + 1,
-	title: `Module ${i + 1}`,
-	subtitle: 'Theory + Practice',
-	status: 'coming-soon',
-	accentVar: '--accent',
-	description: 'Coming soon...'
-}));
+export const graphicDesignModules: Module[] = [
+	{
+		id: '01',
+		number: 1,
+		title: "What Design Is (and Isn't)",
+		subtitle: 'Theory + Practice',
+		status: 'available',
+		accentVar: '--gd-rose',
+		description:
+			'Design as intentional problem-solving, not decoration. The invisible structure behind good design, and why your taste already gives you an advantage.'
+	},
+	{
+		id: '02',
+		number: 2,
+		title: 'Visual Perception & Composition',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-violet',
+		description:
+			'How the eye moves across an image. Visual hierarchy, rule of thirds, balance, contrast, alignment, spacing, and grouping.'
+	},
+	{
+		id: '03',
+		number: 3,
+		title: 'Typography Essentials',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-sky',
+		description:
+			'Use type to communicate tone and personality. Serif, sans-serif, pairing fonts, kerning, leading, and type for thumbnails and websites.'
+	},
+	{
+		id: '04',
+		number: 4,
+		title: 'Color Theory & Emotional Impact',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-amber',
+		description:
+			'Build color palettes that communicate ideas. Hues, saturation, complementary palettes, warm vs cool behavior, and accessibility.'
+	},
+	{
+		id: '05',
+		number: 5,
+		title: 'Shape Language & Iconography',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-sage',
+		description:
+			'Use shapes to express personality. Sharp vs rounded forms, geometric vs organic, symbol design rules, and how shape language builds identity.'
+	},
+	{
+		id: '06',
+		number: 6,
+		title: 'Brand Identity & Visual Systems',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-rose',
+		description:
+			'Build a functional identity system: logo, colors, fonts, patterns. Designing a logo from concept and establishing a style guide.'
+	},
+	{
+		id: '07',
+		number: 7,
+		title: 'Layout for Digital Platforms',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-violet',
+		description:
+			'Design for YouTube and websites. Thumbnails, banners, spacing systems, grids, and visual rhythm across screen sizes.'
+	},
+	{
+		id: '08',
+		number: 8,
+		title: 'Designing Story-Driven Visuals',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-sky',
+		description:
+			'Use visuals to explain concepts clearly. Visual analogies, sequential design, and simplifying complex ideas into clear graphics.'
+	},
+	{
+		id: '09',
+		number: 9,
+		title: 'Motion as a Design Tool',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--gd-amber',
+		description:
+			'Use motion to reinforce meaning. Anticipation, easing, and the relationship between static design and animated design.'
+	},
+	{
+		id: '10',
+		number: 10,
+		title: 'Building Final Assets & Style Guide',
+		subtitle: 'Capstone Project',
+		status: 'coming-soon',
+		accentVar: '--gd-sage',
+		description:
+			'Finalize your brand system. Logo, thumbnail templates, title cards, diagram sets, and a complete website layout kit.'
+	}
+];
+
+export function getGraphicDesignModule(id: string): Module | undefined {
+	return graphicDesignModules.find((m) => m.id === id);
+}
+
+export function getAdjacentGraphicDesignModules(id: string): {
+	prev: Module | null;
+	next: Module | null;
+} {
+	const idx = graphicDesignModules.findIndex((m) => m.id === id);
+	return {
+		prev: idx > 0 ? graphicDesignModules[idx - 1] : null,
+		next: idx < graphicDesignModules.length - 1 ? graphicDesignModules[idx + 1] : null
+	};
+}

@@ -353,7 +353,7 @@
 				outline: none;
 				min-width: 80px;
 			}
-			input[type='range']::-webkit-slider-thumb {
+			:global(input[type='range']::-webkit-slider-thumb) {
 				-webkit-appearance: none;
 				width: 12px;
 				height: 12px;
@@ -362,10 +362,10 @@
 				cursor: pointer;
 				border: 2px solid var(--bg);
 			}
-			input[type='range'].gold::-webkit-slider-thumb {
+			:global(input[type='range'].gold::-webkit-slider-thumb) {
 				background: var(--gold);
 			}
-			input[type='range'].mint::-webkit-slider-thumb {
+			:global(input[type='range'].mint::-webkit-slider-thumb) {
 				background: var(--mint);
 			}
 
@@ -378,7 +378,7 @@
 				border: 1px solid var(--border);
 				background: var(--bg);
 			}
-			.hier-node {
+			:global(.hier-node) {
 				display: flex;
 				align-items: center;
 				gap: 0.4rem;
@@ -387,25 +387,25 @@
 				border-radius: 2px;
 				transition: background 0.12s;
 			}
-			.hier-node:hover {
+			:global(.hier-node:hover) {
 				background: var(--raised);
 			}
-			.hier-node.selected {
+			:global(.hier-node.selected) {
 				background: color-mix(in srgb, var(--coral) 10%, var(--raised));
 			}
-			.hier-node .hier-icon {
+			:global(.hier-node .hier-icon) {
 				color: var(--coral);
 				font-size: 10px;
 			}
-			.hier-node .hier-name {
+			:global(.hier-node .hier-name) {
 				color: var(--text);
 			}
-			.hier-node .hier-type {
+			:global(.hier-node .hier-type) {
 				color: var(--dim);
 				font-size: 9px;
 				margin-left: auto;
 			}
-			.hier-indent {
+			:global(.hier-indent) {
 				padding-left: 1.2rem;
 				border-left: 1px solid var(--border);
 				margin-left: 0.5rem;
@@ -456,7 +456,7 @@
 				border: 1px solid var(--border);
 				overflow: hidden;
 			}
-			.pose-card {
+			:global(.pose-card) {
 				flex: 1;
 				background: var(--surface);
 				display: flex;
@@ -465,30 +465,30 @@
 				transition: background 0.12s;
 				min-width: 80px;
 			}
-			.pose-card:hover {
+			:global(.pose-card:hover) {
 				background: var(--raised);
 			}
-			.pose-card.active {
+			:global(.pose-card.active) {
 				background: color-mix(in srgb, var(--gold) 6%, var(--raised));
 			}
-			.pose-card.active .pose-name {
+			:global(.pose-card.active .pose-name) {
 				color: var(--gold);
 			}
-			.pose-num {
+			:global(.pose-num) {
 				font-family: var(--ff-mono);
 				font-size: 9px;
 				color: var(--dim);
 				padding: 0.4rem 0.75rem 0.1rem;
 				letter-spacing: 0.1em;
 			}
-			.pose-name {
+			:global(.pose-name) {
 				font-family: var(--ff-display);
 				font-size: 13px;
 				font-weight: 700;
 				color: var(--text);
 				padding: 0 0.75rem 0.3rem;
 			}
-			.pose-desc {
+			:global(.pose-desc) {
 				font-family: var(--ff-mono);
 				font-size: 9px;
 				color: var(--muted);
@@ -2370,8 +2370,6 @@
 				for (let i = 0; i < SEG; i++) {
 					const t = i / SEG;
 					const { upper, lower, hand } = getWeight(t, 1);
-					const col = (bone) =>
-						'upper' ? weightColor(upper, 'upper') : weightColor(lower, 'lower');
 
 					let x1, y1, x2, y2;
 					if (t < 0.4) {

@@ -1,5 +1,5 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
 	onMount(() => {
@@ -863,10 +863,12 @@
 			// UI Panel — eased tween
 			const panel = flEntities[2];
 			panel.tweenT = Math.min(panel.tweenT + dt, panel.tweenDur);
-			if (panel.tweenT >= panel.tweenDur && panel.targetX === 20) {
+			if (panel.tweenT >= panel.tweenDur && panel.targetX === 20 && !panel.timeoutScheduled) {
+				panel.timeoutScheduled = true;
 				setTimeout(() => {
 					panel.tweenT = 0;
 					panel.targetX = panel.targetX === 20 ? -200 : 20;
+					panel.timeoutScheduled = false;
 				}, 2000);
 			}
 			const raw = panel.tweenT / panel.tweenDur;
@@ -1037,13 +1039,13 @@
 							: 'var(--accent4)';
 			}
 		}
-		buildAssess();
-
 		/* fix assessment answer 0 */
 		assessData[0].correct = 0;
 		assessData[0].options = ['Frame 0', 'Frame 1', 'Frame 4', 'Frame 2'];
 		assessData[0].explanation =
 			'floor(0.75 × 8) % 6 = floor(6.0) % 6 = 6 % 6 = 0 → Frame 0. The elapsed time times the fps gives exactly 6 "frame-ticks" — which wraps to 0 in a 6-frame cycle. This is why sprite cycles that divide evenly can briefly reset to frame 0 at exact integer multiples of the cycle duration.';
+
+		buildAssess();
 
 		window.addEventListener('scroll', () => {
 			document.getElementById('reading-progress').style.width =
@@ -1051,29 +1053,33 @@
 				'%';
 		});
 
-		/* eslint-disable no-undef */
+		if (typeof drawDt === 'function') window.drawDt = drawDt;
+		if (typeof drawTimeline === 'function') window.drawTimeline = drawTimeline;
+		if (typeof fvvLoop === 'function') window.fvvLoop = fvvLoop;
+		if (typeof fullLoop === 'function') window.fullLoop = fullLoop;
+		if (typeof drawInterp === 'function') window.drawInterp = drawInterp;
+		if (typeof toggleFull === 'function') window.toggleFull = toggleFull;
+		if (typeof assessAnswer === 'function') window.assessAnswer = assessAnswer;
+		if (typeof showLoop === 'function') window.showLoop = showLoop;
+		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
+		if (typeof drawFVV === 'function') window.drawFVV = drawFVV;
+		if (typeof setInterpMode === 'function') window.setInterpMode = setInterpMode;
 		if (typeof dtLoop === 'function') window.dtLoop = dtLoop;
 		if (typeof buildEasingGrid === 'function') window.buildEasingGrid = buildEasingGrid;
-		if (typeof drawFVV === 'function') window.drawFVV = drawFVV;
-		if (typeof stepBall === 'function') window.stepBall = stepBall;
-		if (typeof drawTimeline === 'function') window.drawTimeline = drawTimeline;
-		if (typeof drawDt === 'function') window.drawDt = drawDt;
-		if (typeof drawInterp === 'function') window.drawInterp = drawInterp;
-		if (typeof showLoop === 'function') window.showLoop = showLoop;
-		if (typeof drawEaseMotion === 'function') window.drawEaseMotion = drawEaseMotion;
 		if (typeof resetFull === 'function') window.resetFull = resetFull;
-		if (typeof drawEaseCurve === 'function') window.drawEaseCurve = drawEaseCurve;
-		if (typeof toggleFull === 'function') window.toggleFull = toggleFull;
-		if (typeof fullLoop === 'function') window.fullLoop = fullLoop;
-		if (typeof setInterpMode === 'function') window.setInterpMode = setInterpMode;
-		if (typeof assessAnswer === 'function') window.assessAnswer = assessAnswer;
 		if (typeof drawFull === 'function') window.drawFull = drawFull;
-		if (typeof fvvLoop === 'function') window.fvvLoop = fvvLoop;
+		if (typeof drawEaseMotion === 'function') window.drawEaseMotion = drawEaseMotion;
 		if (typeof easeAnimLoop === 'function') window.easeAnimLoop = easeAnimLoop;
-		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
-		/* eslint-enable no-undef */
+		if (typeof stepBall === 'function') window.stepBall = stepBall;
+		if (typeof drawEaseCurve === 'function') window.drawEaseCurve = drawEaseCurve;
 
-		return () => {};
+		return () => {
+			if (typeof dtRaf !== 'undefined' && dtRaf) cancelAnimationFrame(dtRaf);
+			if (typeof flRAF !== 'undefined' && flRAF) cancelAnimationFrame(flRAF);
+			if (typeof fvvRaf !== 'undefined' && fvvRaf) cancelAnimationFrame(fvvRaf);
+			// Note: window event listeners use anonymous functions and cannot be auto-removed.
+			// Consider refactoring to named handlers for proper cleanup.
+		};
 	});
 </script>
 
@@ -1147,13 +1153,16 @@
 				<div class="loop-diagram" id="loop-diagram">
 					<div
 						class="loop-stage"
+						tabindex="0"
+						role="button"
 						onclick={(e) => {
 							window.showLoop(0, e.currentTarget);
 						}}
-						role="button"
-						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.showLoop(0, e.currentTarget);
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.showLoop(0, e.currentTarget);
+							}
 						}}
 					>
 						<div class="loop-num">1</div>
@@ -1167,13 +1176,16 @@
 					</div>
 					<div
 						class="loop-stage"
+						tabindex="0"
+						role="button"
 						onclick={(e) => {
 							window.showLoop(1, e.currentTarget);
 						}}
-						role="button"
-						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.showLoop(1, e.currentTarget);
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.showLoop(1, e.currentTarget);
+							}
 						}}
 					>
 						<div class="loop-num">2</div>
@@ -1187,13 +1199,16 @@
 					</div>
 					<div
 						class="loop-stage"
+						tabindex="0"
+						role="button"
 						onclick={(e) => {
 							window.showLoop(2, e.currentTarget);
 						}}
-						role="button"
-						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.showLoop(2, e.currentTarget);
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.showLoop(2, e.currentTarget);
+							}
 						}}
 					>
 						<div class="loop-num">3</div>
@@ -1207,13 +1222,16 @@
 					</div>
 					<div
 						class="loop-stage"
+						tabindex="0"
+						role="button"
 						onclick={(e) => {
 							window.showLoop(3, e.currentTarget);
 						}}
-						role="button"
-						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.showLoop(3, e.currentTarget);
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.showLoop(3, e.currentTarget);
+							}
 						}}
 					>
 						<div class="loop-num">4</div>
@@ -1227,13 +1245,16 @@
 					</div>
 					<div
 						class="loop-stage"
+						tabindex="0"
+						role="button"
 						onclick={(e) => {
 							window.showLoop(4, e.currentTarget);
 						}}
-						role="button"
-						tabindex="0"
 						onkeydown={(e) => {
-							if (e.key === 'Enter') window.showLoop(4, e.currentTarget);
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.showLoop(4, e.currentTarget);
+							}
 						}}
 					>
 						<div class="loop-num">5</div>
@@ -1293,12 +1314,12 @@
 					"heavy frame" slider to simulate a spike.
 				</p>
 				<div class="slider-row" style="margin-bottom: 0.75rem">
-					<label for="dummy">Target FPS</label>
+					<label>Target FPS</label>
 					<input type="range" id="tl-fps" min="10" max="120" value="60" />
 					<span class="slider-val" id="tl-fps-val">60</span>
 				</div>
 				<div class="slider-row" style="margin-bottom: 0.75rem">
-					<label for="dummy">Heavy frame</label>
+					<label>Heavy frame</label>
 					<input type="range" id="tl-spike" min="0" max="100" value="0" />
 					<span class="slider-val" id="tl-spike-val">0%</span>
 				</div>
@@ -1355,7 +1376,7 @@ player.x += speed * delta_time   <span class="cm"># moves 'speed' pixels per SEC
 					Change the simulated FPS to see them diverge.
 				</p>
 				<div class="slider-row" style="margin-bottom: 1rem">
-					<label for="dummy">Sim FPS</label>
+					<label>Sim FPS</label>
 					<input type="range" id="dt-fps" min="5" max="120" value="60" />
 					<span class="slider-val" id="dt-fps-val">60</span>
 				</div>
@@ -1461,12 +1482,12 @@ accumulator = <span class="num">0.0</span>
 					to see how each handles it.
 				</p>
 				<div class="slider-row">
-					<label for="dummy">Render FPS</label>
+					<label>Render FPS</label>
 					<input type="range" id="fvv-fps" min="5" max="120" value="60" />
 					<span class="slider-val" id="fvv-fps-val">60</span>
 				</div>
 				<div class="slider-row" style="margin-bottom: 1rem">
-					<label for="dummy">FPS spike</label>
+					<label>FPS spike</label>
 					<input type="range" id="fvv-spike" min="0" max="90" value="0" />
 					<span class="slider-val" id="fvv-spike-val">0%</span>
 				</div>
@@ -1590,7 +1611,7 @@ camera.x = <span class="fn">lerp</span>(camera.x, target.x, <span class="num">1<
 					>
 				</div>
 				<div class="slider-row" style="margin-bottom: 1rem">
-					<label for="dummy">t (blend)</label>
+					<label>t (blend)</label>
 					<input type="range" id="interp-t" min="0" max="100" value="50" />
 					<span class="slider-val" id="interp-t-val">0.50</span>
 				</div>
@@ -1930,7 +1951,7 @@ panel_tween = <span class="fn">Tween</span>(<span class="num">800</span>, <span 
 						}}>↺ Reset</button
 					>
 					<div class="slider-row" style="flex: 1; min-width: 200px">
-						<label for="dummy">Sim FPS</label>
+						<label>Sim FPS</label>
 						<input type="range" id="full-fps" min="5" max="120" value="60" />
 						<span class="slider-val" id="full-fps-val">60</span>
 					</div>

@@ -1,5 +1,5 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions, svelte/prefer-svelte-reactivity, no-useless-assignment, no-useless-escape */
+	/* eslint-disable @typescript-eslint/no-unused-vars, svelte/prefer-svelte-reactivity, no-useless-assignment, no-useless-escape */
 	import { onMount } from 'svelte';
 
 	onMount(() => {
@@ -40,17 +40,12 @@
 			logEvent('release', `keyup: ${k}`);
 			updateStateTable();
 			updateKbVis();
-			// Flash just-released for one real second then clear
-			setTimeout(() => {
-				justReleased.delete(k);
-				updateKbVis();
-				updateStateTable();
-			}, 300);
 		});
 
 		// Clear per-frame sets periodically (simulate frame boundary)
 		setInterval(() => {
 			justPressed.clear();
+			justReleased.clear();
 			mousePressedThisFrame.clear();
 			mouseReleasedThisFrame.clear();
 			mouseRawDelta = { x: 0, y: 0 };
@@ -441,7 +436,7 @@
 				let dx = (right ? 1 : 0) - (left ? 1 : 0);
 				let dy = (down ? 1 : 0) - (up ? 1 : 0);
 				const len = Math.sqrt(dx * dx + dy * dy) || 1;
-				return { dx: dx / len, dy: (dy / len) * (dx !== 0 && dy !== 0 ? 1 : 1) };
+				return { dx: dx / len, dy: dy / len };
 			}
 		}
 
@@ -617,8 +612,8 @@
 			const jumpForce = parseInt(document.getElementById('g-jump').value);
 			const gravity = parseInt(document.getElementById('g-gravity').value);
 
-			// Check "R" for reset
-			if (heldKeys.has('r') || heldKeys.has('R')) gcReset();
+			// Check "R" for reset (one-shot)
+			if (justPressed.has('r') || justPressed.has('R')) gcReset();
 
 			// Horizontal
 			const left = heldKeys.has('ArrowLeft') || heldKeys.has('a') || heldKeys.has('A');
@@ -996,30 +991,31 @@ This runs in the event loop, not the game loop. What is the problem?`,
 				'%';
 		});
 
-		/* eslint-disable no-undef */
-		if (typeof updateKbVis === 'function') window.updateKbVis = updateKbVis;
-		if (typeof drawSimCanvas === 'function') window.drawSimCanvas = drawSimCanvas;
+		if (typeof logEvent === 'function') window.logEvent = logEvent;
 		if (typeof updateStateTable === 'function') window.updateStateTable = updateStateTable;
-		if (typeof drawGame === 'function') window.drawGame = drawGame;
-		if (typeof gameLoop === 'function') window.gameLoop = gameLoop;
-		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
 		if (typeof drawTrail === 'function') window.drawTrail = drawTrail;
-		if (typeof setPolicy === 'function') window.setPolicy = setPolicy;
-		if (typeof toggleBinding === 'function') window.toggleBinding = toggleBinding;
-		if (typeof gcReset === 'function') window.gcReset = gcReset;
-		if (typeof drawMouseCanvas === 'function') window.drawMouseCanvas = drawMouseCanvas;
-		if (typeof buildInputMapUI === 'function') window.buildInputMapUI = buildInputMapUI;
-		if (typeof aabb === 'function') window.aabb = aabb;
-		if (typeof assessAns === 'function') window.assessAns = assessAns;
 		if (typeof buildKbVis === 'function') window.buildKbVis = buildKbVis;
 		if (typeof updateGame === 'function') window.updateGame = updateGame;
-		if (typeof getSimAxis === 'function') window.getSimAxis = getSimAxis;
-		if (typeof updateInputMap === 'function') window.updateInputMap = updateInputMap;
 		if (typeof renderEventLog === 'function') window.renderEventLog = renderEventLog;
-		if (typeof logEvent === 'function') window.logEvent = logEvent;
-		/* eslint-enable no-undef */
+		if (typeof updateInputMap === 'function') window.updateInputMap = updateInputMap;
+		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
+		if (typeof setPolicy === 'function') window.setPolicy = setPolicy;
+		if (typeof assessAns === 'function') window.assessAns = assessAns;
+		if (typeof gameLoop === 'function') window.gameLoop = gameLoop;
+		if (typeof drawMouseCanvas === 'function') window.drawMouseCanvas = drawMouseCanvas;
+		if (typeof gcReset === 'function') window.gcReset = gcReset;
+		if (typeof getSimAxis === 'function') window.getSimAxis = getSimAxis;
+		if (typeof updateKbVis === 'function') window.updateKbVis = updateKbVis;
+		if (typeof toggleBinding === 'function') window.toggleBinding = toggleBinding;
+		if (typeof drawGame === 'function') window.drawGame = drawGame;
+		if (typeof drawSimCanvas === 'function') window.drawSimCanvas = drawSimCanvas;
+		if (typeof buildInputMapUI === 'function') window.buildInputMapUI = buildInputMapUI;
+		if (typeof aabb === 'function') window.aabb = aabb;
 
-		return () => {};
+		return () => {
+			// Note: window event listeners use anonymous functions and cannot be auto-removed.
+			// Consider refactoring to named handlers for proper cleanup.
+		};
 	});
 </script>
 

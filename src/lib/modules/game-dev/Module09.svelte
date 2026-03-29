@@ -1,5 +1,5 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
 	onMount(() => {
@@ -1004,12 +1004,17 @@
 						} else if (oy < ox && b.vy < 0) {
 							b.y = p.y + p.h + (b.isCircle ? b.r : 0);
 							b.vy = Math.abs(b.vy) * rest;
-						} else if (b.vx > 0) {
-							b.x = p.x - (b.isCircle ? b.r : b.w);
-							b.vx = -Math.abs(b.vx) * rest;
 						} else {
-							b.x = p.x + p.w + (b.isCircle ? b.r : 0);
-							b.vx = Math.abs(b.vx) * rest;
+							// Horizontal resolution: use position-based check when vx===0
+							const bodyCenterX = b.isCircle ? b.x : b.x + b.w / 2;
+							const platCenterX = p.x + p.w / 2;
+							if (bodyCenterX < platCenterX) {
+								b.x = p.x - (b.isCircle ? b.r : b.w);
+								b.vx = -Math.abs(b.vx) * rest;
+							} else {
+								b.x = p.x + p.w + (b.isCircle ? b.r : 0);
+								b.vx = Math.abs(b.vx) * rest;
+							}
 						}
 					}
 				});
@@ -1237,7 +1242,7 @@ What is vy after resolution, and how high does it bounce relative to the drop?`,
 			}
 		];
 
-		// Fix scenario 1 — the boxes don't collide
+		// Fix scenario 1 — inline corrected values
 		assessData[0].correct = 0;
 		assessData[0].options = [
 			'No collision — X axis gap: A.right=180, B.x=190, gap = 10px',
@@ -1304,42 +1309,43 @@ What is vy after resolution, and how high does it bounce relative to the drop?`,
 				'%';
 		});
 
-		/* eslint-disable no-undef */
-		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
-		if (typeof toggleCircNormal === 'function') window.toggleCircNormal = toggleCircNormal;
-		if (typeof sandboxLoop === 'function') window.sandboxLoop = sandboxLoop;
-		if (typeof dist2 === 'function') window.dist2 = dist2;
-		if (typeof getMTV === 'function') window.getMTV = getMTV;
-		if (typeof fmt === 'function') window.fmt = fmt;
-		if (typeof drawInteg === 'function') window.drawInteg = drawInteg;
-		if (typeof forceLoop === 'function') window.forceLoop = forceLoop;
 		if (typeof makeFBody === 'function') window.makeFBody = makeFBody;
-		if (typeof toggleSandbox === 'function') window.toggleSandbox = toggleSandbox;
-		if (typeof drawRes === 'function') window.drawRes = drawRes;
-		if (typeof toggleAABBMTV === 'function') window.toggleAABBMTV = toggleAABBMTV;
-		if (typeof updateForce === 'function') window.updateForce = updateForce;
-		if (typeof clamp === 'function') window.clamp = clamp;
-		if (typeof drawCircles === 'function') window.drawCircles = drawCircles;
-		if (typeof addBody === 'function') window.addBody = addBody;
-		if (typeof lerp === 'function') window.lerp = lerp;
-		if (typeof spawnSandbox === 'function') window.spawnSandbox = spawnSandbox;
-		if (typeof toggleAABBAxes === 'function') window.toggleAABBAxes = toggleAABBAxes;
-		if (typeof aabbOverlap === 'function') window.aabbOverlap = aabbOverlap;
-		if (typeof resetSandbox === 'function') window.resetSandbox = resetSandbox;
-		if (typeof drawAABB === 'function') window.drawAABB = drawAABB;
-		if (typeof resolveStep === 'function') window.resolveStep = resolveStep;
-		if (typeof toggleForce === 'function') window.toggleForce = toggleForce;
 		if (typeof drawSandbox === 'function') window.drawSandbox = drawSandbox;
-		if (typeof circleCollide === 'function') window.circleCollide = circleCollide;
-		if (typeof updateSandbox === 'function') window.updateSandbox = updateSandbox;
-		if (typeof toggleCircSep === 'function') window.toggleCircSep = toggleCircSep;
-		if (typeof resetForce === 'function') window.resetForce = resetForce;
+		if (typeof dist2 === 'function') window.dist2 = dist2;
+		if (typeof sandboxLoop === 'function') window.sandboxLoop = sandboxLoop;
+		if (typeof resetSandbox === 'function') window.resetSandbox = resetSandbox;
 		if (typeof drawForce === 'function') window.drawForce = drawForce;
+		if (typeof toggleCircSep === 'function') window.toggleCircSep = toggleCircSep;
+		if (typeof lerp === 'function') window.lerp = lerp;
+		if (typeof toggleAABBMTV === 'function') window.toggleAABBMTV = toggleAABBMTV;
+		if (typeof spawnSandbox === 'function') window.spawnSandbox = spawnSandbox;
+		if (typeof forceLoop === 'function') window.forceLoop = forceLoop;
+		if (typeof fmt === 'function') window.fmt = fmt;
 		if (typeof assessAns === 'function') window.assessAns = assessAns;
+		if (typeof clamp === 'function') window.clamp = clamp;
+		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
+		if (typeof getMTV === 'function') window.getMTV = getMTV;
 		if (typeof resetResolution === 'function') window.resetResolution = resetResolution;
-		/* eslint-enable no-undef */
+		if (typeof toggleCircNormal === 'function') window.toggleCircNormal = toggleCircNormal;
+		if (typeof toggleForce === 'function') window.toggleForce = toggleForce;
+		if (typeof drawAABB === 'function') window.drawAABB = drawAABB;
+		if (typeof drawCircles === 'function') window.drawCircles = drawCircles;
+		if (typeof updateSandbox === 'function') window.updateSandbox = updateSandbox;
+		if (typeof resolveStep === 'function') window.resolveStep = resolveStep;
+		if (typeof toggleSandbox === 'function') window.toggleSandbox = toggleSandbox;
+		if (typeof drawInteg === 'function') window.drawInteg = drawInteg;
+		if (typeof addBody === 'function') window.addBody = addBody;
+		if (typeof drawRes === 'function') window.drawRes = drawRes;
+		if (typeof aabbOverlap === 'function') window.aabbOverlap = aabbOverlap;
+		if (typeof updateForce === 'function') window.updateForce = updateForce;
+		if (typeof resetForce === 'function') window.resetForce = resetForce;
+		if (typeof toggleAABBAxes === 'function') window.toggleAABBAxes = toggleAABBAxes;
+		if (typeof circleCollide === 'function') window.circleCollide = circleCollide;
 
-		return () => {};
+		return () => {
+			// Note: window event listeners use anonymous functions and cannot be auto-removed.
+			// Consider refactoring to named handlers for proper cleanup.
+		};
 	});
 </script>
 
@@ -1625,7 +1631,7 @@ What is vy after resolution, and how high does it bounce relative to the drop?`,
 						}}>↺ Reset</button
 					>
 					<div class="slider-row" style="flex: 1; min-width: 180px">
-						<label for="dummy">Restitution</label>
+						<label>Restitution</label>
 						<input type="range" id="res-restitution" min="0" max="100" value="60" />
 						<span class="slider-val" id="res-rest-val">0.60</span>
 					</div>
@@ -1924,7 +1930,7 @@ What is vy after resolution, and how high does it bounce relative to the drop?`,
 					difference.
 				</p>
 				<div class="slider-row" style="margin-bottom: 0.75rem">
-					<label for="dummy">Timestep (dt)</label>
+					<label>Timestep (dt)</label>
 					<input type="range" id="integ-dt" min="1" max="80" value="16" />
 					<span class="slider-val" id="integ-dt-val">0.016s</span>
 				</div>
@@ -2042,17 +2048,17 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 					simultaneously.
 				</p>
 				<div class="slider-row">
-					<label for="dummy">Gravity</label>
+					<label>Gravity</label>
 					<input type="range" id="f-gravity" min="0" max="1200" value="400" />
 					<span class="slider-val" id="f-gravity-val">400</span>
 				</div>
 				<div class="slider-row">
-					<label for="dummy">Drag</label>
+					<label>Drag</label>
 					<input type="range" id="f-drag" min="0" max="80" value="10" />
 					<span class="slider-val" id="f-drag-val">0.10</span>
 				</div>
 				<div class="slider-row" style="margin-bottom: 1rem">
-					<label for="dummy">Restitution</label>
+					<label>Restitution</label>
 					<input type="range" id="f-restitution" min="0" max="100" value="70" />
 					<span class="slider-val" id="f-restitution-val">0.70</span>
 				</div>
@@ -2163,12 +2169,12 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 				</div>
 				<div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem">
 					<div class="slider-row" style="flex: 1; min-width: 200px">
-						<label for="dummy">Gravity</label>
+						<label>Gravity</label>
 						<input type="range" id="sb-gravity" min="0" max="1500" value="600" />
 						<span class="slider-val" id="sb-gravity-val">600</span>
 					</div>
 					<div class="slider-row" style="flex: 1; min-width: 200px">
-						<label for="dummy">Restitution</label>
+						<label>Restitution</label>
 						<input type="range" id="sb-rest" min="0" max="100" value="50" />
 						<span class="slider-val" id="sb-rest-val">0.50</span>
 					</div>

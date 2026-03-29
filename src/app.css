@@ -28,6 +28,21 @@
 	--anim-text: #ede5d4;
 	--anim-muted: #7a6e5e;
 	--anim-dim: #4a4035;
+
+	/* Graphic Design Course Tokens */
+	--gd-bg: #080b0f;
+	--gd-surface: #0d1117;
+	--gd-raised: #131a22;
+	--gd-border: #1e2836;
+	--gd-border2: #2a3a50;
+	--gd-rose: #e85d8a;
+	--gd-violet: #9b6dff;
+	--gd-sky: #38c0e8;
+	--gd-amber: #f5a623;
+	--gd-sage: #56d0a0;
+	--gd-text: #d0dbe8;
+	--gd-muted: #5a7090;
+	--gd-dim: #2a3a50;
 }
 
 /* ═══════════════════════════════════════════════════════

@@ -2399,12 +2399,17 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 							} else if (oy < ox && b.vy < 0) {
 								b.y = p.y + p.h + (b.isCircle ? b.r : 0);
 								b.vy = Math.abs(b.vy) * rest;
-							} else if (b.vx > 0) {
-								b.x = p.x - (b.isCircle ? b.r : b.w);
-								b.vx = -Math.abs(b.vx) * rest;
 							} else {
-								b.x = p.x + p.w + (b.isCircle ? b.r : 0);
-								b.vx = Math.abs(b.vx) * rest;
+								// Horizontal resolution: use position-based check when vx===0
+								const bodyCenterX = b.isCircle ? b.x : b.x + b.w / 2;
+								const platCenterX = p.x + p.w / 2;
+								if (bodyCenterX < platCenterX) {
+									b.x = p.x - (b.isCircle ? b.r : b.w);
+									b.vx = -Math.abs(b.vx) * rest;
+								} else {
+									b.x = p.x + p.w + (b.isCircle ? b.r : 0);
+									b.vx = Math.abs(b.vx) * rest;
+								}
 							}
 						}
 					});
@@ -2632,7 +2637,7 @@ What is vy after resolution, and how high does it bounce relative to the drop?`,
 				}
 			];
 
-			// Fix scenario 1 — the boxes don't collide
+			// Fix scenario 1 — inline corrected values
 			assessData[0].correct = 0;
 			assessData[0].options = [
 				'No collision — X axis gap: A.right=180, B.x=190, gap = 10px',
@@ -2643,55 +2648,55 @@ What is vy after resolution, and how high does it bounce relative to the drop?`,
 			assessData[0].explanation =
 				'A.right = 100+80 = 180. B.x = 190. Since 190 > 180, there is a 10px GAP on the X axis — the boxes do NOT overlap. The AABB test requires overlap on BOTH axes for a collision. A gap on any one axis means no collision. No resolution is needed.';
 
-			let assessAnswered = 0,
-				assessCorrect = 0;
-			function buildAssess() {
-				const c = document.getElementById('assess-container');
-				c.innerHTML = '';
-				assessData.forEach((p, pi) => {
-					const div = document.createElement('div');
-					div.className = 'scenario-box';
-					const qText = p.q.replace(/\n/g, '<br>');
-					div.innerHTML =
-						`<div class="scenario-num">Question ${pi + 1} · ${p.title}</div>` +
-						`<div class="scenario-q" style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--code-bg);padding:.75rem;margin-bottom:1rem;border:1px solid var(--border);white-space:pre-wrap;line-height:1.8;">${p.q}</div>` +
-						`<div class="sc-options" id="sc-opts-${pi}">${p.options.map((o, oi) => `<div class="sc-option" onclick="assessAns(${pi},${oi})" id="sc-opt-${pi}-${oi}">${o}</div>`).join('')}</div>` +
-						`<div class="sc-feedback" id="sc-fb-${pi}"></div>`;
-					c.appendChild(div);
-				});
+		let assessAnswered = 0,
+			assessCorrect = 0;
+		function buildAssess() {
+			const c = document.getElementById('assess-container');
+			c.innerHTML = '';
+			assessData.forEach((p, pi) => {
+				const div = document.createElement('div');
+				div.className = 'scenario-box';
+				const qText = p.q.replace(/\n/g, '<br>');
+				div.innerHTML =
+					`<div class="scenario-num">Question ${pi + 1} · ${p.title}</div>` +
+					`<div class="scenario-q" style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--code-bg);padding:.75rem;margin-bottom:1rem;border:1px solid var(--border);white-space:pre-wrap;line-height:1.8;">${p.q}</div>` +
+					`<div class="sc-options" id="sc-opts-${pi}">${p.options.map((o, oi) => `<div class="sc-option" onclick="assessAns(${pi},${oi})" id="sc-opt-${pi}-${oi}">${o}</div>`).join('')}</div>` +
+					`<div class="sc-feedback" id="sc-fb-${pi}"></div>`;
+				c.appendChild(div);
+			});
+		}
+		function assessAns(pi, oi) {
+			const p = assessData[pi];
+			document
+				.querySelectorAll(`#sc-opts-${pi} .sc-option`)
+				.forEach((o) => o.classList.add('disabled'));
+			const fb = document.getElementById(`sc-fb-${pi}`);
+			if (oi === p.correct) {
+				document.getElementById(`sc-opt-${pi}-${oi}`).classList.add('correct');
+				fb.textContent = '✓ ' + p.explanation;
+				fb.className = 'sc-feedback ok';
+				assessCorrect++;
+			} else {
+				document.getElementById(`sc-opt-${pi}-${oi}`).classList.add('wrong');
+				document.getElementById(`sc-opt-${pi}-${p.correct}`).classList.add('correct');
+				fb.textContent = '✗ ' + p.explanation;
+				fb.className = 'sc-feedback bad';
 			}
-			function assessAns(pi, oi) {
-				const p = assessData[pi];
-				document
-					.querySelectorAll(`#sc-opts-${pi} .sc-option`)
-					.forEach((o) => o.classList.add('disabled'));
-				const fb = document.getElementById(`sc-fb-${pi}`);
-				if (oi === p.correct) {
-					document.getElementById(`sc-opt-${pi}-${oi}`).classList.add('correct');
-					fb.textContent = '✓ ' + p.explanation;
-					fb.className = 'sc-feedback ok';
-					assessCorrect++;
-				} else {
-					document.getElementById(`sc-opt-${pi}-${oi}`).classList.add('wrong');
-					document.getElementById(`sc-opt-${pi}-${p.correct}`).classList.add('correct');
-					fb.textContent = '✗ ' + p.explanation;
-					fb.className = 'sc-feedback bad';
-				}
-				assessAnswered++;
-				if (assessAnswered === assessData.length) {
-					const s = document.getElementById('assess-score');
-					s.style.display = 'block';
-					document.getElementById('assess-score-num').textContent =
-						`${assessCorrect}/${assessData.length}`;
-					s.style.borderColor =
-						assessCorrect === assessData.length
-							? 'var(--accent)'
-							: assessCorrect >= 3
-								? 'var(--accent3)'
-								: 'var(--accent4)';
-				}
+			assessAnswered++;
+			if (assessAnswered === assessData.length) {
+				const s = document.getElementById('assess-score');
+				s.style.display = 'block';
+				document.getElementById('assess-score-num').textContent =
+					`${assessCorrect}/${assessData.length}`;
+				s.style.borderColor =
+					assessCorrect === assessData.length
+						? 'var(--accent)'
+						: assessCorrect >= 3
+							? 'var(--accent3)'
+							: 'var(--accent4)';
 			}
-			buildAssess();
+		}
+		buildAssess();
 
 			window.addEventListener('scroll', () => {
 				document.getElementById('reading-progress').style.width =

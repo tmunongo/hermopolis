@@ -859,7 +859,7 @@
 							Click any stage to see what happens there and why the order matters.
 						</p>
 						<div class="loop-diagram" id="loop-diagram">
-							<div class="loop-stage" onclick="showLoop(0, this)">
+							<div class="loop-stage" tabindex="0" role="button" onclick="showLoop(0, this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showLoop(0,this)}">
 								<div class="loop-num">1</div>
 								<div class="loop-name">
 									<div class="loop-name-main">Measure Time</div>
@@ -869,7 +869,7 @@
 									Sample the system clock. Compute delta_time = now − last_frame_time.
 								</div>
 							</div>
-							<div class="loop-stage" onclick="showLoop(1, this)">
+							<div class="loop-stage" tabindex="0" role="button" onclick="showLoop(1, this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showLoop(1,this)}">
 								<div class="loop-num">2</div>
 								<div class="loop-name">
 									<div class="loop-name-main">Process Events</div>
@@ -879,7 +879,7 @@
 									Drain the OS event queue — keyboard, mouse, window resize, quit signals.
 								</div>
 							</div>
-							<div class="loop-stage" onclick="showLoop(2, this)">
+							<div class="loop-stage" tabindex="0" role="button" onclick="showLoop(2, this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showLoop(2,this)}">
 								<div class="loop-num">3</div>
 								<div class="loop-name">
 									<div class="loop-name-main">Update</div>
@@ -889,7 +889,7 @@
 									Advance every system by delta_time: physics, animations, AI, timers.
 								</div>
 							</div>
-							<div class="loop-stage" onclick="showLoop(3, this)">
+							<div class="loop-stage" tabindex="0" role="button" onclick="showLoop(3, this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showLoop(3,this)}">
 								<div class="loop-num">4</div>
 								<div class="loop-name">
 									<div class="loop-name-main">Render</div>
@@ -899,7 +899,7 @@
 									Clear the framebuffer, issue draw calls for every visible object, swap buffers.
 								</div>
 							</div>
-							<div class="loop-stage" onclick="showLoop(4, this)">
+							<div class="loop-stage" tabindex="0" role="button" onclick="showLoop(4, this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showLoop(4,this)}">
 								<div class="loop-num">5</div>
 								<div class="loop-name">
 									<div class="loop-name-main">Sleep / Cap</div>
@@ -2404,10 +2404,12 @@ panel_tween = <span class="fn">Tween</span>(<span class="num">800</span>, <span 
 				// UI Panel — eased tween
 				const panel = flEntities[2];
 				panel.tweenT = Math.min(panel.tweenT + dt, panel.tweenDur);
-				if (panel.tweenT >= panel.tweenDur && panel.targetX === 20) {
+				if (panel.tweenT >= panel.tweenDur && panel.targetX === 20 && !panel.timeoutScheduled) {
+					panel.timeoutScheduled = true;
 					setTimeout(() => {
 						panel.tweenT = 0;
 						panel.targetX = panel.targetX === 20 ? -200 : 20;
+						panel.timeoutScheduled = false;
 					}, 2000);
 				}
 				const raw = panel.tweenT / panel.tweenDur;
@@ -2579,13 +2581,13 @@ panel_tween = <span class="fn">Tween</span>(<span class="num">800</span>, <span 
 								: 'var(--accent4)';
 				}
 			}
-			buildAssess();
-
 			/* fix assessment answer 0 */
 			assessData[0].correct = 0;
 			assessData[0].options = ['Frame 0', 'Frame 1', 'Frame 4', 'Frame 2'];
 			assessData[0].explanation =
 				'floor(0.75 × 8) % 6 = floor(6.0) % 6 = 6 % 6 = 0 → Frame 0. The elapsed time times the fps gives exactly 6 "frame-ticks" — which wraps to 0 in a 6-frame cycle. This is why sprite cycles that divide evenly can briefly reset to frame 0 at exact integer multiples of the cycle duration.';
+
+			buildAssess();
 
 			window.addEventListener('scroll', () => {
 				document.getElementById('reading-progress').style.width =

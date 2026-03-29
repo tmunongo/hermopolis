@@ -1,15 +1,3789 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
 	onMount(() => {
-		/* eslint-disable no-undef */
+		/* ════════════ UTILS ════════════ */
+		const C = {
+			gold: '#f0a830',
+			coral: '#e8553a',
+			mint: '#4ecbb4',
+			lav: '#c4a8f0',
+			muted: '#7a6e5e',
+			border: '#28221a',
+			border2: '#3c342a',
+			raised: '#1c1812',
+			surface: '#131009',
+			bg: '#0b0906',
+			dim: '#4a4035',
+			text: '#ede5d4'
+		};
+		const lerp = (a, b, t) => a + (b - a) * t;
+		const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+		const eio = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
+		const eout = (t) => 1 - Math.pow(1 - t, 3);
+		const d2r = (d) => (d * Math.PI) / 180;
 
-		/* eslint-enable no-undef */
+		/* ═══════════════════════════════════════
+   DEMO 7.1 — PHONEME SHAPES
+═══════════════════════════════════════ */
+		const PHONEMES = [
+			{
+				id: 'rest',
+				name: 'Rest',
+				sounds: '(silence)',
+				examples: 'pauses, breath',
+				note: 'The neutral closed mouth. Always return here between distinct words. Holding "rest" too long creates stiffness; too briefly creates chatter.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2;
+					// Lips closed, slight natural curve
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					ctx.lineJoin = 'round';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy + 5, 38, 10, 0, 0, Math.PI * 2);
+					ctx.stroke();
+					// Lip line
+					ctx.beginPath();
+					ctx.moveTo(cx - 38, cy + 5);
+					ctx.bezierCurveTo(cx - 20, cy, cx + 20, cy, cx + 38, cy + 5);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'mbp',
+				name: 'M / B / P',
+				sounds: 'm, b, p',
+				examples: '"more", "be", "put"',
+				note: 'Lips completely pressed together. One of the most distinctive shapes — instantly readable. Hold this shape for the full duration of the bilabial consonant.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2 + 5;
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					// Pressed lips — flat line with slight bow
+					ctx.beginPath();
+					ctx.moveTo(cx - 40, cy);
+					ctx.bezierCurveTo(cx - 15, cy - 4, cx + 15, cy - 4, cx + 40, cy);
+					ctx.stroke();
+					// Lower lip slight
+					ctx.beginPath();
+					ctx.moveTo(cx - 38, cy);
+					ctx.bezierCurveTo(cx - 15, cy + 8, cx + 15, cy + 8, cx + 38, cy);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'fv',
+				name: 'F / V',
+				sounds: 'f, v',
+				examples: '"feel", "very"',
+				note: 'Upper teeth rest on lower lip. A very distinctive shape. Make sure upper teeth are visible — this is the clearest visual cue the shape has.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2;
+					// Upper teeth
+					ctx.fillStyle = col + '55';
+					ctx.beginPath();
+					ctx.rect(cx - 30, cy - 12, 60, 14);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 2;
+					ctx.beginPath();
+					ctx.rect(cx - 30, cy - 12, 60, 14);
+					ctx.stroke();
+					// Individual tooth lines
+					for (let i = -15; i <= 15; i += 15) {
+						ctx.beginPath();
+						ctx.moveTo(cx + i, cy - 12);
+						ctx.lineTo(cx + i, cy + 2);
+						ctx.stroke();
+					}
+					// Lower lip pressed up against teeth
+					ctx.lineWidth = 3;
+					ctx.beginPath();
+					ctx.moveTo(cx - 30, cy + 2);
+					ctx.bezierCurveTo(cx - 10, cy + 10, cx + 10, cy + 10, cx + 30, cy + 2);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'lth',
+				name: 'L / Th',
+				sounds: 'l, th, d, n, t',
+				examples: '"lot", "the", "do"',
+				note: 'Tongue tip approaches the teeth or alveolar ridge — very similar from outside. Show a slightly parted mouth with teeth nearly touching. Often simplified to a near-closed shape.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2;
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					// Upper lip
+					ctx.beginPath();
+					ctx.moveTo(cx - 35, cy - 2);
+					ctx.bezierCurveTo(cx - 15, cy - 10, cx + 15, cy - 10, cx + 35, cy - 2);
+					ctx.stroke();
+					// Lower lip slightly open
+					ctx.beginPath();
+					ctx.moveTo(cx - 33, cy + 8);
+					ctx.bezierCurveTo(cx - 15, cy + 18, cx + 15, cy + 18, cx + 33, cy + 8);
+					ctx.stroke();
+					// Teeth line
+					ctx.strokeStyle = col + '66';
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(cx - 28, cy + 2);
+					ctx.lineTo(cx + 28, cy + 2);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(cx - 26, cy + 5);
+					ctx.lineTo(cx + 26, cy + 5);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'aah',
+				name: 'Aah',
+				sounds: 'a (as in "art")',
+				examples: '"ah", "car", "father"',
+				note: 'Wide open jaw, lips relaxed and parted. Maximum jaw drop. Dark interior of mouth visible. Use for strongly stressed open vowels and exclamations.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2;
+					// Open mouth — wide oval
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy + 6, 36, 22, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					// Upper lip arch
+					ctx.beginPath();
+					ctx.moveTo(cx - 36, cy);
+					ctx.bezierCurveTo(cx - 18, cy - 18, cx + 18, cy - 18, cx + 36, cy);
+					ctx.stroke();
+					// Lower lip
+					ctx.beginPath();
+					ctx.moveTo(cx - 34, cy + 12);
+					ctx.bezierCurveTo(cx - 16, cy + 30, cx + 16, cy + 30, cx + 34, cy + 12);
+					ctx.stroke();
+					// Teeth
+					ctx.fillStyle = col + '88';
+					ctx.beginPath();
+					ctx.rect(cx - 28, cy, 56, 8);
+					ctx.fill();
+				}
+			},
+			{
+				id: 'ee',
+				name: 'E / EE',
+				sounds: 'e, ee, i (tense)',
+				examples: '"eat", "see", "me"',
+				note: 'Lips pulled wide horizontally — the "smile" shape. Distinct horizontal stretch. Use for sustained "ee" sounds and vowels that spread the lips.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2;
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy + 5, 40, 8, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					// Wide stretched upper lip
+					ctx.beginPath();
+					ctx.moveTo(cx - 42, cy);
+					ctx.bezierCurveTo(cx - 20, cy - 12, cx + 20, cy - 12, cx + 42, cy);
+					ctx.stroke();
+					// Lower lip, slight
+					ctx.beginPath();
+					ctx.moveTo(cx - 40, cy + 10);
+					ctx.bezierCurveTo(cx - 15, cy + 16, cx + 15, cy + 16, cx + 40, cy + 10);
+					ctx.stroke();
+					// Teeth visible
+					ctx.strokeStyle = col + '55';
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(cx - 30, cy + 1);
+					ctx.lineTo(cx + 30, cy + 1);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'oh',
+				name: 'Oh',
+				sounds: 'o, oh, oo (loose)',
+				examples: '"oh", "go", "no"',
+				note: 'Lips form a rounded oval — distinct from the open "Aah" shape by the lip rounding. Medium jaw drop. The O shape is very distinctive and important to hold clearly.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2 + 4;
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 22, 26, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3.5;
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 24, 28, 0, 0, Math.PI * 2);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'oo',
+				name: 'Ooh',
+				sounds: 'oo, u (rounded)',
+				examples: '"too", "blue", "you"',
+				note: 'Lips pursed forward into a small tight circle. The tightest, most forward lip position. Clearly distinct from all other shapes by its extreme lip protrusion.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2 + 5;
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 14, 16, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 4;
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 16, 18, 0, 0, Math.PI * 2);
+					ctx.stroke();
+					// Lip pucker lines
+					ctx.strokeStyle = col + '44';
+					ctx.lineWidth = 2;
+					for (let a = 0; a < 6; a++) {
+						const ang = (a * Math.PI) / 3;
+						ctx.beginPath();
+						ctx.moveTo(cx + Math.cos(ang) * 18, cy + Math.sin(ang) * 20);
+						ctx.lineTo(cx + Math.cos(ang) * 30, cy + Math.sin(ang) * 32);
+						ctx.stroke();
+					}
+				}
+			},
+			{
+				id: 'wq',
+				name: 'W / Q',
+				sounds: 'w, qu',
+				examples: '"we", "when", "queen"',
+				note: 'Very similar to Ooh but transitioning outward. Tight rounded lips. Often the same shape as Ooh is used — distinguished primarily by the adjacent shapes in context.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2 + 4;
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 18, 15, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3.5;
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 20, 17, 0, 0, Math.PI * 2);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'sk',
+				name: 'S / K',
+				sounds: 's, k, g, ch, sh',
+				examples: '"so", "key", "she"',
+				note: 'Slightly parted lips, teeth nearly together. Minimal opening. Often animated simply as a slightly open version of Rest — the key is that teeth are close and slightly visible.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2;
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					ctx.beginPath();
+					ctx.moveTo(cx - 36, cy - 2);
+					ctx.bezierCurveTo(cx - 15, cy - 9, cx + 15, cy - 9, cx + 36, cy - 2);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(cx - 34, cy + 8);
+					ctx.bezierCurveTo(cx - 15, cy + 14, cx + 15, cy + 14, cx + 34, cy + 8);
+					ctx.stroke();
+					ctx.strokeStyle = col + '55';
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(cx - 25, cy + 1);
+					ctx.lineTo(cx + 25, cy + 1);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'r',
+				name: 'R',
+				sounds: 'r',
+				examples: '"run", "very", "bright"',
+				note: 'Lips slightly parted and slightly rounded — less extreme than Oh. Teeth not visible. A transitional shape, often blended with adjacent shapes rather than held distinctly.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2 + 3;
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 18, 12, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.beginPath();
+					ctx.moveTo(cx - 30, cy - 4);
+					ctx.bezierCurveTo(cx - 12, cy - 14, cx + 12, cy - 14, cx + 30, cy - 4);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(cx - 28, cy + 12);
+					ctx.bezierCurveTo(cx - 10, cy + 20, cx + 10, cy + 20, cx + 28, cy + 12);
+					ctx.stroke();
+				}
+			},
+			{
+				id: 'ih',
+				name: 'Ih',
+				sounds: 'i (short), e (short)',
+				examples: '"it", "bit", "set"',
+				note: 'Medium open, slightly wide. Between the closed Rest and the wide EE. A workhorse shape for relaxed vowels in unstressed syllables.',
+				draw(ctx, W, H, col) {
+					const cx = W / 2,
+						cy = H / 2 + 2;
+					ctx.fillStyle = '#0e0804';
+					ctx.beginPath();
+					ctx.ellipse(cx, cy, 28, 12, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.strokeStyle = col;
+					ctx.lineWidth = 3;
+					ctx.lineCap = 'round';
+					ctx.beginPath();
+					ctx.moveTo(cx - 38, cy - 4);
+					ctx.bezierCurveTo(cx - 16, cy - 14, cx + 16, cy - 14, cx + 38, cy - 4);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(cx - 36, cy + 12);
+					ctx.bezierCurveTo(cx - 14, cy + 20, cx + 14, cy + 20, cx + 36, cy + 12);
+					ctx.stroke();
+				}
+			}
+		];
 
-		return () => {};
+		let activePhoneme = 'aah';
+		const pCanvas = document.getElementById('phonemeCanvas');
+		const pCtx = pCanvas.getContext('2d');
+
+		function drawPhoneme(id, ctx, W, H, col) {
+			ctx.clearRect(0, 0, W, H);
+			const p = PHONEMES.find((x) => x.id === id);
+			if (!p) return;
+			// Face circle
+			ctx.strokeStyle = col + '33';
+			ctx.lineWidth = 1.5;
+			ctx.beginPath();
+			ctx.arc(W / 2, H / 2 + 4, 68, 0, Math.PI * 2);
+			ctx.stroke();
+			p.draw(ctx, W, H, col);
+		}
+
+		function selectPhoneme(id) {
+			activePhoneme = id;
+			const p = PHONEMES.find((x) => x.id === id);
+			document
+				.querySelectorAll('.phoneme-card')
+				.forEach((c) => c.classList.toggle('active', c.dataset.id === id));
+			document.getElementById('phonemeShapeName').textContent = p.name;
+			document.getElementById('phonemeInfo').innerHTML =
+				`<div style="margin-bottom:.5rem;"><span style="color:var(--lavender)">Sounds: </span>${p.sounds}</div>` +
+				`<div style="margin-bottom:.5rem;"><span style="color:var(--lavender)">Example words: </span>${p.examples}</div>` +
+				`<div style="color:var(--text);line-height:1.7;">${p.note}</div>`;
+			drawPhoneme(id, pCtx, pCanvas.width, pCanvas.height, C.lav);
+		}
+
+		// Build grid
+		const grid = document.getElementById('phonemeGrid');
+		PHONEMES.forEach((p) => {
+			const card = document.createElement('div');
+			card.className = 'phoneme-card' + (p.id === activePhoneme ? ' active' : '');
+			card.dataset.id = p.id;
+			// Mini canvas
+			const mc = document.createElement('canvas');
+			mc.width = 80;
+			mc.height = 54;
+			mc.style.cssText = 'background:var(--bg);border:1px solid var(--border);';
+			const mctx = mc.getContext('2d');
+			drawPhoneme(p.id, mctx, 80, 54, C.lav + 'cc');
+			card.appendChild(mc);
+			const name = document.createElement('div');
+			name.className = 'phoneme-name';
+			name.textContent = p.name;
+			card.appendChild(name);
+			const sounds = document.createElement('div');
+			sounds.className = 'phoneme-sounds';
+			sounds.textContent = p.sounds;
+			card.appendChild(sounds);
+			card.onclick = () => selectPhoneme(p.id);
+			grid.appendChild(card);
+		});
+		selectPhoneme('aah');
+
+		/* ═══════════════════════════════════════
+   DEMO 7.2 — LIP SYNC TIMELINE
+═══════════════════════════════════════ */
+		// "Animation takes time."
+		// ~48 frames at 24fps = 2 seconds
+		const LS_FRAMES = 60;
+		const LS_FW = 18; // px per frame
+
+		// Word → frame ranges
+		const LS_WORDS = [
+			{ word: 'An-', start: 2, end: 5 },
+			{ word: 'i-', start: 6, end: 8 },
+			{ word: 'ma-', start: 9, end: 12 },
+			{ word: 'tion', start: 13, end: 18 },
+			{ word: 'takes', start: 22, end: 30 },
+			{ word: 'time.', start: 34, end: 44 }
+		];
+
+		// Phoneme assignments: {frame, shape, hold}
+		const LS_PHONEMES = [
+			{ frame: 1, shape: 'rest', hold: 1 },
+			{ frame: 2, shape: 'aah', hold: 2 },
+			{ frame: 4, shape: 'ih', hold: 1 },
+			{ frame: 5, shape: 'mbp', hold: 2 },
+			{ frame: 7, shape: 'ih', hold: 1 },
+			{ frame: 8, shape: 'aah', hold: 3 },
+			{ frame: 11, shape: 'sk', hold: 1 },
+			{ frame: 12, shape: 'sk', hold: 2 },
+			{ frame: 14, shape: 'ih', hold: 2 },
+			{ frame: 16, shape: 'oh', hold: 2 },
+			{ frame: 18, shape: 'rest', hold: 3 },
+			{ frame: 21, shape: 'lth', hold: 2 },
+			{ frame: 23, shape: 'aah', hold: 2 },
+			{ frame: 25, shape: 'ee', hold: 2 },
+			{ frame: 27, shape: 'sk', hold: 2 },
+			{ frame: 29, shape: 'rest', hold: 4 },
+			{ frame: 33, shape: 'lth', hold: 2 },
+			{ frame: 35, shape: 'aah', hold: 3 },
+			{ frame: 38, shape: 'mbp', hold: 2 },
+			{ frame: 40, shape: 'rest', hold: 3 },
+			{ frame: 43, shape: 'rest', hold: 17 }
+		];
+
+		function getLSShape(frame) {
+			let current = 'rest';
+			for (let i = 0; i < LS_PHONEMES.length; i++) {
+				if (frame >= LS_PHONEMES[i].frame) current = LS_PHONEMES[i].shape;
+				else break;
+			}
+			return current;
+		}
+
+		// Build timeline
+		const wrap = document.getElementById('lsPlayheadWrap');
+
+		// Word row
+		const wordRow = document.createElement('div');
+		wordRow.className = 'ls-word-row';
+		const wLabel = document.createElement('div');
+		wLabel.className = 'ls-label-col';
+		wLabel.textContent = 'Words';
+		wordRow.appendChild(wLabel);
+		const wTrack = document.createElement('div');
+		wTrack.style.cssText = `display:flex;position:relative;width:${LS_FRAMES * LS_FW}px;`;
+		LS_WORDS.forEach((w) => {
+			const cell = document.createElement('div');
+			cell.style.cssText = `position:absolute;left:${w.start * LS_FW}px;width:${(w.end - w.start) * LS_FW}px;height:24px;background:${C.lav}22;border-right:1px solid ${C.border};display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:9px;color:var(--lavender);`;
+			cell.textContent = w.word;
+			wTrack.appendChild(cell);
+		});
+		wordRow.appendChild(wTrack);
+		wrap.appendChild(wordRow);
+
+		// Phoneme row
+		const phRow = document.createElement('div');
+		phRow.className = 'ls-phoneme-row';
+		phRow.style.position = 'relative';
+		const phLabel = document.createElement('div');
+		phLabel.className = 'ls-label-col';
+		phLabel.textContent = 'Mouths';
+		phRow.appendChild(phLabel);
+		const phTrack = document.createElement('div');
+		phTrack.style.cssText = `display:flex;width:${LS_FRAMES * LS_FW}px;`;
+
+		for (let f = 0; f < LS_FRAMES; f++) {
+			const shape = getLSShape(f);
+			const cell = document.createElement('div');
+			cell.className = 'ls-phoneme-cell';
+			cell.style.cssText = `width:${LS_FW}px;border-right:1px solid ${C.border};`;
+			cell.dataset.frame = f;
+			// Mini mouth canvas
+			const mc = document.createElement('canvas');
+			mc.width = LS_FW;
+			mc.height = 28;
+			const mctx = mc.getContext('2d');
+			if (shape !== 'rest') {
+				const p = PHONEMES.find((x) => x.id === shape);
+				if (p) p.draw(mctx, LS_FW, 28, C.lav + 'bb');
+			}
+			cell.appendChild(mc);
+			cell.onclick = () => setLSFrame(f);
+			phTrack.appendChild(cell);
+		}
+		phRow.appendChild(phTrack);
+
+		// Playhead
+		const ph = document.createElement('div');
+		ph.className = 'ls-playhead';
+		ph.id = 'lsPlayhead';
+		ph.style.left = '72px';
+		phRow.appendChild(ph);
+		wrap.appendChild(phRow);
+
+		// Frame number row
+		const frRow = document.createElement('div');
+		frRow.className = 'ls-frame-row';
+		const frLabel = document.createElement('div');
+		frLabel.className = 'ls-label-col';
+		frLabel.textContent = 'Frames';
+		frRow.appendChild(frLabel);
+		const frTrack = document.createElement('div');
+		frTrack.style.cssText = `display:flex;width:${LS_FRAMES * LS_FW}px;`;
+		for (let f = 0; f < LS_FRAMES; f++) {
+			const cell = document.createElement('div');
+			cell.className = 'ls-frame-cell';
+			cell.style.width = LS_FW + 'px';
+			if (f % 6 === 0) cell.textContent = f;
+			frTrack.appendChild(cell);
+		}
+		frRow.appendChild(frTrack);
+		wrap.appendChild(frRow);
+
+		// Face canvas
+		const lsFace = document.getElementById('lsFaceCanvas');
+		const lsCtx = lsFace.getContext('2d');
+		function drawLSFace(shapeId) {
+			lsCtx.clearRect(0, 0, lsFace.width, lsFace.height);
+			const W = lsFace.width,
+				H = lsFace.height;
+			// Face
+			lsCtx.fillStyle = C.lav + 'cc';
+			lsCtx.beginPath();
+			lsCtx.arc(W / 2, H / 2 - 10, 70, 0, Math.PI * 2);
+			lsCtx.fill();
+			// Eyes
+			lsCtx.fillStyle = '#fff';
+			lsCtx.beginPath();
+			lsCtx.ellipse(W / 2 - 22, H / 2 - 28, 9, 11, -0.15, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.ellipse(W / 2 + 22, H / 2 - 28, 9, 11, 0.15, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.fillStyle = C.bg;
+			lsCtx.beginPath();
+			lsCtx.arc(W / 2 - 21, H / 2 - 27, 5.5, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.arc(W / 2 + 21, H / 2 - 27, 5.5, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.fillStyle = '#fff';
+			lsCtx.beginPath();
+			lsCtx.arc(W / 2 - 19, H / 2 - 29, 2, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.arc(W / 2 + 23, H / 2 - 29, 2, 0, Math.PI * 2);
+			lsCtx.fill();
+			// Nose
+			lsCtx.strokeStyle = C.lav + '44';
+			lsCtx.lineWidth = 1.5;
+			lsCtx.lineCap = 'round';
+			lsCtx.beginPath();
+			lsCtx.moveTo(W / 2 - 5, H / 2 - 8);
+			lsCtx.quadraticCurveTo(W / 2 - 10, H / 2 + 4, W / 2 - 4, H / 2 + 6);
+			lsCtx.stroke();
+			lsCtx.beginPath();
+			lsCtx.moveTo(W / 2 - 4, H / 2 + 6);
+			lsCtx.quadraticCurveTo(W / 2 + 4, H / 2 + 9, W / 2 + 8, H / 2 + 6);
+			lsCtx.stroke();
+			// Cheek highlight
+			lsCtx.fillStyle = C.lav + '22';
+			lsCtx.beginPath();
+			lsCtx.ellipse(W / 2 - 40, H / 2 - 10, 14, 8, -0.3, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.ellipse(W / 2 + 40, H / 2 - 10, 14, 8, 0.3, 0, Math.PI * 2);
+			lsCtx.fill();
+			// Mouth region - translate to face center
+			lsCtx.save();
+			lsCtx.translate(W / 2, H / 2 + 22);
+			const p = PHONEMES.find((x) => x.id === shapeId);
+			if (p) p.draw(lsCtx, 0, 0, C.bg + 'cc'); // draw at center offset
+			// Custom centered draw
+			lsCtx.restore();
+			// Draw mouth directly
+			lsCtx.save();
+			lsCtx.translate(0, 22);
+			if (p) p.draw(lsCtx, W, H / 2 + 22, C.bg);
+			lsCtx.restore();
+		}
+
+		// Proper face draw with mouth
+		function drawFullFace(shapeId) {
+			lsCtx.clearRect(0, 0, lsFace.width, lsFace.height);
+			const W = lsFace.width,
+				H = lsFace.height;
+			const cx = W / 2,
+				cy = H * 0.44;
+			// Face
+			lsCtx.fillStyle = C.lav + 'cc';
+			lsCtx.beginPath();
+			lsCtx.arc(cx, cy, 72, 0, Math.PI * 2);
+			lsCtx.fill();
+			// Cheeks
+			lsCtx.fillStyle = C.lav + '33';
+			lsCtx.beginPath();
+			lsCtx.ellipse(cx - 45, cy + 5, 16, 9, -0.3, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.ellipse(cx + 45, cy + 5, 16, 9, 0.3, 0, Math.PI * 2);
+			lsCtx.fill();
+			// Eyes
+			lsCtx.fillStyle = '#fff';
+			lsCtx.beginPath();
+			lsCtx.ellipse(cx - 22, cy - 20, 10, 12, -0.12, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.ellipse(cx + 22, cy - 20, 10, 12, 0.12, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.fillStyle = C.bg;
+			lsCtx.beginPath();
+			lsCtx.arc(cx - 21, cy - 19, 6, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.arc(cx + 21, cy - 19, 6, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.fillStyle = '#fff';
+			lsCtx.beginPath();
+			lsCtx.arc(cx - 18, cy - 21, 2.2, 0, Math.PI * 2);
+			lsCtx.fill();
+			lsCtx.beginPath();
+			lsCtx.arc(cx + 24, cy - 21, 2.2, 0, Math.PI * 2);
+			lsCtx.fill();
+			// Nose
+			lsCtx.strokeStyle = C.lav + '55';
+			lsCtx.lineWidth = 2;
+			lsCtx.lineCap = 'round';
+			lsCtx.beginPath();
+			lsCtx.moveTo(cx - 6, cy + 2);
+			lsCtx.quadraticCurveTo(cx - 10, cy + 12, cx - 4, cy + 15);
+			lsCtx.stroke();
+			lsCtx.beginPath();
+			lsCtx.moveTo(cx - 4, cy + 15);
+			lsCtx.quadraticCurveTo(cx + 4, cy + 18, cx + 8, cy + 15);
+			lsCtx.stroke();
+			// Mouth using phoneme draw, shifted down
+			lsCtx.save();
+			lsCtx.translate(0, 34);
+			const p = PHONEMES.find((x) => x.id === shapeId);
+			if (p) p.draw(lsCtx, W, H * 0.44, C.bg);
+			lsCtx.restore();
+			document.getElementById('lsCurrentShape').textContent = p ? p.name : 'Rest';
+		}
+
+		let lsFrame = 0,
+			lsPlaying = true,
+			lsRaf = null,
+			lsLastTs = null;
+
+		function setLSFrame(f) {
+			lsFrame = clamp(f, 0, LS_FRAMES - 1);
+			const shape = getLSShape(lsFrame);
+			drawFullFace(shape);
+			document.getElementById('lsFrameNum').textContent = lsFrame;
+			// Update playhead
+			const phEl = document.getElementById('lsPlayhead');
+			if (phEl) phEl.style.left = 72 + lsFrame * LS_FW + 'px';
+			// Highlight active cell
+			document.querySelectorAll('.ls-phoneme-cell').forEach((c) => {
+				c.classList.toggle('active', parseInt(c.dataset.frame) === lsFrame);
+			});
+		}
+
+		function lsTick(ts) {
+			if (!lsLastTs) lsLastTs = ts;
+			const dt = (ts - lsLastTs) / 1000;
+			lsLastTs = ts;
+			lsFrame += dt * 18;
+			if (lsFrame >= LS_FRAMES) {
+				lsFrame = 0;
+			}
+			setLSFrame(Math.floor(lsFrame));
+			lsRaf = requestAnimationFrame(lsTick);
+		}
+
+		document.getElementById('lsPlayBtn').onclick = function () {
+			lsPlaying = !lsPlaying;
+			this.textContent = lsPlaying ? '⏸ Pause' : '▶ Play';
+			this.classList.toggle('active', lsPlaying);
+			if (lsPlaying) {
+				lsLastTs = null;
+				lsRaf = requestAnimationFrame(lsTick);
+			} else cancelAnimationFrame(lsRaf);
+		};
+		document.getElementById('lsResetBtn').onclick = () => {
+			lsFrame = 0;
+			setLSFrame(0);
+		};
+		setLSFrame(0);
+		setTimeout(() => {
+			lsLastTs = null;
+			lsRaf = requestAnimationFrame(lsTick);
+		}, 300);
+
+		/* ═══════════════════════════════════════
+   DEMO 7.3 — EXPRESSION LIBRARY
+═══════════════════════════════════════ */
+		const EMOTIONS = [
+			{
+				id: 'happy',
+				name: 'Happy',
+				tag: 'Brows up+curved · Eyes squint · Big smile',
+				color: C.gold,
+				brows: {
+					lx: -28,
+					ly: -58,
+					lcp1x: -12,
+					lcp1y: -72,
+					lcp2x: 8,
+					lcp2y: -70,
+					rx: 28,
+					ry: -58,
+					rcp1x: 12,
+					rcp1y: -70,
+					rcp2x: -8,
+					rcp2y: -72
+				},
+				eyeL: { ox: -22, oy: -30, rx: 11, ry: 10, pupilY: 0, squint: 0.35 },
+				eyeR: { ox: 22, oy: -30, rx: 11, ry: 10, pupilY: 0, squint: 0.35 },
+				mouth: { type: 'smile', open: 0.4, width: 34 },
+				note: 'Squinted eyes are as important as the smile — without them, the smile reads as polite or forced. The cheek lift from squinting drives believability.',
+				breakdown: [
+					{ zone: 'Brows', val: 70, desc: 'Raised and slightly arched' },
+					{ zone: 'Eyes', val: 90, desc: 'Squinted — this is what makes it genuine' },
+					{ zone: 'Mouth', val: 85, desc: 'Wide curve, corners up' }
+				]
+			},
+			{
+				id: 'sad',
+				name: 'Sad',
+				tag: 'Brows inner-raised · Eyes droopy · Down corners',
+				color: C.lav,
+				brows: {
+					lx: -28,
+					ly: -52,
+					lcp1x: -10,
+					lcp1y: -66,
+					lcp2x: 8,
+					lcp2y: -58,
+					rx: 28,
+					ry: -52,
+					rcp1x: 10,
+					rcp1y: -58,
+					rcp2x: -8,
+					rcp2y: -66
+				},
+				eyeL: { ox: -22, oy: -28, rx: 10, ry: 9, pupilY: 2, squint: 0.15 },
+				eyeR: { ox: 22, oy: -28, rx: 10, ry: 9, pupilY: 2, squint: 0.15 },
+				mouth: { type: 'frown', open: 0.15, width: 28 },
+				note: 'The inner corners of the brows rise — this is the single most distinctive sad brow shape and the one most actors struggle to control voluntarily. Get it right and the viewer feels it instantly.',
+				breakdown: [
+					{ zone: 'Brows', val: 95, desc: 'Inner corners raised — most expressive element' },
+					{ zone: 'Eyes', val: 60, desc: 'Slightly drooped upper lids' },
+					{ zone: 'Mouth', val: 40, desc: 'Corners pull down subtly' }
+				]
+			},
+			{
+				id: 'angry',
+				name: 'Angry',
+				tag: 'Brows angled in/down · Eyes sharp · Tight jaw',
+				color: C.coral,
+				brows: {
+					lx: -28,
+					ly: -48,
+					lcp1x: -10,
+					lcp1y: -62,
+					lcp2x: 8,
+					lcp2y: -58,
+					rx: 28,
+					ry: -58,
+					rcp1x: 10,
+					rcp1y: -68,
+					rcp2x: -8,
+					rcp2y: -52
+				},
+				eyeL: { ox: -22, oy: -26, rx: 10, ry: 9, pupilY: 0, squint: 0.5 },
+				eyeR: { ox: 22, oy: -26, rx: 10, ry: 9, pupilY: 0, squint: 0.5 },
+				mouth: { type: 'straight-tense', open: 0, width: 30 },
+				note: 'Brows drive inward and downward simultaneously — creating the distinctive V-shape over the bridge of the nose. The lower eyelids rise from below, making the eyes appear smaller and more focused.',
+				breakdown: [
+					{ zone: 'Brows', val: 100, desc: 'Pulled sharply inward and down — defines anger' },
+					{ zone: 'Eyes', val: 80, desc: 'Squinted from both above and below' },
+					{ zone: 'Mouth', val: 45, desc: 'Pressed flat and tense' }
+				]
+			},
+			{
+				id: 'surprised',
+				name: 'Surprised',
+				tag: 'Brows high · Eyes wide · Jaw drop',
+				color: C.mint,
+				brows: {
+					lx: -28,
+					ly: -68,
+					lcp1x: -10,
+					lcp1y: -76,
+					lcp2x: 8,
+					lcp2y: -72,
+					rx: 28,
+					ry: -68,
+					rcp1x: 10,
+					rcp1y: -72,
+					rcp2x: -8,
+					rcp2y: -76
+				},
+				eyeL: { ox: -22, oy: -32, rx: 12, ry: 14, pupilY: 0, squint: 0 },
+				eyeR: { ox: 22, oy: -32, rx: 12, ry: 14, pupilY: 0, squint: 0 },
+				mouth: { type: 'open-round', open: 0.8, width: 22 },
+				note: 'Maximum brow raise combined with maximum eye opening. The pupils often shrink slightly in genuine surprise (though this is hard to animate subtly). The jaw drop should be a snappy fast action — slow surprise reads as confusion.',
+				breakdown: [
+					{ zone: 'Brows', val: 85, desc: 'Shot up to maximum height' },
+					{ zone: 'Eyes', val: 100, desc: 'Wide open — no squint at all' },
+					{ zone: 'Mouth', val: 70, desc: 'Rounded jaw drop' }
+				]
+			},
+			{
+				id: 'thinking',
+				name: 'Thinking',
+				tag: 'One brow raised · Eyes up · Slight purse',
+				color: C.lav,
+				brows: {
+					lx: -28,
+					ly: -52,
+					lcp1x: -10,
+					lcp1y: -58,
+					lcp2x: 8,
+					lcp2y: -56,
+					rx: 28,
+					ry: -65,
+					rcp1x: 10,
+					rcp1y: -74,
+					rcp2x: -8,
+					rcp2y: -68
+				},
+				eyeL: { ox: -22, oy: -28, rx: 10, ry: 10, pupilY: -2, squint: 0 },
+				eyeR: { ox: 22, oy: -28, rx: 10, ry: 9, pupilY: -3, squint: 0.1 },
+				mouth: { type: 'slight-purse', open: 0, width: 24 },
+				note: 'Asymmetry is key to "thinking" — one brow raises more than the other, suggesting scepticism or consideration. Eyes shift upward (or to the side). Avoid making this symmetrical or it reads as worried.',
+				breakdown: [
+					{ zone: 'Brows', val: 75, desc: 'Asymmetric — right higher than left' },
+					{ zone: 'Eyes', val: 65, desc: 'Pupils shifted upward' },
+					{ zone: 'Mouth', val: 25, desc: 'Slight pursed compression' }
+				]
+			},
+			{
+				id: 'confident',
+				name: 'Confident',
+				tag: 'Brows neutral-low · Eyes steady · Slight smile',
+				color: C.gold,
+				brows: {
+					lx: -28,
+					ly: -56,
+					lcp1x: -10,
+					lcp1y: -62,
+					lcp2x: 8,
+					lcp2y: -60,
+					rx: 28,
+					ry: -56,
+					rcp1x: 10,
+					rcp1y: -60,
+					rcp2x: -8,
+					rcp2y: -62
+				},
+				eyeL: { ox: -22, oy: -28, rx: 10, ry: 10, pupilY: 0, squint: 0.1 },
+				eyeR: { ox: 22, oy: -28, rx: 10, ry: 10, pupilY: 0, squint: 0.1 },
+				mouth: { type: 'slight-smile', open: 0.1, width: 30 },
+				note: 'Confidence is expressed through restraint. Brows are neutral — not raised, not furrowed. Eyes are steady and direct. The very slight smile (or even neutral mouth) communicates comfort without performative happiness.',
+				breakdown: [
+					{ zone: 'Brows', val: 20, desc: 'Neutral — neither raised nor furrowed' },
+					{ zone: 'Eyes', val: 30, desc: 'Steady, direct, slightly narrowed' },
+					{ zone: 'Mouth', val: 40, desc: 'Subtle closed smile' }
+				]
+			},
+			{
+				id: 'disgusted',
+				name: 'Disgusted',
+				tag: 'Nose wrinkle · Brows down · Upper lip raised',
+				color: C.coral,
+				brows: {
+					lx: -28,
+					ly: -54,
+					lcp1x: -10,
+					lcp1y: -64,
+					lcp2x: 8,
+					lcp2y: -60,
+					rx: 28,
+					ry: -54,
+					rcp1x: 10,
+					rcp1y: -60,
+					rcp2x: -8,
+					rcp2y: -64
+				},
+				eyeL: { ox: -22, oy: -26, rx: 10, ry: 8, pupilY: 0, squint: 0.4 },
+				eyeR: { ox: 22, oy: -26, rx: 10, ry: 8, pupilY: 0, squint: 0.4 },
+				mouth: { type: 'sneer', open: 0.2, width: 26 },
+				note: 'One side of the upper lip raises asymmetrically — the classic sneer. This combined with the nose wrinkle (hard to show in flat 2D — suggest it with brow positioning) defines disgust across cultures.',
+				breakdown: [
+					{ zone: 'Brows', val: 65, desc: 'Pulled down and slightly inward' },
+					{ zone: 'Eyes', val: 55, desc: 'Squinted from the cheek rise' },
+					{ zone: 'Mouth', val: 90, desc: 'Asymmetric upper lip raise — defines disgust' }
+				]
+			},
+			{
+				id: 'excited',
+				name: 'Excited',
+				tag: 'Brows very high · Eyes wide · Big open smile',
+				color: C.mint,
+				brows: {
+					lx: -28,
+					ly: -70,
+					lcp1x: -10,
+					lcp1y: -80,
+					lcp2x: 8,
+					lcp2y: -76,
+					rx: 28,
+					ry: -70,
+					rcp1x: 10,
+					rcp1y: -76,
+					rcp2x: -8,
+					rcp2y: -80
+				},
+				eyeL: { ox: -22, oy: -32, rx: 12, ry: 13, pupilY: 0, squint: 0.2 },
+				eyeR: { ox: 22, oy: -32, rx: 12, ry: 13, pupilY: 0, squint: 0.2 },
+				mouth: { type: 'big-open-smile', open: 0.65, width: 36 },
+				note: 'Excitement combines happy and surprise — high brows from surprise, squinted eyes from happiness, open mouth smile. The energy of this expression should come through in quick, bouncy animation timing.',
+				breakdown: [
+					{ zone: 'Brows', val: 90, desc: 'High — the surprise element' },
+					{ zone: 'Eyes', val: 85, desc: 'Wide but slightly squinted from the smile' },
+					{ zone: 'Mouth', val: 95, desc: 'Open wide smile — showing teeth' }
+				]
+			}
+		];
+
+		let activeEmotion = 'happy';
+		let zoneEnabled = { brows: true, eyes: true, mouth: true };
+
+		const exprCanvas = document.getElementById('exprCanvas');
+		const exCtx = exprCanvas.getContext('2d');
+		const EW = exprCanvas.width,
+			EH = exprCanvas.height;
+
+		function drawExpression(emotionId) {
+			const em = EMOTIONS.find((e) => e.id === emotionId);
+			if (!em) return;
+			exCtx.clearRect(0, 0, EW, EH);
+			const cx = EW / 2,
+				cy = EH / 2 + 8;
+
+			// Face base
+			exCtx.fillStyle = C.lav + 'cc';
+			exCtx.beginPath();
+			exCtx.arc(cx, cy, 85, 0, Math.PI * 2);
+			exCtx.fill();
+			// Cheeks
+			exCtx.fillStyle = C.lav + '33';
+			exCtx.beginPath();
+			exCtx.ellipse(cx - 58, cy + 10, 18, 11, -0.3, 0, Math.PI * 2);
+			exCtx.fill();
+			exCtx.beginPath();
+			exCtx.ellipse(cx + 58, cy + 10, 18, 11, 0.3, 0, Math.PI * 2);
+			exCtx.fill();
+			// Nose
+			exCtx.strokeStyle = C.lav + '44';
+			exCtx.lineWidth = 2;
+			exCtx.lineCap = 'round';
+			exCtx.beginPath();
+			exCtx.moveTo(cx - 7, cy + 2);
+			exCtx.quadraticCurveTo(cx - 12, cy + 16, cx - 5, cy + 20);
+			exCtx.stroke();
+			exCtx.beginPath();
+			exCtx.moveTo(cx - 5, cy + 20);
+			exCtx.quadraticCurveTo(cx + 4, cy + 24, cx + 9, cy + 20);
+			exCtx.stroke();
+
+			// Brows
+			if (zoneEnabled.brows) {
+				exCtx.strokeStyle = C.bg;
+				exCtx.lineWidth = 5;
+				exCtx.lineCap = 'round';
+				// Left brow
+				exCtx.beginPath();
+				exCtx.moveTo(cx + em.brows.lx, cy + em.brows.ly);
+				exCtx.bezierCurveTo(
+					cx + em.brows.lcp1x,
+					cy + em.brows.lcp1y,
+					cx + em.brows.lcp2x,
+					cy + em.brows.lcp2y,
+					cx - em.brows.lx,
+					cy + em.brows.ly
+				);
+				exCtx.stroke();
+				exCtx.strokeStyle = C.bg;
+				exCtx.lineWidth = 5;
+				// Right brow
+				exCtx.beginPath();
+				exCtx.moveTo(cx + em.brows.rx, cy + em.brows.ry);
+				exCtx.bezierCurveTo(
+					cx + em.brows.rcp1x,
+					cy + em.brows.rcp1y,
+					cx + em.brows.rcp2x,
+					cy + em.brows.rcp2y,
+					cx - em.brows.rx,
+					cy + em.brows.ry
+				);
+				exCtx.stroke();
+			} else {
+				exCtx.strokeStyle = C.muted + '44';
+				exCtx.lineWidth = 3;
+				exCtx.beginPath();
+				exCtx.moveTo(cx - 35, cy - 56);
+				exCtx.lineTo(cx - 8, cy - 56);
+				exCtx.stroke();
+				exCtx.beginPath();
+				exCtx.moveTo(cx + 35, cy - 56);
+				exCtx.lineTo(cx + 8, cy - 56);
+				exCtx.stroke();
+			}
+
+			// Eyes
+			const drawEye = (cfg) => {
+				const ex = cx + cfg.ox,
+					ey = cy + cfg.oy;
+				if (zoneEnabled.eyes) {
+					const squintOff = cfg.squint * cfg.ry;
+					exCtx.fillStyle = '#fff';
+					exCtx.beginPath();
+					exCtx.ellipse(ex, ey + squintOff * 0.5, cfg.rx, cfg.ry - squintOff, 0, 0, Math.PI * 2);
+					exCtx.fill();
+					// Pupil
+					exCtx.fillStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.arc(
+						ex,
+						ey + cfg.pupilY + squintOff * 0.3,
+						(cfg.ry - squintOff) * 0.7,
+						0,
+						Math.PI * 2
+					);
+					exCtx.fill();
+					exCtx.fillStyle = '#fff';
+					exCtx.beginPath();
+					exCtx.arc(
+						ex + cfg.rx * 0.3,
+						ey + cfg.pupilY + squintOff * 0.3 - cfg.ry * 0.2,
+						(cfg.ry - squintOff) * 0.18,
+						0,
+						Math.PI * 2
+					);
+					exCtx.fill();
+					// Upper lid squint
+					if (cfg.squint > 0) {
+						exCtx.fillStyle = C.lav + 'cc';
+						exCtx.beginPath();
+						exCtx.ellipse(
+							ex,
+							ey - cfg.ry + squintOff * 0.5,
+							cfg.rx + 2,
+							cfg.ry * 0.5 + squintOff * 0.5,
+							0,
+							Math.PI,
+							Math.PI * 2
+						);
+						exCtx.fill();
+					}
+				} else {
+					exCtx.fillStyle = '#fff';
+					exCtx.beginPath();
+					exCtx.ellipse(ex, ey, cfg.rx, cfg.ry, 0, 0, Math.PI * 2);
+					exCtx.fill();
+					exCtx.fillStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.arc(ex, ey, cfg.ry * 0.7, 0, Math.PI * 2);
+					exCtx.fill();
+				}
+			};
+			drawEye(em.eyeL);
+			drawEye(em.eyeR);
+
+			// Mouth
+			const my = cy + 40;
+			if (zoneEnabled.mouth) {
+				const mw = em.mouth.width,
+					mopen = em.mouth.open * 22;
+				exCtx.fillStyle = '#0e0804';
+				exCtx.strokeStyle = C.bg;
+				exCtx.lineWidth = 2.5;
+				exCtx.lineCap = 'round';
+				if (em.mouth.type === 'smile' || em.mouth.type === 'big-open-smile') {
+					if (mopen > 3) {
+						exCtx.beginPath();
+						exCtx.moveTo(cx - mw, my);
+						exCtx.bezierCurveTo(cx - mw * 0.5, my + mopen, cx + mw * 0.5, my + mopen, cx + mw, my);
+						exCtx.bezierCurveTo(
+							cx + mw * 0.5,
+							my + mopen * 0.5,
+							cx - mw * 0.5,
+							my + mopen * 0.5,
+							cx - mw,
+							my
+						);
+						exCtx.fill();
+						if (em.mouth.type === 'big-open-smile') {
+							exCtx.fillStyle = '#f8f0e8';
+							exCtx.beginPath();
+							exCtx.rect(cx - mw + 4, my, mw * 2 - 8, 6);
+							exCtx.fill();
+						}
+					}
+					exCtx.strokeStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.moveTo(cx - mw, my);
+					exCtx.bezierCurveTo(
+						cx - mw * 0.5,
+						my + mopen * 0.6,
+						cx + mw * 0.5,
+						my + mopen * 0.6,
+						cx + mw,
+						my
+					);
+					exCtx.stroke();
+				} else if (em.mouth.type === 'frown') {
+					exCtx.strokeStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.moveTo(cx - mw, my + 4);
+					exCtx.bezierCurveTo(cx - mw * 0.4, my - 8, cx + mw * 0.4, my - 8, cx + mw, my + 4);
+					exCtx.stroke();
+				} else if (em.mouth.type === 'open-round') {
+					exCtx.beginPath();
+					exCtx.ellipse(cx, my + mopen * 0.3, mw * 0.6, mopen * 0.7, 0, 0, Math.PI * 2);
+					exCtx.fill();
+					exCtx.strokeStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.ellipse(cx, my + mopen * 0.3, mw * 0.6, mopen * 0.7, 0, 0, Math.PI * 2);
+					exCtx.stroke();
+				} else if (em.mouth.type === 'sneer') {
+					exCtx.strokeStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.moveTo(cx - mw * 0.6, my + 4);
+					exCtx.bezierCurveTo(cx - mw * 0.2, my, cx + mw * 0.2, my - 4, cx + mw * 0.6, my - 10);
+					exCtx.stroke();
+				} else {
+					exCtx.strokeStyle = C.bg;
+					exCtx.beginPath();
+					exCtx.moveTo(cx - mw, my);
+					exCtx.bezierCurveTo(
+						cx - mw * 0.4,
+						my - mopen * 0.3,
+						cx + mw * 0.4,
+						my - mopen * 0.3,
+						cx + mw,
+						my
+					);
+					exCtx.stroke();
+				}
+			} else {
+				exCtx.strokeStyle = C.muted + '44';
+				exCtx.lineWidth = 2;
+				exCtx.beginPath();
+				exCtx.moveTo(cx - 20, my);
+				exCtx.lineTo(cx + 20, my);
+				exCtx.stroke();
+			}
+		}
+
+		function selectEmotion(id) {
+			activeEmotion = id;
+			const em = EMOTIONS.find((e) => e.id === id);
+			document
+				.querySelectorAll('.emotion-card')
+				.forEach((c) => c.classList.toggle('active', c.dataset.id === id));
+			document.getElementById('exprEmotionName').textContent = em.name;
+			document.getElementById('exprEmotionTag').textContent = em.tag;
+			document.getElementById('exprNote').textContent = em.note;
+			// Breakdown bars
+			const bd = document.getElementById('exprBreakdown');
+			bd.innerHTML = '';
+			em.breakdown.forEach((b) => {
+				const row = document.createElement('div');
+				row.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+				row.innerHTML =
+					`<div style="display:flex;justify-content:space-between;"><span style="color:var(--text)">${b.zone}</span><span style="color:var(--lavender)">${b.val}%</span></div>` +
+					`<div style="height:4px;background:var(--border2);border-radius:2px;"><div style="width:${b.val}%;height:100%;background:${em.color};border-radius:2px;"></div></div>` +
+					`<div style="font-size:9px;color:var(--muted)">${b.desc}</div>`;
+				bd.appendChild(row);
+			});
+			drawExpression(id);
+		}
+
+		function toggleZone(zone, btn) {
+			zoneEnabled[zone] = !zoneEnabled[zone];
+			btn.classList.toggle('active', zoneEnabled[zone]);
+			drawExpression(activeEmotion);
+		}
+
+		// Build emotion grid
+		const emGrid = document.getElementById('emotionGrid');
+		EMOTIONS.forEach((em) => {
+			const card = document.createElement('div');
+			card.className = 'emotion-card' + (em.id === activeEmotion ? ' active' : '');
+			card.dataset.id = em.id;
+			// Tiny face preview canvas
+			const mc = document.createElement('canvas');
+			mc.width = 80;
+			mc.height = 64;
+			mc.style.cssText = 'background:var(--bg);border:1px solid var(--border);';
+			// draw small
+			const mctx = mc.getContext('2d');
+			const W = 80,
+				H = 64,
+				cx = W / 2,
+				cy = H * 0.48;
+			mctx.fillStyle = C.lav + '88';
+			mctx.beginPath();
+			mctx.arc(cx, cy, 28, 0, Math.PI * 2);
+			mctx.fill();
+			// Simplified face
+			mctx.fillStyle = '#fff';
+			mctx.beginPath();
+			mctx.ellipse(cx - 7, cy - 8, 4, 5, 0, 0, Math.PI * 2);
+			mctx.fill();
+			mctx.beginPath();
+			mctx.ellipse(cx + 7, cy - 8, 4, 5, 0, 0, Math.PI * 2);
+			mctx.fill();
+			mctx.fillStyle = C.bg;
+			mctx.beginPath();
+			mctx.arc(cx - 7, cy - 8, 2.5, 0, Math.PI * 2);
+			mctx.fill();
+			mctx.beginPath();
+			mctx.arc(cx + 7, cy - 8, 2.5, 0, Math.PI * 2);
+			mctx.fill();
+			card.appendChild(mc);
+			const name = document.createElement('div');
+			name.className = 'emotion-name';
+			name.textContent = em.name;
+			card.appendChild(name);
+			const tag = document.createElement('div');
+			tag.className = 'emotion-tag';
+			tag.textContent = em.tag.split('·')[0];
+			card.appendChild(tag);
+			card.onclick = () => selectEmotion(em.id);
+			emGrid.appendChild(card);
+		});
+		selectEmotion('happy');
+
+		/* ═══════════════════════════════════════
+   DEMO 7.4 — GESTURE TIMING
+═══════════════════════════════════════ */
+		const gestureCanvas = document.getElementById('gestureCanvas');
+		const gctx = gestureCanvas.getContext('2d');
+		const GW = gestureCanvas.width,
+			GH = gestureCanvas.height;
+		let gestureMode = 'correct',
+			gestureFrame = 0,
+			gesturePlaying = true,
+			gestureRaf = null,
+			gestureLastTs = null;
+
+		// Words: "This idea is BIG."
+		// 72 frames total
+		const WORDS = [
+			{ word: 'This', start: 4, end: 14, emphasis: false },
+			{ word: 'idea', start: 16, end: 26, emphasis: false },
+			{ word: 'is', start: 28, end: 34, emphasis: false },
+			{ word: 'BIG.', start: 36, end: 50, emphasis: true }
+		];
+
+		// Gesture: arms spread wide, triggered at different frames
+		function getGestureArmAngle(frame, mode) {
+			const WORD_FRAME = 36; // "BIG" starts
+			let gestureStart;
+			if (mode === 'correct')
+				gestureStart = WORD_FRAME - 6; // anticipates
+			else if (mode === 'lag')
+				gestureStart = WORD_FRAME + 6; // lags
+			else return 0; // no gesture
+
+			const gEnd = gestureStart + 16;
+			if (frame < gestureStart) return 0;
+			if (frame > gEnd + 8) return lerp(80, 0, eout((frame - gEnd - 8) / 10));
+			if (frame <= gEnd) return lerp(0, 80, eout((frame - gestureStart) / 16));
+			return 80;
+		}
+
+		function getActiveWord(frame) {
+			return WORDS.find((w) => frame >= w.start && frame <= w.end) || null;
+		}
+
+		function drawGestureChar(frame, mode) {
+			gctx.clearRect(0, 0, GW, GH);
+			const cx = GW / 2,
+				gy = GH - 30;
+			// Ground
+			gctx.strokeStyle = C.border2;
+			gctx.lineWidth = 1;
+			gctx.beginPath();
+			gctx.moveTo(20, gy);
+			gctx.lineTo(GW - 20, gy);
+			gctx.stroke();
+
+			const hipY = gy - 80,
+				chestY = gy - 135,
+				headY = gy - 175;
+			const armAngle = getGestureArmAngle(frame, mode);
+			const aRad = (armAngle * Math.PI) / 180;
+
+			// Legs
+			gctx.strokeStyle = C.gold + 'cc';
+			gctx.lineWidth = 14;
+			gctx.lineCap = 'round';
+			gctx.beginPath();
+			gctx.moveTo(cx, hipY);
+			gctx.lineTo(cx - 16, gy);
+			gctx.stroke();
+			gctx.beginPath();
+			gctx.moveTo(cx, hipY);
+			gctx.lineTo(cx + 16, gy);
+			gctx.stroke();
+
+			// Spine
+			gctx.strokeStyle = C.lav + 'cc';
+			gctx.lineWidth = 18;
+			gctx.beginPath();
+			gctx.moveTo(cx, hipY);
+			gctx.lineTo(cx, chestY);
+			gctx.stroke();
+
+			// Arms
+			const lArmX = cx - Math.cos(aRad) * 55,
+				lArmY = chestY + Math.sin(aRad) * 30;
+			const rArmX = cx + Math.cos(aRad) * 55,
+				rArmY = chestY + Math.sin(aRad) * 30;
+			gctx.strokeStyle = C.coral + 'cc';
+			gctx.lineWidth = 11;
+			gctx.beginPath();
+			gctx.moveTo(cx, chestY);
+			gctx.lineTo(lArmX, lArmY);
+			gctx.stroke();
+			gctx.beginPath();
+			gctx.moveTo(cx, chestY);
+			gctx.lineTo(rArmX, rArmY);
+			gctx.stroke();
+			// Forearms
+			gctx.lineWidth = 9;
+			gctx.beginPath();
+			gctx.moveTo(lArmX, lArmY);
+			gctx.lineTo(lArmX - Math.cos(aRad) * 38, lArmY + Math.sin(aRad) * 20);
+			gctx.stroke();
+			gctx.beginPath();
+			gctx.moveTo(rArmX, rArmY);
+			gctx.lineTo(rArmX + Math.cos(aRad) * 38, rArmY + Math.sin(aRad) * 20);
+			gctx.stroke();
+
+			// Head
+			gctx.fillStyle = C.lav + 'cc';
+			gctx.beginPath();
+			gctx.arc(cx, headY, 26, 0, Math.PI * 2);
+			gctx.fill();
+			// Eyes
+			gctx.fillStyle = '#fff';
+			gctx.beginPath();
+			gctx.ellipse(cx - 9, headY - 4, 5, 6, -0.1, 0, Math.PI * 2);
+			gctx.fill();
+			gctx.beginPath();
+			gctx.ellipse(cx + 9, headY - 4, 5, 6, 0.1, 0, Math.PI * 2);
+			gctx.fill();
+			gctx.fillStyle = C.bg;
+			gctx.beginPath();
+			gctx.arc(cx - 8, headY - 3, 3, 0, Math.PI * 2);
+			gctx.fill();
+			gctx.beginPath();
+			gctx.arc(cx + 9, headY - 3, 3, 0, Math.PI * 2);
+			gctx.fill();
+
+			// Mouth — simple lip sync
+			const w = getActiveWord(frame);
+			gctx.strokeStyle = C.bg;
+			gctx.lineWidth = 2.5;
+			gctx.lineCap = 'round';
+			if (w) {
+				const open = w.emphasis ? 8 : 4;
+				gctx.beginPath();
+				gctx.moveTo(cx - 10, headY + 12);
+				gctx.bezierCurveTo(
+					cx - 5,
+					headY + 12 + open,
+					cx + 5,
+					headY + 12 + open,
+					cx + 10,
+					headY + 12
+				);
+				gctx.stroke();
+			} else {
+				gctx.beginPath();
+				gctx.moveTo(cx - 8, headY + 12);
+				gctx.lineTo(cx + 8, headY + 12);
+				gctx.stroke();
+			}
+
+			// Word display
+			const activeW = getActiveWord(frame);
+			WORDS.forEach((wd) => {
+				const isActive = frame >= wd.start && frame <= wd.end;
+				gctx.fillStyle = isActive ? (wd.emphasis ? C.gold : '#fff') : C.dim;
+				gctx.font =
+					isActive && wd.emphasis ? `bold 16px 'JetBrains Mono'` : `12px 'JetBrains Mono'`;
+				gctx.textAlign = 'center';
+				const wi = WORDS.indexOf(wd);
+				gctx.fillText(wd.word, 48 + wi * 60, GH - 8);
+			});
+
+			// Gesture timing label
+			const col = gestureMode === 'correct' ? C.mint : gestureMode === 'lag' ? C.coral : C.muted;
+			gctx.fillStyle = col;
+			gctx.font = `9px 'JetBrains Mono'`;
+			gctx.textAlign = 'left';
+			gctx.fillText(
+				gestureMode === 'correct'
+					? 'Gesture anticipates'
+					: `Gesture ${gestureMode === 'lag' ? 'lags behind' : 'absent'}`,
+				12,
+				16
+			);
+		}
+
+		function setGestureMode(el, mode) {
+			gestureMode = mode;
+			document
+				.querySelectorAll('#gestureTimingRow .timing-cell')
+				.forEach((c) => c.classList.toggle('active', c.dataset.mode === mode));
+			const notes = {
+				correct:
+					'Correct anticipation makes the character feel like they are <em>thinking</em> the words before speaking them — the gesture charges the emphasis.',
+				lag: 'Lagging gesture feels reactive and disconnected — as if the body is commenting on what was already said rather than driving it.',
+				none: 'Without gesture the character is a talking head. Holds attention but lacks personality and physical presence.'
+			};
+			document.getElementById('gestureNote').innerHTML = notes[mode];
+			drawGestureChar(gestureFrame, gestureMode);
+		}
+
+		const gSlider = document.getElementById('gestureFrame');
+		gSlider.oninput = function () {
+			gestureFrame = parseInt(this.value);
+			document.getElementById('gestureFrameVal').textContent = gestureFrame;
+			drawGestureChar(gestureFrame, gestureMode);
+		};
+
+		function gestureTick(ts) {
+			if (!gestureLastTs) gestureLastTs = ts;
+			gestureFrame += ((ts - gestureLastTs) / 1000) * 20;
+			gestureLastTs = ts;
+			if (gestureFrame > 72) gestureFrame = 0;
+			gSlider.value = Math.floor(gestureFrame);
+			document.getElementById('gestureFrameVal').textContent = Math.floor(gestureFrame);
+			drawGestureChar(Math.floor(gestureFrame), gestureMode);
+			gestureRaf = requestAnimationFrame(gestureTick);
+		}
+		document.getElementById('gesturePlayBtn').onclick = function () {
+			gesturePlaying = !gesturePlaying;
+			this.textContent = gesturePlaying ? '⏸ Pause' : '▶ Play';
+			this.classList.toggle('active', gesturePlaying);
+			if (gesturePlaying) {
+				gestureLastTs = null;
+				gestureRaf = requestAnimationFrame(gestureTick);
+			} else cancelAnimationFrame(gestureRaf);
+		};
+		document.getElementById('gestureResetBtn').onclick = () => {
+			gestureFrame = 0;
+			gSlider.value = 0;
+			drawGestureChar(0, gestureMode);
+		};
+		drawGestureChar(0, gestureMode);
+		setTimeout(() => {
+			gestureLastTs = null;
+			gestureRaf = requestAnimationFrame(gestureTick);
+		}, 500);
+
+		/* ═══════════════════════════════════════
+   DEMO 7.5 — TIMING & EMOTION
+═══════════════════════════════════════ */
+		const timingCanvas = document.getElementById('timingCanvas');
+		const tctx = timingCanvas.getContext('2d');
+		const TW = timingCanvas.width,
+			TH = timingCanvas.height;
+		const tProgCanvas = document.getElementById('timingProgressCanvas');
+		const tProgCtx = tProgCanvas.getContext('2d');
+
+		const TIMING_MODES = {
+			slow: {
+				frames: 24,
+				color: C.mint,
+				mood: 'Slow — 24 frames',
+				desc: '24 frames — heavy, deliberate. Reads as sadness, reverence, exhaustion, or careful thought. The audience has time to feel the weight of the action.'
+			},
+			medium: {
+				frames: 12,
+				color: C.gold,
+				mood: 'Medium — 12 frames',
+				desc: '12 frames — natural, conversational. The default for most confident, neutral, or informational gestures. Not heavy, not flippant.'
+			},
+			fast: {
+				frames: 4,
+				color: C.coral,
+				mood: 'Fast — 4 frames',
+				desc: '4 frames — sharp, snappy. Reads as startled, excited, impulsive, or urgent. The speed itself communicates emotion — even before the gesture completes.'
+			}
+		};
+		let timingMode = 'slow',
+			timingT = 0,
+			timingPlaying = false,
+			timingRaf = null,
+			timingLastTs = null,
+			timingHold = 0;
+
+		function drawTimingChar(t) {
+			tctx.clearRect(0, 0, TW, TH);
+			const cx = TW / 2,
+				gy = TH - 24;
+			// Ground
+			tctx.strokeStyle = C.border2;
+			tctx.lineWidth = 1;
+			tctx.beginPath();
+			tctx.moveTo(20, gy);
+			tctx.lineTo(TW - 20, gy);
+			tctx.stroke();
+
+			const hipY = gy - 80,
+				chestY = gy - 128,
+				headY = gy - 168;
+			const armT = clamp(t, 0, 1);
+			const armAngle = lerp(0, 120, eout(armT));
+			const aRad = (armAngle * Math.PI) / 180;
+			const lArmX = cx - Math.cos(aRad) * 40,
+				lArmY = chestY + Math.sin(aRad) * 25;
+
+			// Legs
+			tctx.strokeStyle = C.gold + 'cc';
+			tctx.lineWidth = 14;
+			tctx.lineCap = 'round';
+			tctx.beginPath();
+			tctx.moveTo(cx, hipY);
+			tctx.lineTo(cx - 14, gy);
+			tctx.stroke();
+			tctx.beginPath();
+			tctx.moveTo(cx, hipY);
+			tctx.lineTo(cx + 14, gy);
+			tctx.stroke();
+			// Spine
+			tctx.strokeStyle = C.lav + 'cc';
+			tctx.lineWidth = 18;
+			tctx.beginPath();
+			tctx.moveTo(cx, hipY);
+			tctx.lineTo(cx, chestY);
+			tctx.stroke();
+			// Raised arm
+			tctx.strokeStyle = TIMING_MODES[timingMode].color + 'cc';
+			tctx.lineWidth = 11;
+			tctx.beginPath();
+			tctx.moveTo(cx, chestY);
+			tctx.lineTo(lArmX, lArmY);
+			tctx.stroke();
+			tctx.lineWidth = 9;
+			tctx.beginPath();
+			tctx.moveTo(lArmX, lArmY);
+			tctx.lineTo(lArmX - 18, lArmY - 28);
+			tctx.stroke();
+			// Resting arm
+			tctx.strokeStyle = C.coral + '88';
+			tctx.lineWidth = 11;
+			tctx.beginPath();
+			tctx.moveTo(cx, chestY);
+			tctx.lineTo(cx + 36, chestY + 15);
+			tctx.stroke();
+			tctx.lineWidth = 9;
+			tctx.beginPath();
+			tctx.moveTo(cx + 36, chestY + 15);
+			tctx.lineTo(cx + 40, chestY + 40);
+			tctx.stroke();
+
+			// Head
+			tctx.fillStyle = C.lav + 'cc';
+			tctx.beginPath();
+			tctx.arc(cx, headY, 24, 0, Math.PI * 2);
+			tctx.fill();
+			tctx.fillStyle = '#fff';
+			tctx.beginPath();
+			tctx.ellipse(cx - 8, headY - 3, 4.5, 5.5, 0, 0, Math.PI * 2);
+			tctx.fill();
+			tctx.beginPath();
+			tctx.ellipse(cx + 8, headY - 3, 4.5, 5.5, 0, 0, Math.PI * 2);
+			tctx.fill();
+			tctx.fillStyle = C.bg;
+			tctx.beginPath();
+			tctx.arc(cx - 7, headY - 2, 2.8, 0, Math.PI * 2);
+			tctx.fill();
+			tctx.beginPath();
+			tctx.arc(cx + 8, headY - 2, 2.8, 0, Math.PI * 2);
+			tctx.fill();
+
+			// Mode label
+			const md = TIMING_MODES[timingMode];
+			tctx.fillStyle = md.color;
+			tctx.font = `bold 11px 'JetBrains Mono'`;
+			tctx.textAlign = 'center';
+			tctx.fillText(`${md.frames} frames`, TW / 2, 16);
+		}
+
+		function drawTimingProgress(t) {
+			const md = TIMING_MODES[timingMode];
+			const w = tProgCanvas.width,
+				h = tProgCanvas.height;
+			tProgCtx.clearRect(0, 0, w, h);
+			tProgCtx.fillStyle = C.border;
+			tProgCtx.fillRect(0, 0, w, h);
+			// Total frames marker
+			const frameW = w / (md.frames + 8);
+			for (let f = 0; f <= md.frames; f++) {
+				const x = f * frameW + frameW * 0.5;
+				tProgCtx.fillStyle = C.dim;
+				tProgCtx.fillRect(x, h * 0.6, 1, h * 0.4);
+			}
+			// Progress
+			tProgCtx.fillStyle = md.color;
+			tProgCtx.fillRect(0, 0, Math.min(1, t) * w, h * 0.55);
+			// Frame count
+			tProgCtx.fillStyle = md.color;
+			tProgCtx.font = `9px 'JetBrains Mono'`;
+			tProgCtx.textAlign = 'right';
+			tProgCtx.fillText(`${Math.round(t * md.frames)}/${md.frames}`, w - 4, h * 0.45);
+		}
+
+		function selectTimingMode(el, mode) {
+			timingMode = mode;
+			timingT = 0;
+			timingHold = 0;
+			document
+				.querySelectorAll('#timingModeGrid .timing-cell')
+				.forEach((c) => c.classList.toggle('active', c.dataset.tmode === mode));
+			const md = TIMING_MODES[mode];
+			document.getElementById('timingMoodLabel').textContent = md.mood;
+			document.getElementById('timingMoodLabel').style.color = md.color;
+			document.getElementById('timingMoodDesc').textContent = md.desc;
+			drawTimingChar(0);
+			drawTimingProgress(0);
+			if (!timingPlaying) {
+				timingPlaying = true;
+				timingLastTs = null;
+				timingRaf = requestAnimationFrame(timingTick);
+				document.getElementById('timingPlayBtn').textContent = '⏸ Pause';
+				document.getElementById('timingPlayBtn').classList.add('active');
+			}
+		}
+
+		function timingTick(ts) {
+			if (!timingLastTs) timingLastTs = ts;
+			const dt = (ts - timingLastTs) / 1000;
+			timingLastTs = ts;
+			const md = TIMING_MODES[timingMode];
+			const speed = 1 / md.frames;
+
+			if (timingHold > 0) {
+				timingHold -= dt;
+				drawTimingChar(timingT);
+				drawTimingProgress(timingT);
+			} else {
+				timingT += dt * 24 * speed;
+				if (timingT >= 1.0) {
+					timingT = 1.0;
+					timingHold = 0.8;
+					setTimeout(() => {
+						timingT = 0;
+						timingHold = 0;
+					}, 800);
+				}
+				drawTimingChar(timingT);
+				drawTimingProgress(timingT);
+			}
+			timingRaf = requestAnimationFrame(timingTick);
+		}
+
+		document.getElementById('timingPlayBtn').onclick = function () {
+			timingPlaying = !timingPlaying;
+			this.textContent = timingPlaying ? '⏸ Pause' : '▶ Play';
+			this.classList.toggle('active', timingPlaying);
+			if (timingPlaying) {
+				timingLastTs = null;
+				timingRaf = requestAnimationFrame(timingTick);
+			} else cancelAnimationFrame(timingRaf);
+		};
+		document.getElementById('timingResetBtn').onclick = () => {
+			timingT = 0;
+			timingHold = 0;
+			drawTimingChar(0);
+			drawTimingProgress(0);
+		};
+		drawTimingChar(0);
+		drawTimingProgress(0);
+		setTimeout(() => {
+			timingPlaying = true;
+			timingLastTs = null;
+			timingRaf = requestAnimationFrame(timingTick);
+			document.getElementById('timingPlayBtn').textContent = '⏸ Pause';
+			document.getElementById('timingPlayBtn').classList.add('active');
+		}, 400);
+
+		/* ════════════════════════════
+   QUIZ
+════════════════════════════ */
+		let quizScores = {};
+		function answer(optEl, qId, result) {
+			const qEl = document.getElementById(qId);
+			if (qEl.querySelector('.option.correct') || qEl.querySelector('.option.wrong')) return;
+			const fb = document.getElementById(qId + '-feedback');
+			optEl.classList.add(result === 'correct' ? 'correct' : 'wrong');
+			qEl.querySelectorAll('.option').forEach((o) => o.classList.add('disabled'));
+			if (result === 'correct') {
+				fb.textContent = '✓ Correct.';
+				fb.className = 'feedback ok';
+				quizScores[qId] = true;
+			} else {
+				fb.textContent = '✗ Not quite — review the section above.';
+				fb.className = 'feedback bad';
+				quizScores[qId] = false;
+				qEl.querySelectorAll('.option').forEach((o) => {
+					if (!o.classList.contains('wrong')) o.classList.add('correct');
+				});
+			}
+			if (Object.keys(quizScores).length === 5) {
+				const c = Object.values(quizScores).filter(Boolean).length;
+				document.getElementById('scoreNum').textContent = `${c}/5`;
+				document.getElementById('scoreLbl').textContent =
+					c === 5
+						? 'Perfect — Module 7 Complete!'
+						: c >= 4
+							? 'Strong — review any you missed.'
+							: 'Good effort — re-read the sections.';
+				document.getElementById('quizScore').classList.add('visible');
+			}
+		}
+
+		if (typeof toggleZone === 'function') window.toggleZone = toggleZone;
+		if (typeof drawExpression === 'function') window.drawExpression = drawExpression;
+		if (typeof getActiveWord === 'function') window.getActiveWord = getActiveWord;
+		if (typeof getLSShape === 'function') window.getLSShape = getLSShape;
+		if (typeof drawLSFace === 'function') window.drawLSFace = drawLSFace;
+		if (typeof selectEmotion === 'function') window.selectEmotion = selectEmotion;
+		if (typeof timingTick === 'function') window.timingTick = timingTick;
+		if (typeof selectPhoneme === 'function') window.selectPhoneme = selectPhoneme;
+		if (typeof setLSFrame === 'function') window.setLSFrame = setLSFrame;
+		if (typeof getGestureArmAngle === 'function') window.getGestureArmAngle = getGestureArmAngle;
+		if (typeof drawFullFace === 'function') window.drawFullFace = drawFullFace;
+		if (typeof gestureTick === 'function') window.gestureTick = gestureTick;
+		if (typeof drawTimingChar === 'function') window.drawTimingChar = drawTimingChar;
+		if (typeof drawPhoneme === 'function') window.drawPhoneme = drawPhoneme;
+		if (typeof lsTick === 'function') window.lsTick = lsTick;
+		if (typeof selectTimingMode === 'function') window.selectTimingMode = selectTimingMode;
+		if (typeof drawTimingProgress === 'function') window.drawTimingProgress = drawTimingProgress;
+		if (typeof drawGestureChar === 'function') window.drawGestureChar = drawGestureChar;
+		if (typeof setGestureMode === 'function') window.setGestureMode = setGestureMode;
+		if (typeof answer === 'function') window.answer = answer;
+
+		return () => {
+			if (typeof gestureRaf !== 'undefined' && gestureRaf) cancelAnimationFrame(gestureRaf);
+			if (typeof lsRaf !== 'undefined' && lsRaf) cancelAnimationFrame(lsRaf);
+			if (typeof timingRaf !== 'undefined' && timingRaf) cancelAnimationFrame(timingRaf);
+		};
 	});
 </script>
 
+<div class="page-wrapper">
+	<!-- ══ HERO ══ -->
+	<header class="module-hero">
+		<svg class="hero-deco" width="260" height="300" viewBox="0 0 260 300" aria-hidden="true">
+			<!-- Scattered mouth shapes at varying sizes/angles -->
+			<g transform="translate(20,30) rotate(-12)">
+				<ellipse cx="0" cy="0" rx="28" ry="16" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<ellipse cx="0" cy="4" rx="22" ry="10" fill="#c4a8f0" opacity=".3" />
+			</g>
+			<g transform="translate(120,20) rotate(8)">
+				<ellipse cx="0" cy="0" rx="20" ry="8" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<path d="M-20,0 Q0,12 20,0" fill="#c4a8f0" opacity=".3" />
+			</g>
+			<g transform="translate(200,80) rotate(-5)">
+				<ellipse cx="0" cy="0" rx="24" ry="20" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<ellipse cx="0" cy="5" rx="18" ry="14" fill="#c4a8f0" opacity=".25" />
+			</g>
+			<g transform="translate(50,130) rotate(10)">
+				<ellipse cx="0" cy="0" rx="16" ry="6" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<line x1="-10" y1="-3" x2="10" y2="-3" stroke="#c4a8f0" stroke-width="2" opacity=".5" />
+			</g>
+			<g transform="translate(160,150) rotate(-8)">
+				<ellipse cx="0" cy="0" rx="32" ry="14" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<path d="M-30,-2 Q0,16 30,-2" fill="#c4a8f0" opacity=".3" />
+			</g>
+			<g transform="translate(80,220) rotate(6)">
+				<ellipse cx="0" cy="0" rx="18" ry="18" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<ellipse cx="0" cy="3" rx="12" ry="12" fill="#c4a8f0" opacity=".2" />
+			</g>
+			<g transform="translate(210,240) rotate(-14)">
+				<ellipse cx="0" cy="0" rx="22" ry="10" fill="none" stroke="#c4a8f0" stroke-width="1.5" />
+				<path d="M-18,2 Q0,-10 18,2" fill="#c4a8f0" opacity=".25" />
+			</g>
+		</svg>
+		<div class="module-eyebrow">Animation Fundamentals · Module 07</div>
+		<h1 class="module-title">Lip Sync &amp; <em>Expressive</em> Animation</h1>
+		<p class="module-subtitle">
+			The mouth is only 20% of expression. The other 80% is everything else.
+		</p>
+		<div class="objectives">
+			<div class="obj-label">Learning Objectives</div>
+			<ul>
+				<li>Identify the core phoneme mouth shapes and which sounds they represent</li>
+				<li>Map spoken dialogue to animation frames using a lip sync chart</li>
+				<li>Understand why less is more in lip sync — the "cheat" that looks real</li>
+				<li>Animate emotion through body language, timing, and exaggeration</li>
+				<li>Balance expressive animation with informational clarity in educational content</li>
+			</ul>
+		</div>
+	</header>
+
+	<!-- ══ SECTION 1: WHAT IS LIP SYNC ══ -->
+	<section class="section" id="s1">
+		<div class="section-header">
+			<span class="section-num">01</span>
+			<h2 class="section-title">What Lip Sync Actually Is</h2>
+		</div>
+		<p>
+			Lip sync — short for lip synchronisation — is the process of animating a character's mouth so
+			that its shape matches the sounds being spoken in the audio track. Done well, it is invisible:
+			the viewer simply perceives a character who is speaking. Done badly, it is immediately jarring
+			— a moving mouth that doesn't match the words destroys believability instantly.
+		</p>
+		<p>
+			The key insight is that you are <em>not</em> trying to reproduce every minute movement of a
+			real human mouth. You are creating a <strong>visual impression</strong> of speech using a
+			small set of recognisable shapes — called <strong>phoneme shapes</strong> or mouth cels. The brain
+			fills in the rest, the same way it fills in motion between animation frames.
+		</p>
+		<div class="callout gold">
+			<div class="callout-label">The Animator's Shortcut</div>
+			Professional lip sync typically uses<strong>7–10 distinct mouth shapes</strong> to represent all
+			possible sounds. English has 44 phonemes, but many share near-identical mouth positions. A skilled
+			animator selects the shape that reads most clearly on screen — not the one that is most anatomically
+			accurate.
+		</div>
+		<p>
+			For educational animation, lip sync serves a secondary purpose: it tells the viewer that the
+			character speaking <em>owns</em> the information being delivered. A speaking character is more trustworthy
+			and engaging than a static one. Even rough, reduced lip sync dramatically improves viewer retention.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 2: PHONEME SHAPES ══ -->
+	<section class="section" id="s2">
+		<div class="section-header">
+			<span class="section-num">02</span>
+			<h2 class="section-title">Phoneme Shapes</h2>
+		</div>
+		<p>
+			The standard set of mouth shapes for 2D animation is loosely based on the Preston Blair
+			phoneme chart — one of the most referenced documents in the animation industry. Each shape
+			covers a group of sounds that produce the same basic mouth position.
+		</p>
+		<p>
+			You don't need a unique shape for every sound. You need shapes that are
+			<strong>clearly distinct from each other</strong> at animation frame rates. If two sounds look nearly
+			identical in motion, they can share a shape.
+		</p>
+
+		<!-- DEMO 7.1 — Phoneme Explorer -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 7.1 — Phoneme Shape Explorer</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Click any shape to see it drawn large with the sounds it covers, example words, and
+					animation notes.
+				</p>
+				<div class="phoneme-grid" id="phonemeGrid"></div>
+				<div
+					style="
+								display: grid;
+								grid-template-columns: 220px 1fr;
+								gap: 1.25rem;
+								align-items: start;
+								margin-top: 1px;
+								background: var(--border);
+							"
+				>
+					<div
+						style="
+									background: var(--raised);
+									padding: 0.75rem;
+									display: flex;
+									flex-direction: column;
+									align-items: center;
+									gap: 0.5rem;
+								"
+					>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--muted);
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+									"
+						>
+							Mouth Shape
+						</div>
+						<canvas
+							id="phonemeCanvas"
+							width="200"
+							height="160"
+							style="background: var(--bg); border: 1px solid var(--border)"
+						></canvas>
+						<div
+							id="phonemeShapeName"
+							style="
+										font-family: var(--ff-display);
+										font-size: 20px;
+										font-weight: 800;
+										color: var(--lavender);
+									"
+						>
+							—
+						</div>
+					</div>
+					<div style="background: var(--surface); padding: 1rem">
+						<div
+							id="phonemeInfo"
+							style="
+										font-family: var(--ff-mono);
+										font-size: 11px;
+										color: var(--muted);
+										line-height: 1.8;
+									"
+						>
+							<span style="color: var(--dim)">Select a phoneme shape to see details.</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<p>
+			Notice that shapes like <strong>M/B/P</strong> (lips completely closed) and
+			<strong>F/V</strong> (upper teeth on lower lip) are the most distinctive — they read clearly even
+			at small sizes. The open vowel shapes (A, E, I, O, U) differ primarily in jaw height and lip rounding.
+			On fast dialogue, only the extremes — closed, wide-open, and O — need to be shown clearly.
+		</p>
+	</section>
+
+	<!-- ══ SECTION 3: SYNC TO AUDIO ══ -->
+	<section class="section" id="s3">
+		<div class="section-header">
+			<span class="section-num">03</span>
+			<h2 class="section-title">Syncing to Audio Frames</h2>
+		</div>
+		<p>
+			Lip sync in professional production begins with an
+			<strong>exposure sheet</strong> (X-sheet) or a digital equivalent: a frame-by-frame breakdown of
+			the audio, with phonemes written into the columns corresponding to the frames where they occur.
+			The animator then assigns mouth shapes to those frames.
+		</p>
+		<p>
+			The process: <strong>1)</strong> listen to the audio repeatedly until you can hear each
+			syllable clearly. <strong>2)</strong> Find where each stressed phoneme falls in the audio
+			waveform. <strong>3)</strong> Assign a mouth shape 1–2 frames <em>before</em> the phoneme hits
+			in the audio — the animation anticipates the sound slightly. <strong>4)</strong> Hold each
+			shape for its natural duration. <strong>5)</strong> Return to rest/neutral between clearly separate
+			words.
+		</p>
+
+		<div class="callout coral">
+			<div class="callout-label">The Most Common Mistake</div>
+			Beginners try to animate every single syllable perfectly. This produces "chattering" — rapid, shallow
+			mouth changes that read as noise rather than speech.
+			<strong>Animate the accented syllables only.</strong> Let the mouth settle between stressed beats.
+			Real speech perception happens at the level of syllables and words, not individual phonemes.
+		</div>
+
+		<!-- DEMO 7.2 — Lip Sync Timeline -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 7.2 — Lip Sync Chart</span>
+				<span class="demo-badge coral">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					A lip sync breakdown for the phrase
+					<strong style="color: #fff">"Animation takes time."</strong> Scrub the playhead or hit Play.
+					Click any frame cell to see which phoneme is active and watch the mouth shape update.
+				</p>
+				<div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-start">
+					<!-- Face preview -->
+					<div
+						style="
+									flex: 0 0 auto;
+									display: flex;
+									flex-direction: column;
+									gap: 0.5rem;
+									align-items: center;
+								"
+					>
+						<div
+							style="
+										font-family: var(--ff-mono);
+										font-size: 9px;
+										color: var(--muted);
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+									"
+						>
+							Live Preview
+						</div>
+						<canvas
+							id="lsFaceCanvas"
+							width="180"
+							height="180"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+						<div
+							id="lsCurrentShape"
+							style="font-family: var(--ff-mono); font-size: 11px; color: var(--lavender)"
+						>
+							Rest
+						</div>
+					</div>
+					<!-- Timeline -->
+					<div style="flex: 1; min-width: 280px; overflow: hidden">
+						<div class="lipsync-strip">
+							<div class="ls-playhead-wrap" id="lsPlayheadWrap">
+								<!-- rows injected by JS -->
+							</div>
+						</div>
+						<div style="margin-top: 0.75rem" class="btn-row">
+							<button class="btn active" id="lsPlayBtn">▶ Play</button>
+							<button class="btn" id="lsResetBtn">↺ Reset</button>
+							<div
+								style="
+											margin-left: auto;
+											font-family: var(--ff-mono);
+											font-size: 10px;
+											color: var(--muted);
+										"
+							>
+								Frame: <span id="lsFrameNum" style="color: var(--lavender)">0</span>
+							</div>
+						</div>
+						<div
+							style="
+										margin-top: 0.65rem;
+										padding: 0.65rem 0.85rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+										line-height: 1.7;
+									"
+							id="lsInfo"
+						>
+							The phoneme shapes above the waveform row are the "held" shapes — each one is active
+							for the full duration shown.
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 4: EXPRESSION ══ -->
+	<section class="section" id="s4">
+		<div class="section-header">
+			<span class="section-num">04</span>
+			<h2 class="section-title">Expression — The Face Beyond the Mouth</h2>
+		</div>
+		<p>
+			The mouth is the least important part of facial expression. Research consistently shows that
+			the <strong>eyes and brows</strong> communicate emotional state far more powerfully than the mouth
+			shape. A character with expressive brows and neutral mouth reads as emotional. A character with
+			an expressive mouth and neutral brows reads as speaking.
+		</p>
+		<p>
+			For 2D character animation, the face is usually decomposed into independent layers:
+			<strong>brows, upper eyelids, eyes/pupils, lower eyelids, cheeks, and mouth</strong>. Each can
+			be animated independently, allowing you to mix and match emotional states precisely.
+		</p>
+
+		<!-- DEMO 7.3 — Expression Library -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 7.3 — Expression Library</span>
+				<span class="demo-badge mint">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Click an emotion to see how brows, eyes, and mouth each contribute. Toggle individual face
+					zones to isolate which element carries the most emotional weight.
+				</p>
+				<div class="emotion-grid" id="emotionGrid"></div>
+				<div
+					style="
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 1.25rem;
+								margin-top: 1px;
+								background: var(--border);
+							"
+				>
+					<!-- Face -->
+					<div
+						style="
+									background: var(--surface);
+									padding: 1.25rem;
+									display: flex;
+									flex-direction: column;
+									gap: 0.75rem;
+									align-items: center;
+								"
+					>
+						<canvas
+							id="exprCanvas"
+							width="220"
+							height="220"
+							style="background: var(--raised); border: 1px solid var(--border)"
+						></canvas>
+						<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center">
+							<button
+								class="btn mint active"
+								id="exprBrowToggle"
+								onclick={(e) => {
+									window.toggleZone('brows', e.currentTarget);
+								}}
+							>
+								Brows
+							</button>
+							<button
+								class="btn mint active"
+								id="exprEyeToggle"
+								onclick={(e) => {
+									window.toggleZone('eyes', e.currentTarget);
+								}}
+							>
+								Eyes
+							</button>
+							<button
+								class="btn mint active"
+								id="exprMouthToggle"
+								onclick={(e) => {
+									window.toggleZone('mouth', e.currentTarget);
+								}}
+							>
+								Mouth
+							</button>
+						</div>
+					</div>
+					<!-- Info -->
+					<div
+						style="
+									background: var(--raised);
+									padding: 1.25rem;
+									display: flex;
+									flex-direction: column;
+									gap: 0.75rem;
+								"
+					>
+						<div>
+							<div
+								id="exprEmotionName"
+								style="
+											font-family: var(--ff-display);
+											font-size: 24px;
+											font-weight: 800;
+											color: var(--lavender);
+										"
+							>
+								Happy
+							</div>
+							<div
+								id="exprEmotionTag"
+								style="
+											font-family: var(--ff-mono);
+											font-size: 10px;
+											color: var(--muted);
+											margin-top: 0.2rem;
+										"
+							></div>
+						</div>
+						<div
+							id="exprBreakdown"
+							style="
+										display: flex;
+										flex-direction: column;
+										gap: 0.5rem;
+										font-family: var(--ff-mono);
+										font-size: 11px;
+									"
+						></div>
+						<div
+							id="exprNote"
+							style="
+										margin-top: 0.25rem;
+										padding: 0.75rem;
+										border-left: 2px solid var(--lavender);
+										background: color-mix(in srgb, var(--lavender) 5%, var(--bg));
+										font-size: 12px;
+										color: var(--muted);
+										line-height: 1.65;
+									"
+						></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 5: BODY LANGUAGE ══ -->
+	<section class="section" id="s5">
+		<div class="section-header">
+			<span class="section-num">05</span>
+			<h2 class="section-title">Body Language &amp; Gesture</h2>
+		</div>
+		<p>
+			In animation, the body speaks before the mouth does. A character's
+			<strong>posture, weight distribution, and gesture</strong> communicate their emotional state continuously
+			— even when they aren't talking. When gesture and dialogue are in sync, the result is a character
+			that feels genuinely inhabited. When they conflict, the character feels like a puppet.
+		</p>
+		<p>
+			Gestures in animation should <strong>precede the word they reinforce</strong> by 4–8 frames. If
+			a character says "this is enormous" and their arms spread wide, the arms should start spreading
+			4 frames before the word "enormous" hits. This matches how humans actually gesture — we anticipate
+			the emphasis point.
+		</p>
+
+		<!-- DEMO 7.4 — Gesture + Dialogue -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 7.4 — Gesture Timing</span>
+				<span class="demo-badge gold">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Watch a character deliver a line. Toggle gesture timing between
+					<strong style="color: var(--gold)">correct</strong> (gesture anticipates speech) and
+					<strong style="color: var(--coral)">incorrect</strong> (gesture lags behind speech). The difference
+					is subtle but immediately felt.
+				</p>
+				<div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start">
+					<canvas
+						id="gestureCanvas"
+						width="340"
+						height="280"
+						style="background: var(--raised); border: 1px solid var(--border); max-width: 100%"
+					></canvas>
+					<div
+						style="
+									flex: 1;
+									min-width: 200px;
+									display: flex;
+									flex-direction: column;
+									gap: 0.85rem;
+								"
+					>
+						<div>
+							<div
+								style="
+											font-family: var(--ff-mono);
+											font-size: 9px;
+											color: var(--muted);
+											letter-spacing: 0.1em;
+											text-transform: uppercase;
+											margin-bottom: 0.4rem;
+										"
+							>
+								Gesture Mode
+							</div>
+							<div class="timing-row" id="gestureTimingRow">
+								<div
+									class="timing-cell active"
+									data-mode="correct"
+									onclick={(e) => {
+										window.setGestureMode(e.currentTarget, 'correct');
+									}}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											window.setGestureMode(e.currentTarget, 'correct');
+										}
+									}}
+								>
+									<div class="timing-cell-name" style="color: var(--mint)">
+										Anticipates (Correct)
+									</div>
+									<div class="timing-cell-desc">Arms lead speech by ~5 frames</div>
+								</div>
+								<div
+									class="timing-cell"
+									data-mode="lag"
+									onclick={(e) => {
+										window.setGestureMode(e.currentTarget, 'lag');
+									}}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											window.setGestureMode(e.currentTarget, 'lag');
+										}
+									}}
+								>
+									<div class="timing-cell-name">Follows (Wrong)</div>
+									<div class="timing-cell-desc">Arms trail speech by ~5 frames</div>
+								</div>
+								<div
+									class="timing-cell"
+									data-mode="none"
+									onclick={(e) => {
+										window.setGestureMode(e.currentTarget, 'none');
+									}}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											window.setGestureMode(e.currentTarget, 'none');
+										}
+									}}
+								>
+									<div class="timing-cell-name">No gesture</div>
+									<div class="timing-cell-desc">Talking head, static body</div>
+								</div>
+							</div>
+						</div>
+						<div
+							style="
+										padding: 0.75rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+										font-family: var(--ff-mono);
+										font-size: 10px;
+										color: var(--muted);
+									"
+							id="gestureNote"
+						>
+							Correct anticipation makes the character feel like they are <em>thinking</em> the words
+							before speaking them.
+						</div>
+						<div class="ctrl-row">
+							<span class="ctrl-label">Playback</span>
+							<input type="range" class="gold" id="gestureFrame" min="0" max="71" value="0" />
+							<span class="ctrl-val" id="gestureFrameVal">0</span>
+						</div>
+						<div class="btn-row">
+							<button class="btn gold active" id="gesturePlayBtn">▶ Play</button>
+							<button class="btn" id="gestureResetBtn">↺ Reset</button>
+						</div>
+						<!-- Word highlight bar -->
+						<div style="padding: 0.65rem; border: 1px solid var(--border); background: var(--bg)">
+							<div
+								style="
+											font-family: var(--ff-mono);
+											font-size: 9px;
+											color: var(--muted);
+											margin-bottom: 0.4rem;
+											letter-spacing: 0.1em;
+											text-transform: uppercase;
+										"
+							>
+								Dialogue
+							</div>
+							<div id="wordHighlightRow" style="display: flex; gap: 0.3rem; flex-wrap: wrap"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 6: TIMING + EMOTION ══ -->
+	<section class="section" id="s6">
+		<div class="section-header">
+			<span class="section-num">06</span>
+			<h2 class="section-title">Timing as Emotional Language</h2>
+		</div>
+		<p>
+			The <em>speed</em> at which an expression or gesture is performed completely changes its emotional
+			meaning. A slow blink reads as calm. A rapid blink reads as anxiety or surprise. A head turn over
+			12 frames is thoughtful. The same turn over 3 frames is a sharp reactive snap. The geometry of the
+			motion is identical — only the timing changes.
+		</p>
+		<p>
+			This is one of the most powerful and least-taught concepts in character animation. You can
+			animate the exact same pose sequence at three different speeds and produce
+			<strong>three completely different emotional readings</strong> from the same character.
+		</p>
+
+		<!-- DEMO 7.5 — Timing & Emotion -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span class="demo-label">Demo 7.5 — Same Gesture, Different Timing</span>
+				<span class="demo-badge">interactive</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 13px; color: var(--muted); margin-bottom: 1.25rem">
+					Three versions of the same arm raise and hold. Only the timing differs. Select a mode and
+					play to feel the emotional difference.
+				</p>
+
+				<div
+					style="
+								display: grid;
+								grid-template-columns: repeat(3, 1fr);
+								gap: 1px;
+								background: var(--border);
+								border: 1px solid var(--border);
+								margin-bottom: 1rem;
+							"
+					id="timingModeGrid"
+				>
+					<div
+						class="timing-cell active"
+						data-tmode="slow"
+						onclick={(e) => {
+							window.selectTimingMode(e.currentTarget, 'slow');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.selectTimingMode(e.currentTarget, 'slow');
+							}
+						}}
+					>
+						<div class="timing-cell-name" style="color: var(--mint)">Slow — 24 frames</div>
+						<div class="timing-cell-desc">Deliberate, heavy, sad, tired, reverent</div>
+					</div>
+					<div
+						class="timing-cell"
+						data-tmode="medium"
+						onclick={(e) => {
+							window.selectTimingMode(e.currentTarget, 'medium');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.selectTimingMode(e.currentTarget, 'medium');
+							}
+						}}
+					>
+						<div class="timing-cell-name" style="color: var(--gold)">Medium — 12 frames</div>
+						<div class="timing-cell-desc">Natural, confident, conversational</div>
+					</div>
+					<div
+						class="timing-cell"
+						data-tmode="fast"
+						onclick={(e) => {
+							window.selectTimingMode(e.currentTarget, 'fast');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.selectTimingMode(e.currentTarget, 'fast');
+							}
+						}}
+					>
+						<div class="timing-cell-name" style="color: var(--coral)">Fast — 4 frames</div>
+						<div class="timing-cell-desc">Startled, excited, impulsive, panicked</div>
+					</div>
+				</div>
+
+				<div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start">
+					<canvas
+						id="timingCanvas"
+						width="280"
+						height="260"
+						style="background: var(--raised); border: 1px solid var(--border)"
+					></canvas>
+					<div
+						style="
+									flex: 1;
+									min-width: 180px;
+									display: flex;
+									flex-direction: column;
+									gap: 0.85rem;
+								"
+					>
+						<div
+							style="
+										padding: 0.85rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+									"
+						>
+							<div
+								style="
+											font-family: var(--ff-mono);
+											font-size: 9px;
+											color: var(--muted);
+											letter-spacing: 0.1em;
+											text-transform: uppercase;
+											margin-bottom: 0.35rem;
+										"
+							>
+								Frame Progress
+							</div>
+							<canvas
+								id="timingProgressCanvas"
+								width="220"
+								height="32"
+								style="
+											display: block;
+											background: var(--bg);
+											border: 1px solid var(--border);
+											max-width: 100%;
+										"
+							></canvas>
+						</div>
+						<div
+							id="timingMoodLabel"
+							style="
+										font-family: var(--ff-display);
+										font-size: 20px;
+										font-weight: 800;
+										color: var(--mint);
+									"
+						>
+							Slow
+						</div>
+						<div
+							id="timingMoodDesc"
+							style="
+										font-family: var(--ff-mono);
+										font-size: 11px;
+										color: var(--muted);
+										line-height: 1.7;
+										padding: 0.65rem;
+										border: 1px solid var(--border);
+										background: var(--raised);
+									"
+						>
+							24 frames — heavy, deliberate. Reads as sadness, reverence, exhaustion, or careful
+							thought. The audience has time to feel the weight of the action.
+						</div>
+						<div class="btn-row">
+							<button class="btn active" id="timingPlayBtn">▶ Play</button>
+							<button class="btn" id="timingResetBtn">↺ Reset</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ SECTION 7: EDUCATIONAL BALANCE ══ -->
+	<section class="section" id="s7">
+		<div class="section-header">
+			<span class="section-num">07</span>
+			<h2 class="section-title">Expression vs. Clarity in Educational Video</h2>
+		</div>
+		<p>
+			Expression and lip sync serve a different purpose in educational animation than in
+			entertainment. The goal is not to create a fully realised character performance — it is to
+			keep the viewer's attention anchored to a human-like presence while information is delivered.
+			Too little expression and the character is a cardboard cutout. Too much and the viewer watches
+			the performance instead of absorbing the content.
+		</p>
+		<div class="callout mint">
+			<div class="callout-label">The Educational Animator's Balance</div>
+			<div
+				style="
+							display: grid;
+							grid-template-columns: 1fr 1fr;
+							gap: 0.5rem 1.5rem;
+							font-size: 12px;
+							margin-top: 0.4rem;
+						"
+			>
+				<div>
+					<strong style="color: var(--gold)">Do use expression for:</strong><br />Reinforcing key
+					points<br />Transitions between topics<br />Reactions to diagram reveals<br />Opening and
+					closing beats
+				</div>
+				<div>
+					<strong style="color: var(--coral)">Avoid expression that:</strong><br />Competes with
+					diagram animation<br />Continues during dense narration<br />Uses more than 2–3 gestures
+					per minute<br />Draws eye away from the focal point
+				</div>
+			</div>
+		</div>
+		<p>
+			A practical approach: animate the character's mouth with basic lip sync throughout, but
+			reserve <strong>full body gestures</strong> for the three or four most important moments in the
+			video. These emphasis beats will have maximum impact precisely because the rest of the video is
+			more restrained.
+		</p>
+	</section>
+
+	<!-- ══ QUIZ ══ -->
+	<div class="quiz-section" id="quiz">
+		<div class="quiz-header-bar">
+			<div>
+				<div class="quiz-title">Module Check</div>
+				<div class="quiz-sub">5 questions · Expression &amp; sync</div>
+			</div>
+			<span class="demo-badge">Assessment</span>
+		</div>
+		<div class="quiz-body">
+			<div class="question" id="q1">
+				<div class="q-num">Q1 of 5</div>
+				<div class="q-text">
+					Why do professional animators use only 7–10 mouth shapes to represent all possible speech
+					sounds rather than a unique shape for every phoneme?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
+						}}
+					>
+						Software can only store a maximum of 10 shapes per character
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'correct');
+							}
+						}}
+					>
+						Many phonemes share nearly identical visible mouth positions, and the brain fills in the
+						rest — too many shapes creates visual noise without adding clarity
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
+						}}
+					>
+						More than 10 shapes causes rendering errors in most animation tools
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q1', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q1', 'wrong');
+							}
+						}}
+					>
+						Human vision cannot distinguish more than 10 distinct mouth positions per second
+					</div>
+				</div>
+				<div class="feedback" id="q1-feedback"></div>
+			</div>
+
+			<div class="question" id="q2">
+				<div class="q-num">Q2 of 5</div>
+				<div class="q-text">
+					When placing a mouth shape keyframe for a phoneme in your audio, when should the shape
+					appear relative to the sound?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
+						}}
+					>
+						Exactly on the frame where the phoneme plays in the audio
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
+						}}
+					>
+						2–3 frames after the phoneme plays, so it feels reactive
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'correct');
+							}
+						}}
+					>
+						1–2 frames before the phoneme in the audio — the mouth anticipates the sound
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q2', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q2', 'wrong');
+							}
+						}}
+					>
+						At the beginning of the word containing the phoneme, regardless of timing
+					</div>
+				</div>
+				<div class="feedback" id="q2-feedback"></div>
+			</div>
+
+			<div class="question" id="q3">
+				<div class="q-num">Q3 of 5</div>
+				<div class="q-text">
+					A character's face has expressive, arched brows and narrowed eyes, but a neutral, closed
+					mouth. What does the viewer most likely perceive?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
+						}}
+					>
+						A character who is speaking quietly
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
+						}}
+					>
+						A neutral, unemotional character — the mouth is the primary carrier of expression
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'correct');
+							}
+						}}
+					>
+						An emotionally charged character — brows and eyes carry emotional state far more
+						powerfully than the mouth
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q3', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q3', 'wrong');
+							}
+						}}
+					>
+						A character who is asleep
+					</div>
+				</div>
+				<div class="feedback" id="q3-feedback"></div>
+			</div>
+
+			<div class="question" id="q4">
+				<div class="q-num">Q4 of 5</div>
+				<div class="q-text">
+					A character is about to say the word "enormous" while spreading their arms wide. To feel
+					natural and anticipatory, when should the arm movement begin?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
+						}}
+					>
+						On the exact frame where "enormous" begins in the audio
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
+						}}
+					>
+						After "enormous" has finished — the gesture follows the word as a reaction
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'correct');
+							}
+						}}
+					>
+						4–8 frames before "enormous" begins — the gesture anticipates and leads the spoken
+						emphasis
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q4', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q4', 'wrong');
+							}
+						}}
+					>
+						At the start of the entire sentence, regardless of which word it emphasises
+					</div>
+				</div>
+				<div class="feedback" id="q4-feedback"></div>
+			</div>
+
+			<div class="question" id="q5">
+				<div class="q-num">Q5 of 5</div>
+				<div class="q-text">
+					You animate a character raising one hand slowly over 24 frames, then instantly snapping
+					their fingers over 2 frames. Which emotional qualities would viewers most likely read into
+					each motion?
+				</div>
+				<div class="options">
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
+						}}
+					>
+						Both feel the same — timing only affects technical smoothness, not emotional quality
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
+						}}
+					>
+						The slow raise reads as excited; the snap reads as sad
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'correct');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'correct');
+							}
+						}}
+					>
+						The slow raise reads as deliberate, heavy, or thoughtful; the snap reads as sudden,
+						sharp, or surprising — same geometry, completely different emotional character
+					</div>
+					<div
+						class="option"
+						onclick={(e) => {
+							window.answer(e.currentTarget, 'q5', 'wrong');
+						}}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								window.answer(e.currentTarget, 'q5', 'wrong');
+							}
+						}}
+					>
+						The slow raise is always wrong — all gestures should be fast to hold viewer attention
+					</div>
+				</div>
+				<div class="feedback" id="q5-feedback"></div>
+			</div>
+		</div>
+		<div class="quiz-score" id="quizScore">
+			<div class="score-big" id="scoreNum">0/5</div>
+			<div class="score-lbl" id="scoreLbl">Module 7 Complete</div>
+		</div>
+	</div>
+
+	<!-- ══ NAV ══ -->
+	<nav class="nav-links">
+		<a href="/courses/animation/06" class="prev-link">← Module 6: Rigging for 2D Characters</a>
+		<a href="/courses/animation/08" class="next-module">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">Diagram &amp; Concept Animation</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</nav>
+</div>
+
+<!-- /page-wrapper -->
+
 <style>
+	.page-wrapper {
+		background: var(--anim-bg);
+		color: var(--anim-text);
+		font-family: var(--ff-body);
+		font-size: 15px;
+		line-height: 1.8;
+	}
+
+	h1,
+	h2,
+	:global(h3) {
+		font-family: var(--ff-display);
+		font-weight: 800;
+		line-height: 1.15;
+		color: #fff;
+	}
+	p {
+		margin-bottom: 1.1rem;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--anim-gold);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: italic;
+	}
+	:global(code) {
+		font-family: var(--ff-mono);
+		font-size: 12px;
+		background: var(--anim-raised);
+		border: 1px solid var(--anim-border2);
+		padding: 1px 6px;
+		color: var(--anim-mint);
+	}
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 8rem;
+	}
+
+	/* ── HERO ── */
+	.module-hero {
+		padding: 5rem 0 4rem;
+		border-bottom: 1px solid var(--anim-border);
+		margin-bottom: 4rem;
+		position: relative;
+		overflow: hidden;
+	}
+	.module-eyebrow {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-gold);
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.module-eyebrow::before,
+	.module-eyebrow::after {
+		content: '';
+		display: inline-block;
+		width: 24px;
+		height: 1px;
+		background: var(--anim-gold);
+	}
+	.module-title {
+		font-size: clamp(28px, 5vw, 54px);
+		color: #fff;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+	.module-title em {
+		color: var(--anim-lavender);
+		font-style: italic;
+	}
+	.module-subtitle {
+		font-size: 16px;
+		color: var(--anim-muted);
+		font-weight: 400;
+		margin-bottom: 2.5rem;
+	}
+	.objectives {
+		border: 1px solid var(--anim-border);
+		border-left: 3px solid var(--anim-lavender);
+		background: var(--anim-surface);
+		padding: 1.5rem 2rem;
+	}
+	.obj-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-lavender);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.25rem 0 0.25rem 1.5rem;
+		position: relative;
+		font-size: 14px;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--anim-gold);
+	}
+
+	/* hero deco — mouth shapes scatter */
+	.hero-deco {
+		position: absolute;
+		top: 10px;
+		right: -10px;
+		opacity: 0.06;
+		pointer-events: none;
+	}
+
+	/* ── SECTIONS ── */
+	.section {
+		margin: 5rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.section-num {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-coral);
+		letter-spacing: 0.1em;
+	}
+	.section-title {
+		font-family: var(--ff-display);
+		font-size: 26px;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	/* ── CALLOUT ── */
+	.callout {
+		margin: 1.75rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
+		font-size: 13.5px;
+	}
+	.callout.gold {
+		border-color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
+	}
+	.callout.coral {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
+	}
+	.callout.mint {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
+	}
+	.callout-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		margin-bottom: 0.4rem;
+		font-weight: 500;
+		color: var(--anim-lavender);
+	}
+	.callout.gold .callout-label {
+		color: var(--anim-gold);
+	}
+	.callout.coral .callout-label {
+		color: var(--anim-coral);
+	}
+	.callout.mint .callout-label {
+		color: var(--anim-mint);
+	}
+
+	/* ── DEMO BOX ── */
+	.demo-box {
+		background: var(--anim-surface);
+		border: 1px solid var(--anim-border);
+		margin: 2.5rem 0;
+	}
+	.demo-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.demo-label {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.demo-badge {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid var(--anim-lavender);
+		color: var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 10%, transparent);
+	}
+	.demo-badge.gold {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+		background: color-mix(in srgb, var(--anim-gold) 10%, transparent);
+	}
+	.demo-badge.coral {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+	}
+	.demo-badge.mint {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+	canvas {
+		display: block;
+	}
+
+	/* ── PHONEME GRID ── */
+	.phoneme-grid {
+		display: grid;
+		grid-template-columns: repeat(6, 1fr);
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+	}
+	@media (max-width: 600px) {
+		.phoneme-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+	.phoneme-card {
+		background: var(--anim-surface);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0.75rem 0.5rem;
+		cursor: pointer;
+		transition: background 0.12s;
+		user-select: none;
+	}
+	.phoneme-card:hover {
+		background: var(--anim-raised);
+	}
+	.phoneme-card.active {
+		background: color-mix(in srgb, var(--anim-lavender) 8%, var(--anim-raised));
+	}
+	.phoneme-card.active .phoneme-name {
+		color: var(--anim-lavender);
+	}
+	.phoneme-name {
+		font-family: var(--ff-display);
+		font-size: 16px;
+		font-weight: 800;
+		color: var(--anim-text);
+		margin-bottom: 0.2rem;
+	}
+	.phoneme-sounds {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-muted);
+		text-align: center;
+		line-height: 1.4;
+	}
+	.phoneme-sound-example {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-dim);
+	}
+
+	/* ── LIP SYNC STRIP ── */
+	.lipsync-strip {
+		background: var(--anim-bg);
+		border: 1px solid var(--anim-border2);
+		overflow-x: auto;
+		font-family: var(--ff-mono);
+	}
+	.ls-word-row {
+		display: flex;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.ls-phoneme-row {
+		display: flex;
+		position: relative;
+	}
+	.ls-frame-row {
+		display: flex;
+		border-top: 1px solid var(--anim-border);
+	}
+	.ls-cell {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.ls-word-cell {
+		height: 24px;
+		font-size: 10px;
+		border-right: 1px solid var(--anim-border);
+		color: var(--anim-text);
+		background: var(--anim-raised);
+	}
+	.ls-phoneme-cell {
+		height: 28px;
+		font-size: 10px;
+		border-right: 1px solid var(--anim-border);
+		cursor: pointer;
+		transition: background 0.1s;
+	}
+	.ls-phoneme-cell:hover {
+		background: var(--anim-raised);
+	}
+	.ls-phoneme-cell.active {
+		background: color-mix(in srgb, var(--anim-lavender) 15%, var(--anim-raised));
+	}
+	.ls-frame-cell {
+		height: 20px;
+		font-size: 8px;
+		color: var(--anim-dim);
+		border-right: 1px solid var(--anim-border);
+	}
+	.ls-label-col {
+		width: 72px;
+		flex-shrink: 0;
+		padding: 0 0.5rem;
+		font-size: 9px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		display: flex;
+		align-items: center;
+		border-right: 1px solid var(--anim-border2);
+	}
+	.ls-playhead-wrap {
+		position: relative;
+	}
+	.ls-playhead {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 2px;
+		background: var(--anim-coral);
+		pointer-events: none;
+		z-index: 5;
+	}
+
+	/* ── EMOTION CARDS ── */
+	.emotion-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+	}
+	@media (max-width: 560px) {
+		.emotion-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	.emotion-card {
+		background: var(--anim-surface);
+		padding: 0.75rem;
+		cursor: pointer;
+		transition: background 0.12s;
+		text-align: center;
+	}
+	.emotion-card:hover {
+		background: var(--anim-raised);
+	}
+	.emotion-card.active {
+		background: color-mix(in srgb, var(--anim-lavender) 8%, var(--anim-raised));
+	}
+	.emotion-name {
+		font-family: var(--ff-display);
+		font-size: 14px;
+		font-weight: 700;
+		color: var(--anim-text);
+		margin-top: 0.4rem;
+	}
+	.emotion-card.active .emotion-name {
+		color: var(--anim-lavender);
+	}
+	.emotion-tag {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-muted);
+	}
+
+	/* ── TIMING COMPARISON ── */
+	.timing-row {
+		display: flex;
+		align-items: stretch;
+		gap: 1px;
+		background: var(--anim-border);
+		border: 1px solid var(--anim-border);
+		margin: 0.75rem 0;
+	}
+	.timing-cell {
+		flex: 1;
+		background: var(--anim-surface);
+		padding: 0.65rem 0.85rem;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	.timing-cell:hover {
+		background: var(--anim-raised);
+	}
+	.timing-cell.active {
+		background: color-mix(in srgb, var(--anim-coral) 7%, var(--anim-raised));
+	}
+	.timing-cell-name {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-coral);
+		margin-bottom: 0.2rem;
+	}
+	.timing-cell-desc {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		color: var(--anim-muted);
+		line-height: 1.5;
+	}
+
+	/* ── QUIZ ── */
+	.quiz-section {
+		margin: 5rem 0;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+	}
+	.quiz-header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 1.75rem;
+		border-bottom: 1px solid var(--anim-border);
+	}
+	.quiz-title {
+		font-family: var(--ff-display);
+		font-size: 22px;
+		font-weight: 800;
+		color: #fff;
+	}
+	.quiz-sub {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.2rem;
+	}
+	.quiz-body {
+		padding: 1.75rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	.question:first-child {
+		margin-top: 0;
+	}
+	:global(.q-num) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		color: var(--anim-lavender);
+		margin-bottom: 0.4rem;
+	}
+	:global(.q-text) {
+		font-size: 14px;
+		color: #fff;
+		margin-bottom: 0.75rem;
+		line-height: 1.6;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	:global(.option) {
+		padding: 0.65rem 1rem;
+		border: 1px solid var(--anim-border);
+		cursor: pointer;
+		font-size: 13px;
+		font-family: var(--ff-body);
+		transition: all 0.15s;
+		user-select: none;
+		background: var(--anim-bg);
+	}
+	:global(.option:hover) {
+		border-color: var(--anim-border2);
+		background: var(--anim-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--anim-mint);
+		background: color-mix(in srgb, var(--anim-mint) 10%, transparent);
+		color: var(--anim-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--anim-coral);
+		background: color-mix(in srgb, var(--anim-coral) 10%, transparent);
+		color: var(--anim-coral);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.6rem;
+		min-height: 1.4em;
+		font-family: var(--ff-mono);
+		color: var(--anim-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--anim-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--anim-coral);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 2rem;
+		border: 1px solid var(--anim-border);
+		text-align: center;
+		background: var(--anim-raised);
+		display: none;
+	}
+	:global(.quiz-score.visible) {
+		display: block;
+	}
+	.score-big {
+		font-family: var(--ff-display);
+		font-size: 52px;
+		font-weight: 800;
+		color: var(--anim-gold);
+		line-height: 1;
+	}
+	.score-lbl {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+		margin-top: 0.5rem;
+	}
+
+	/* ── BTN / CTRL ── */
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--anim-border2);
+		color: var(--anim-text);
+		padding: 5px 14px;
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		cursor: pointer;
+		transition: all 0.15s;
+		letter-spacing: 0.05em;
+		user-select: none;
+	}
+	:global(.btn:hover) {
+		border-color: var(--anim-lavender);
+		color: var(--anim-lavender);
+	}
+	:global(.btn.active) {
+		border-color: var(--anim-lavender);
+		color: var(--anim-lavender);
+		background: color-mix(in srgb, var(--anim-lavender) 12%, transparent);
+	}
+	.btn.gold:hover,
+	:global(.btn.gold.active) {
+		border-color: var(--anim-gold);
+		color: var(--anim-gold);
+	}
+	:global(.btn.gold.active) {
+		background: color-mix(in srgb, var(--anim-gold) 12%, transparent);
+	}
+	:global(.btn.coral:hover),
+	:global(.btn.coral.active) {
+		border-color: var(--anim-coral);
+		color: var(--anim-coral);
+	}
+	:global(.btn.coral.active) {
+		background: color-mix(in srgb, var(--anim-coral) 12%, transparent);
+	}
+	:global(.btn.mint:hover),
+	:global(.btn.mint.active) {
+		border-color: var(--anim-mint);
+		color: var(--anim-mint);
+	}
+	:global(.btn.mint.active) {
+		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-row) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.35rem 0;
+		flex-wrap: wrap;
+	}
+	:global(.ctrl-label) {
+		font-family: var(--ff-mono);
+		font-size: 10px;
+		color: var(--anim-muted);
+		min-width: 88px;
+	}
+	:global(.ctrl-val) {
+		font-family: var(--ff-mono);
+		font-size: 11px;
+		color: var(--anim-lavender);
+		font-weight: 500;
+		min-width: 40px;
+	}
+	:global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 2px;
+		background: var(--anim-border2);
+		outline: none;
+		min-width: 80px;
+	}
+	:global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--anim-lavender);
+		cursor: pointer;
+		border: 2px solid var(--anim-bg);
+	}
+	input[type='range'].gold::-webkit-slider-thumb {
+		background: var(--anim-gold);
+	}
+	:global(input[type='range'].coral::-webkit-slider-thumb) {
+		background: var(--anim-coral);
+	}
+	input[type='range'].mint::-webkit-slider-thumb {
+		background: var(--anim-mint);
+	}
+
+	/* ── NAV ── */
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 4rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.prev-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		color: var(--anim-muted);
+		font-family: var(--ff-mono);
+		font-size: 11px;
+	}
+	.prev-link:hover {
+		border-color: var(--anim-muted);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--anim-border);
+		background: var(--anim-surface);
+		text-decoration: none;
+		transition: all 0.2s;
+		min-width: 260px;
+	}
+	.next-module:hover {
+		border-color: var(--anim-gold);
+	}
+	.next-label {
+		font-family: var(--ff-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--anim-muted);
+	}
+	.next-title {
+		font-family: var(--ff-display);
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.2rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--anim-gold);
+		flex-shrink: 0;
+	}
+	@media (max-width: 640px) {
+		.page-wrapper {
+			padding: 0 1.25rem 6rem;
+		}
+	}
 </style>
