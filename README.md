@@ -31,6 +31,15 @@ _Theory + Practice_ — 10 modules covering motion, principles, and visual story
 | 05    | Digital 2D Tools       | ✅ Available   |
 | 06–10 | …                      | 🔒 Coming Soon |
 
+### Graphic Design & Visual Storytelling
+
+_Building a Personal Creative Identity_ — 10 modules exploring principles, branding, and visual composition.
+
+| #     | Title                                      | Status         |
+| ----- | ------------------------------------------ | -------------- |
+| 01    | What Design Is (and Isn't)                 | ✅ Available   |
+| 02–10 | …                                          | 🔒 Coming Soon |
+
 ## Development
 
 ```sh
