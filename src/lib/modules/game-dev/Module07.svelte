@@ -1053,25 +1053,25 @@
 				'%';
 		});
 
-		if (typeof drawDt === 'function') window.drawDt = drawDt;
-		if (typeof drawTimeline === 'function') window.drawTimeline = drawTimeline;
-		if (typeof fvvLoop === 'function') window.fvvLoop = fvvLoop;
-		if (typeof fullLoop === 'function') window.fullLoop = fullLoop;
+		if (typeof buildEasingGrid === 'function') window.buildEasingGrid = buildEasingGrid;
+		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
+		if (typeof setInterpMode === 'function') window.setInterpMode = setInterpMode;
+		if (typeof easeAnimLoop === 'function') window.easeAnimLoop = easeAnimLoop;
 		if (typeof drawInterp === 'function') window.drawInterp = drawInterp;
 		if (typeof toggleFull === 'function') window.toggleFull = toggleFull;
-		if (typeof assessAnswer === 'function') window.assessAnswer = assessAnswer;
-		if (typeof showLoop === 'function') window.showLoop = showLoop;
-		if (typeof buildAssess === 'function') window.buildAssess = buildAssess;
-		if (typeof drawFVV === 'function') window.drawFVV = drawFVV;
-		if (typeof setInterpMode === 'function') window.setInterpMode = setInterpMode;
 		if (typeof dtLoop === 'function') window.dtLoop = dtLoop;
-		if (typeof buildEasingGrid === 'function') window.buildEasingGrid = buildEasingGrid;
-		if (typeof resetFull === 'function') window.resetFull = resetFull;
 		if (typeof drawFull === 'function') window.drawFull = drawFull;
-		if (typeof drawEaseMotion === 'function') window.drawEaseMotion = drawEaseMotion;
-		if (typeof easeAnimLoop === 'function') window.easeAnimLoop = easeAnimLoop;
-		if (typeof stepBall === 'function') window.stepBall = stepBall;
+		if (typeof drawTimeline === 'function') window.drawTimeline = drawTimeline;
+		if (typeof fullLoop === 'function') window.fullLoop = fullLoop;
+		if (typeof assessAnswer === 'function') window.assessAnswer = assessAnswer;
 		if (typeof drawEaseCurve === 'function') window.drawEaseCurve = drawEaseCurve;
+		if (typeof showLoop === 'function') window.showLoop = showLoop;
+		if (typeof drawEaseMotion === 'function') window.drawEaseMotion = drawEaseMotion;
+		if (typeof resetFull === 'function') window.resetFull = resetFull;
+		if (typeof drawFVV === 'function') window.drawFVV = drawFVV;
+		if (typeof drawDt === 'function') window.drawDt = drawDt;
+		if (typeof fvvLoop === 'function') window.fvvLoop = fvvLoop;
+		if (typeof stepBall === 'function') window.stepBall = stepBall;
 
 		return () => {
 			if (typeof dtRaf !== 'undefined' && dtRaf) cancelAnimationFrame(dtRaf);
@@ -2602,7 +2602,7 @@ panel_tween = <span class="fn">Tween</span>(<span class="num">800</span>, <span 
 		gap: 0.5rem;
 		flex-wrap: wrap;
 	}
-	.tp-option {
+	:global(.tp-option) {
 		padding: 0.4rem 1rem;
 		border: 1px solid var(--border);
 		cursor: pointer;
@@ -2610,33 +2610,33 @@ panel_tween = <span class="fn">Tween</span>(<span class="num">800</span>, <span 
 		transition: all 0.15s;
 		font-family: 'IBM Plex Mono', monospace;
 	}
-	.tp-option:hover {
+	:global(.tp-option:hover) {
 		border-color: var(--border2);
 		background: var(--raised);
 	}
-	.tp-option.correct {
+	:global(.tp-option.correct) {
 		border-color: var(--accent3);
 		background: color-mix(in srgb, var(--accent3) 12%, transparent);
 		color: var(--accent3);
 	}
-	.tp-option.wrong {
+	:global(.tp-option.wrong) {
 		border-color: var(--accent4);
 		background: color-mix(in srgb, var(--accent4) 12%, transparent);
 		color: var(--accent4);
 	}
-	.tp-option.disabled {
+	:global(.tp-option.disabled) {
 		pointer-events: none;
 	}
-	.tp-feedback {
+	:global(.tp-feedback) {
 		font-size: 12px;
 		color: var(--muted);
 		margin-top: 0.75rem;
 		min-height: 1.4em;
 	}
-	.tp-feedback.ok {
+	:global(.tp-feedback.ok) {
 		color: var(--accent3);
 	}
-	.tp-feedback.bad {
+	:global(.tp-feedback.bad) {
 		color: var(--accent4);
 	}
 	.assess-score {

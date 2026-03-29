@@ -45,6 +45,22 @@
 	--gd-dim: #2a3a50;
 }
 
+.gd-theme {
+	--bg: var(--gd-bg);
+	--surface: var(--gd-surface);
+	--raised: var(--gd-raised);
+	--border: var(--gd-border);
+	--border2: var(--gd-border2);
+	--rose: var(--gd-rose);
+	--violet: var(--gd-violet);
+	--sky: var(--gd-sky);
+	--amber: var(--gd-amber);
+	--sage: var(--gd-sage);
+	--text: var(--gd-text);
+	--muted: var(--gd-muted);
+	--dim: var(--gd-dim);
+}
+
 /* ═══════════════════════════════════════════════════════
    RESET
 ═══════════════════════════════════════════════════════ */

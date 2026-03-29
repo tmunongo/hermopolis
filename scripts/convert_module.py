@@ -98,6 +98,32 @@ def convert_module(input_path, output_path):
         ".log-line.info",
         ".question",
         ".lang-tag",
+        ".cc-item",
+        ".cc-item.bad",
+        ".cc-item.good",
+        ".debug-option",
+        ".debug-option:hover",
+        ".debug-option.correct",
+        ".debug-option.wrong",
+        ".debug-option.disabled",
+        ".demo-badge.animated",
+        ".btn.rose:hover",
+        ".btn.rose.active",
+        ".btn.violet.active",
+        ".btn.amber.active",
+        ".issue-list li",
+        ".issue-list li.problem",
+        ".issue-list li.strength",
+        ".ts-output.rose-mode .ts-heading",
+        ".ts-output.mix-mode .ts-heading",
+        ".tp-option",
+        ".tp-option:hover",
+        ".tp-option.correct",
+        ".tp-option.wrong",
+        ".tp-option.disabled",
+        ".tp-feedback",
+        ".tp-feedback.ok",
+        ".tp-feedback.bad",
         ".op",
         ".callout.pink",
         ".callout.pink .callout-label",
@@ -287,6 +313,14 @@ def convert_module(input_path, output_path):
 
     html_content = re.sub(
         r'(<[^>]+)\bonclick="([^"]+)"([^>]*>)', replace_onclick, html_content
+    )
+
+    # Handle oninput and onchange simply
+    html_content = re.sub(
+        r'\boninput="([^"]+)"', r"oninput={() => { window.\1 }}", html_content
+    )
+    html_content = re.sub(
+        r'\bonchange="([^"]+)"', r"onchange={() => { window.\1 }}", html_content
     )
 
     # Automatically extract all function declarations to mount to window

@@ -1,0 +1,4524 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 1 — What Design Is (and Isn't)</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			/* ── TOKENS ── */
+			:root {
+				--bg: #080b0f;
+				--surface: #0d1117;
+				--raised: #131a22;
+				--border: #1e2836;
+				--border2: #2a3a50;
+				--rose: #e85d8a;
+				--violet: #9b6dff;
+				--sky: #38c0e8;
+				--amber: #f5a623;
+				--sage: #56d0a0;
+				--text: #d0dbe8;
+				--muted: #5a7090;
+				--dim: #2a3a50;
+				--code-bg: #070b10;
+
+				/* Convenience aliases that match the shared CSS */
+				--accent: var(--sky);
+				--accent2: var(--rose);
+				--accent3: var(--violet);
+				--accent4: var(--amber);
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+
+			body {
+				background: var(--bg);
+				color: var(--text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+
+			/* ── SCROLLBAR ── */
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--border2);
+				border-radius: 3px;
+			}
+
+			/* ── LAYOUT ── */
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+
+			/* ── HEADER ── */
+			.course-header {
+				border-bottom: 1px solid var(--border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+				font-weight: 400;
+			}
+
+			/* ── HERO ── */
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--rose);
+				border: 1px solid var(--rose);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 600px;
+			}
+			.module-title span {
+				color: var(--rose);
+			}
+
+			/* ── TOC ── */
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--rose);
+				border-color: var(--rose);
+			}
+
+			/* ── OBJECTIVES ── */
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--sky);
+				background: var(--surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--sky);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--rose);
+			}
+
+			/* ── SECTIONS ── */
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--rose);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+				color: var(--text);
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--sky);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+
+			/* ── CODE ── */
+			code {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--violet);
+				font-family: 'IBM Plex Mono', monospace;
+			}
+
+			/* ── CALLOUTS ── */
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--violet);
+				background: color-mix(in srgb, var(--violet) 5%, var(--surface));
+				font-size: 13px;
+			}
+			.callout.info {
+				border-color: var(--amber);
+				background: color-mix(in srgb, var(--amber) 5%, var(--surface));
+			}
+			.callout.green {
+				border-color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 5%, var(--surface));
+			}
+			.callout.warn {
+				border-color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 5%, var(--surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--violet);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.info .callout-label {
+				color: var(--amber);
+			}
+			.callout.green .callout-label {
+				color: var(--sage);
+			}
+			.callout.warn .callout-label {
+				color: var(--rose);
+			}
+
+			/* ── DEMO BOXES ── */
+			.demo-box {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header > span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.interactive {
+				color: var(--sky);
+				border-color: var(--sky);
+				background: color-mix(in srgb, var(--sky) 10%, transparent);
+			}
+			.demo-badge.animated {
+				color: var(--amber);
+				border-color: var(--amber);
+				background: color-mix(in srgb, var(--amber) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			/* ── CONTROLS ── */
+			.btn {
+				background: transparent;
+				border: 1px solid var(--border2);
+				color: var(--text);
+				padding: 6px 16px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--sky);
+				color: var(--sky);
+			}
+			.btn.active {
+				border-color: var(--sky);
+				color: var(--sky);
+				background: color-mix(in srgb, var(--sky) 10%, transparent);
+			}
+			.btn.rose:hover {
+				border-color: var(--rose);
+				color: var(--rose);
+			}
+			.btn.rose.active {
+				border-color: var(--rose);
+				color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 10%, transparent);
+			}
+			.btn.violet:hover {
+				border-color: var(--violet);
+				color: var(--violet);
+			}
+			.btn.violet.active {
+				border-color: var(--violet);
+				color: var(--violet);
+				background: color-mix(in srgb, var(--violet) 10%, transparent);
+			}
+			.btn.amber:hover {
+				border-color: var(--amber);
+				color: var(--amber);
+			}
+			.btn.amber.active {
+				border-color: var(--amber);
+				color: var(--amber);
+				background: color-mix(in srgb, var(--amber) 10%, transparent);
+			}
+
+			/* ── PROGRESS ── */
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--rose);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			/* ── DIVIDER ── */
+			.divider {
+				border: none;
+				border-top: 1px solid var(--border);
+				margin: 3rem 0;
+			}
+
+			/* ── TWO-COL ── */
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			@media (max-width: 640px) {
+				.two-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			/* ── TABLE ── */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--raised);
+				color: var(--sky);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--border);
+				color: var(--text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--raised) 50%, transparent);
+			}
+
+			/* ── QUIZ ── */
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.5rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--rose);
+				margin-right: 0.5rem;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--border2);
+				background: var(--raised);
+			}
+			.option.correct {
+				border-color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 10%, transparent);
+				color: var(--sage);
+			}
+			.option.wrong {
+				border-color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 10%, transparent);
+				color: var(--rose);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--muted);
+			}
+			.feedback.ok {
+				color: var(--sage);
+			}
+			.feedback.bad {
+				color: var(--rose);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--sky);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 0.25rem;
+			}
+
+			/* ── ASSESSMENT ── */
+			.assessment-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.assessment-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.25rem;
+			}
+			.assessment-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+			.reflect-area {
+				width: 100%;
+				min-height: 120px;
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				color: var(--text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 13px;
+				padding: 1rem;
+				line-height: 1.7;
+				resize: vertical;
+				outline: none;
+				transition: border-color 0.2s;
+			}
+			.reflect-area:focus {
+				border-color: var(--violet);
+			}
+			.reflect-footer {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 0.75rem;
+			}
+			.char-count {
+				font-size: 11px;
+				color: var(--muted);
+			}
+
+			/* ── NEXT MODULE ── */
+			.next-module {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--border);
+				text-decoration: none;
+				margin-top: 4rem;
+				transition: all 0.2s;
+				background: var(--surface);
+			}
+			.next-module:hover {
+				border-color: var(--rose);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--rose);
+			}
+
+			/* ══════════════════════════════════
+     DEMO-SPECIFIC STYLES
+  ══════════════════════════════════ */
+
+			/* --- Structure Reveal Demo --- */
+			.sr-canvas-wrap {
+				position: relative;
+				display: inline-block;
+				border: 1px solid var(--border2);
+				background: #0a0f15;
+			}
+			#sr-canvas {
+				display: block;
+			}
+			.layer-btns {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4rem;
+				margin-bottom: 1rem;
+			}
+			.layer-desc {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 1rem;
+				min-height: 2.5em;
+				line-height: 1.6;
+				transition: color 0.2s;
+			}
+
+			/* --- Template vs Custom Demo --- */
+			.compare-wrap {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+			}
+			@media (max-width: 560px) {
+				.compare-wrap {
+					grid-template-columns: 1fr;
+				}
+			}
+			.compare-panel {
+				position: relative;
+			}
+			.compare-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				margin-bottom: 0.5rem;
+			}
+			.compare-label.template {
+				color: var(--rose);
+			}
+			.compare-label.custom {
+				color: var(--sage);
+			}
+			#cv-template,
+			#cv-custom {
+				display: block;
+				width: 100%;
+				border: 1px solid var(--border);
+			}
+			.issue-list {
+				margin-top: 0.75rem;
+				font-size: 11px;
+				list-style: none;
+				display: flex;
+				flex-direction: column;
+				gap: 0.3rem;
+			}
+			.issue-list li {
+				padding: 3px 8px;
+				border-left: 2px solid;
+				transition: background 0.2s;
+			}
+			.issue-list li.problem {
+				border-color: var(--rose);
+				color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 6%, transparent);
+			}
+			.issue-list li.strength {
+				border-color: var(--sage);
+				color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 6%, transparent);
+			}
+
+			/* --- Taste vs Skill slider --- */
+			.taste-skill-wrap {
+				margin: 1.5rem 0;
+			}
+			.ts-track {
+				display: flex;
+				height: 3px;
+				background: var(--border2);
+				position: relative;
+				margin: 2rem 0 0.5rem;
+			}
+			.ts-fill {
+				height: 100%;
+				background: linear-gradient(90deg, var(--violet), var(--rose));
+				transition: width 0.3s;
+			}
+			.ts-thumb {
+				width: 14px;
+				height: 14px;
+				border-radius: 50%;
+				background: #fff;
+				border: 2px solid var(--rose);
+				position: absolute;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				cursor: grab;
+				z-index: 10;
+				transition: border-color 0.2s;
+			}
+			.ts-thumb:active {
+				cursor: grabbing;
+			}
+			.ts-labels {
+				display: flex;
+				justify-content: space-between;
+				font-size: 10px;
+				color: var(--muted);
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+			}
+			.ts-output {
+				margin-top: 1.2rem;
+				padding: 1rem;
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				font-size: 12px;
+				min-height: 70px;
+				line-height: 1.6;
+				transition: all 0.3s;
+			}
+			.ts-output .ts-heading {
+				font-weight: 600;
+				margin-bottom: 0.4rem;
+			}
+			.ts-output.violet-mode .ts-heading {
+				color: var(--violet);
+			}
+			.ts-output.rose-mode .ts-heading {
+				color: var(--rose);
+			}
+			.ts-output.mix-mode .ts-heading {
+				color: var(--amber);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<!-- COURSE HEADER -->
+			<header class="course-header">
+				<div>
+					<div class="course-label">Graphic Design &amp; Visual Storytelling</div>
+					<div class="course-title">Building a Personal Creative Identity</div>
+				</div>
+				<div style="font-size: 11px; color: var(--muted); text-align: right">Module 01 of 10</div>
+			</header>
+
+			<!-- HERO -->
+			<div class="module-hero">
+				<div class="module-number">01</div>
+				<div class="module-tag">Module 01 · Foundations</div>
+				<h1 class="module-title">What Design<br /><span>Is (and Isn't)</span></h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<!-- TOC -->
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#design-as-problem">Design as Problem-Solving</a></li>
+					<li><a href="#invisible-structure">The Invisible Structure</a></li>
+					<li><a href="#taste-vs-skill">Taste vs Skill</a></li>
+					<li><a href="#template-problem">The Template Problem</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+					<li><a href="#assessment">Assessment</a></li>
+				</ul>
+			</nav>
+
+			<!-- OBJECTIVES -->
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Understand what graphic design actually involves — and what it doesn't</li>
+					<li>Identify the difference between "taste" and "skill" and why you already have both</li>
+					<li>Understand why templates fail to create authentic visual identity</li>
+				</ul>
+			</section>
+
+			<!-- ══════════════════════════════════
+       SECTION 1: DESIGN AS PROBLEM-SOLVING
+  ══════════════════════════════════ -->
+			<section id="design-as-problem" class="section">
+				<div class="section-header">
+					<span class="section-num">01.01</span>
+					<h2 class="section-title">Design as Intentional Problem-Solving</h2>
+				</div>
+
+				<p>
+					Most people's first instinct is to think of graphic design as decoration — the act of
+					making things look nice. This is understandable, because the end product is always visual.
+					But it is wrong, and the misunderstanding is what makes beginners feel like they need to
+					be "creative" or "artistic" before they can start.
+				</p>
+
+				<p>
+					<em>Design is the act of solving a communication problem using visual means.</em> Every
+					design decision — what font to use, how large to make something, what color to choose,
+					where to place an element — is an answer to a specific question:
+					<strong>What does this need to communicate, and to whom?</strong>
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">Core Principle</div>
+					A logo isn't beautiful because the designer was talented. It's beautiful because every
+					element does a specific job. The elegance is a byproduct of clarity, not its cause.
+				</div>
+
+				<p>
+					Consider a YouTube thumbnail. Its job is brutally specific: be legible at 168×94 pixels,
+					communicate the video's topic in under two seconds, and generate enough curiosity to earn
+					a click — all while competing with dozens of other thumbnails. That is an engineering
+					problem as much as a visual one. The designer's job is to solve it. The visual output is
+					just the solution.
+				</p>
+
+				<p>
+					This reframing matters practically. When you sit down to design something, instead of
+					asking <em>"What should this look like?"</em>, you ask:
+					<em>"What does this need to do?"</em> The first question paralyzes. The second gives you
+					somewhere to start.
+				</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Design Object</th>
+							<th>Communication Problem It Solves</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Logo</td>
+							<td>Identify a brand at a glance across any surface</td>
+						</tr>
+						<tr>
+							<td>Thumbnail</td>
+							<td>Generate a click from a 168px wide image in under 2 seconds</td>
+						</tr>
+						<tr>
+							<td>Website header</td>
+							<td>Answer "What is this?" before the user decides to scroll</td>
+						</tr>
+						<tr>
+							<td>Explainer diagram</td>
+							<td>Make one specific idea impossible to misunderstand</td>
+						</tr>
+						<tr>
+							<td>Title card</td>
+							<td>Set the visual tone before the video's first word</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<div class="callout green">
+					<div class="callout-label">Key Insight</div>
+					You have been solving problems your whole life. Design is just problem-solving with visual
+					tools. You are not starting from nothing.
+				</div>
+			</section>
+
+			<!-- ══════════════════════════════════
+       SECTION 2: INVISIBLE STRUCTURE
+  ══════════════════════════════════ -->
+			<section id="invisible-structure" class="section">
+				<div class="section-header">
+					<span class="section-num">01.02</span>
+					<h2 class="section-title">The Invisible Structure Behind Good Design</h2>
+				</div>
+
+				<p>
+					When you look at a design you find beautiful, you typically cannot explain why. It "just
+					works." This is by intention. Good design hides its scaffolding. What you're responding to
+					— the sense of order, clarity, and intention — is produced by underlying decisions about
+					<strong>hierarchy</strong>, <strong>alignment</strong>, <strong>spacing</strong>, and
+					<strong>contrast</strong>. These are learnable. They are rules, not intuitions.
+				</p>
+
+				<p>
+					Visual <em>hierarchy</em> is the practice of arranging elements so that the eye encounters
+					them in a specific order — most important first, least important last. It is achieved
+					through size, weight, color, position, and contrast. Without hierarchy, every element
+					competes for attention equally, and the viewer's eye has nowhere to land.
+				</p>
+
+				<p>
+					<em>Alignment</em> is the practice of placing elements along invisible lines. When
+					elements share an edge or a center axis, they feel intentional. When they don't, a design
+					feels messy even if you can't say why. Alignment creates the invisible grid that gives
+					professional design its sense of order.
+				</p>
+
+				<p>
+					The interactive below lets you reveal these invisible layers on a composed thumbnail.
+					Notice how the structure — the grid, the focal point, the hierarchy — becomes visible the
+					moment you look for it.
+				</p>
+
+				<!-- DEMO: Structure Reveal -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Structure Reveal</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							Toggle the overlay layers to reveal the invisible structure beneath a YouTube-style
+							thumbnail composition.
+						</p>
+
+						<div class="layer-btns" id="layer-btns">
+							<button class="btn" data-layer="grid" onclick="toggleLayer(this)">Grid</button>
+							<button class="btn" data-layer="hierarchy" onclick="toggleLayer(this)">
+								Hierarchy
+							</button>
+							<button class="btn" data-layer="alignment" onclick="toggleLayer(this)">
+								Alignment
+							</button>
+							<button class="btn" data-layer="focal" onclick="toggleLayer(this)">
+								Focal Point
+							</button>
+							<button class="btn" data-layer="spacing" onclick="toggleLayer(this)">Spacing</button>
+						</div>
+
+						<div class="sr-canvas-wrap">
+							<canvas id="sr-canvas" width="560" height="315" style="max-width: 100%"></canvas>
+						</div>
+						<div class="layer-desc" id="layer-desc">
+							Activate a layer above to reveal a structural principle hidden in this composition.
+						</div>
+					</div>
+				</div>
+
+				<div class="callout info">
+					<div class="callout-label">Notice</div>
+					Every layer you toggled existed in the original — you just couldn't see it consciously.
+					Training your eye to notice structure is what separates designers from everyone else
+					looking at the same image.
+				</div>
+			</section>
+
+			<!-- ══════════════════════════════════
+       SECTION 3: TASTE VS SKILL
+  ══════════════════════════════════ -->
+			<section id="taste-vs-skill" class="section">
+				<div class="section-header">
+					<span class="section-num">01.03</span>
+					<h2 class="section-title">Taste vs Skill — and Why You Already Have Both</h2>
+				</div>
+
+				<p>
+					<em>Taste</em> is the ability to recognize quality. It is the voice that says "something
+					feels off" about a design, or "this is good" without being able to articulate why. Most
+					people assume this is a gift. It is not. Taste is developed by exposure — by looking at a
+					lot of things and forming opinions.
+				</p>
+
+				<p>
+					<em>Skill</em> is the ability to produce quality. It is knowing <em>why</em> something
+					feels off, and knowing what to do about it. Skill is entirely learnable through practice
+					and feedback.
+				</p>
+
+				<p>
+					Here is what Ira Glass — a radio producer, not a designer — described as the most
+					important thing beginners need to understand: you got into a creative field because your
+					taste was already good. But in the beginning, your skill hasn't caught up. This gap is
+					uncomfortable but temporary. Everyone who is good at creative work went through it.
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">The Gap</div>
+					When you look at your own work and think "this isn't as good as I want it to be" — that
+					feeling is your taste working correctly. It is proof you have standards. Skill is just
+					taste expressed with tools.
+				</div>
+
+				<!-- DEMO: Taste vs Skill Slider -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Taste vs Skill Spectrum</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+							Drag the slider to explore what it means to have each combination of taste and skill.
+						</p>
+
+						<div class="taste-skill-wrap">
+							<div class="ts-labels">
+								<span>High Taste · Low Skill</span>
+								<span>High Taste · High Skill</span>
+							</div>
+							<div class="ts-track" id="ts-track">
+								<div class="ts-fill" id="ts-fill" style="width: 10%"></div>
+								<div class="ts-thumb" id="ts-thumb" style="left: 10%"></div>
+							</div>
+							<div class="ts-output violet-mode" id="ts-output">
+								<div class="ts-heading" id="ts-heading">Beginning Designer</div>
+								<div id="ts-body">
+									You notice when something is wrong but can't fix it yet. You feel frustrated
+									because the work in your head looks better than the work on screen. This is the
+									correct starting condition. This is where everyone starts.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<p>
+					There is also a third combination worth naming: low taste and high skill. This produces
+					technically proficient but empty work — execution without judgment. That is a harder
+					problem to fix than low skill, because you can't practice your way out of it. The fact
+					that you're here, with standards you've already developed, puts you in the better
+					position.
+				</p>
+			</section>
+
+			<!-- ══════════════════════════════════
+       SECTION 4: THE TEMPLATE PROBLEM
+  ══════════════════════════════════ -->
+			<section id="template-problem" class="section">
+				<div class="section-header">
+					<span class="section-num">01.04</span>
+					<h2 class="section-title">Why Templates Fail to Create Authentic Identity</h2>
+				</div>
+
+				<p>
+					Templates have a seductive appeal. They are fast, they look professional immediately, and
+					they remove the anxiety of a blank canvas. If you are building a YouTube channel or a
+					website and you just need something that works, a template seems like the right tool.
+				</p>
+
+				<p>
+					The problem is structural. A template is designed to look acceptable to the largest number
+					of people. To achieve this, it makes conservative choices: neutral colors, safe type
+					combinations, conventional layouts. It is optimized for general use, which means it is
+					optimized for <em>nobody in particular</em>.
+				</p>
+
+				<p>
+					Your identity — the thing that makes your channel or website feel like <em>you</em> —
+					cannot come from a template. A template was designed by someone who doesn't know your
+					subject, your audience, your aesthetic sensibility, or your message. At best, it's a
+					starting point you have to escape. At worst, it locks you into visual decisions that
+					communicate the wrong things.
+				</p>
+
+				<div class="callout warn">
+					<div class="callout-label">The Core Problem</div>
+					Templates communicate <strong>genericness</strong>. Genericness communicates that you
+					didn't make a decision. Not making a decision about your visual identity <em>is</em> a
+					decision — just not one you made intentionally.
+				</div>
+
+				<!-- DEMO: Template vs Custom Comparison -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Template vs Designed — Structural Analysis</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							Two thumbnails for the same hypothetical video. Click elements on each to reveal their
+							structural properties.
+						</p>
+
+						<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem">
+							<button class="btn" id="show-issues-btn" onclick="toggleIssues()">
+								Show Analysis
+							</button>
+							<button class="btn violet" id="reset-btn" onclick="resetComparison()">Reset</button>
+						</div>
+
+						<div class="compare-wrap">
+							<div class="compare-panel">
+								<div class="compare-label template">Template Version</div>
+								<canvas id="cv-template" width="320" height="180"></canvas>
+								<ul class="issue-list" id="template-issues" style="display: none"></ul>
+							</div>
+							<div class="compare-panel">
+								<div class="compare-label custom">Designed Version</div>
+								<canvas id="cv-custom" width="320" height="180"></canvas>
+								<ul class="issue-list" id="custom-strengths" style="display: none"></ul>
+							</div>
+						</div>
+
+						<div
+							style="margin-top: 1rem; font-size: 12px; color: var(--muted); line-height: 1.6"
+							id="compare-detail"
+						>
+							Press "Show Analysis" to reveal the structural differences between these two
+							approaches.
+						</div>
+					</div>
+				</div>
+
+				<p>
+					The goal of this course is not to make you avoid all starting points. It is to give you
+					the vocabulary and judgment to make intentional decisions. Once you understand structure,
+					you can use a template as raw material and redesign it from the inside out — or you can
+					start from nothing, because you understand the principles behind what you are building.
+				</p>
+			</section>
+
+			<!-- ══════════════════════════════════
+       SECTION 5: PRACTICAL WORK
+  ══════════════════════════════════ -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">01.05</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<div class="callout green">
+					<div class="callout-label">Exercise 1 — Structure Analysis</div>
+					Find a logo or YouTube thumbnail you consider "well designed." It can be from any channel,
+					brand, or product. In your notes, write down:
+					<br /><br />
+					1. What is the focal point — where does the eye go first?<br />
+					2. How many elements are competing for attention?<br />
+					3. Is there a dominant color? What does it communicate?<br />
+					4. What would you remove, and what would you keep?<br /><br />
+					You are not being asked to replicate or judge aesthetics. You are being asked to read
+					structure.
+				</div>
+
+				<div class="callout info">
+					<div class="callout-label">Exercise 2 — Template Autopsy</div>
+					Find a YouTube channel using an obvious template (Canva templates are a good source).
+					Identify:
+					<br /><br />
+					1. Three design decisions that feel generic or interchangeable<br />
+					2. One element that <em>might</em> be intentional, not template-derived<br />
+					3. What you would do differently if you were designing for that creator's specific
+					subject<br /><br />
+					The goal is not to criticize — it is to train your eye to separate structure from
+					decoration.
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ══════════════════════════════════
+       QUIZ
+  ══════════════════════════════════ -->
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module 01 — Check Your Understanding</div>
+				<div class="quiz-sub">
+					Five questions · No time limit · Select the best answer for each.
+				</div>
+
+				<!-- Q1 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">01.</span> A designer is working on a YouTube thumbnail. Which
+						question best reflects a design-as-problem-solving mindset?
+					</div>
+					<div class="options" data-correct="2">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. What colors look good together for this topic?
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. How can I make this look similar to channels I admire?
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. What does this thumbnail need to communicate at 168px wide to earn a click?
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. How many elements can I fit without it looking too empty?
+						</div>
+					</div>
+					<div class="feedback" id="fb-0"></div>
+				</div>
+
+				<!-- Q2 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">02.</span> Visual hierarchy is best described as:
+					</div>
+					<div class="options" data-correct="1">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. Making the most important elements the most colourful
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. Arranging elements so the eye encounters them in a deliberate order
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. Ensuring all elements are the same visual weight
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. Placing text at the top of every composition
+						</div>
+					</div>
+					<div class="feedback" id="fb-1"></div>
+				</div>
+
+				<!-- Q3 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">03.</span> A beginning designer says: "I know my work isn't good
+						yet, even though I can tell something is wrong with it." What does this indicate?
+					</div>
+					<div class="options" data-correct="2">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. They lack both taste and skill and should reconsider this path
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. They have skill but their taste hasn't developed yet
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. Their taste is already working — their skill just needs to catch up
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. They should stop critiquing their work and focus on output volume
+						</div>
+					</div>
+					<div class="feedback" id="fb-2"></div>
+				</div>
+
+				<!-- Q4 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">04.</span> Why do templates fail to create authentic visual
+						identity?
+					</div>
+					<div class="options" data-correct="3">
+						<div class="option" onclick="handleQuiz(this, 0)">A. They use too many colors</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. They are designed by people with low skill
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. They are hard to edit without professional tools
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. They are optimized for general acceptability, not a specific creator's identity
+						</div>
+					</div>
+					<div class="feedback" id="fb-3"></div>
+				</div>
+
+				<!-- Q5 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">05.</span> Good design "hides its scaffolding." What does this mean?
+					</div>
+					<div class="options" data-correct="0">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. The underlying structural decisions (hierarchy, alignment, spacing) are invisible
+							in the final work, even though they drive its quality
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. Designers should not show their work-in-progress to clients
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. The best designs use hidden layers that can only be seen in editing software
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. Simple designs are always better than complex ones
+						</div>
+					</div>
+					<div class="feedback" id="fb-4"></div>
+				</div>
+
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-num">—</div>
+					<div class="score-label">questions correct out of 5</div>
+				</div>
+			</section>
+
+			<!-- ══════════════════════════════════
+       ASSESSMENT
+  ══════════════════════════════════ -->
+			<section id="assessment" class="assessment-section">
+				<div class="assessment-header">Module Assessment — Structural Reflection</div>
+				<div class="assessment-sub">
+					Short written reflection · ~100–200 words · No right or wrong answers
+				</div>
+
+				<p style="font-size: 13px; margin-bottom: 1.25rem">
+					Find a design you genuinely like — a logo, a thumbnail, a poster, or any visual object.
+					Describe it structurally: where does your eye go first, what is doing the most work, and
+					what would break if you removed it. Avoid aesthetic language ("it's pretty," "I like the
+					vibe") and focus on what you can observe about hierarchy, alignment, contrast, or purpose.
+				</p>
+
+				<textarea
+					class="reflect-area"
+					id="reflect-area"
+					placeholder="Describe the design structurally — not whether you like it, but how it works..."
+				></textarea>
+				<div class="reflect-footer">
+					<span class="char-count" id="char-count">0 / 200+ characters</span>
+					<button class="btn amber" onclick="submitReflection()">Mark Complete</button>
+				</div>
+				<div
+					id="reflect-feedback"
+					style="font-size: 12px; margin-top: 0.75rem; min-height: 1.2em"
+				></div>
+			</section>
+
+			<!-- NEXT MODULE -->
+			<a href="gd-module-02.html" class="next-module">
+				<div>
+					<div class="next-label">Next — Module 02</div>
+					<div class="next-title">Visual Perception and Composition Foundations</div>
+				</div>
+				<div class="next-arrow">→</div>
+			</a>
+		</div>
+		<!-- .page-wrapper -->
+
+		<script>
+			/* ══════════════════════════════════
+   READING PROGRESS
+══════════════════════════════════ */
+			window.addEventListener('scroll', () => {
+				const el = document.documentElement;
+				const progress = el.scrollTop / (el.scrollHeight - el.clientHeight);
+				document.getElementById('reading-progress').style.width = progress * 100 + '%';
+			});
+
+			/* ══════════════════════════════════
+   STRUCTURE REVEAL DEMO
+══════════════════════════════════ */
+			const srCanvas = document.getElementById('sr-canvas');
+			const srCtx = srCanvas.getContext('2d');
+			const W = srCanvas.width,
+				H = srCanvas.height;
+
+			const activeLayers = new Set();
+
+			const layerDescriptions = {
+				grid: '<strong style="color:var(--violet)">Rule of Thirds Grid</strong> — The subject falls near a thirds intersection, not dead-center. The horizon sits on the lower third line. This creates natural tension and visual interest.',
+				hierarchy:
+					'<strong style="color:var(--rose)">Visual Hierarchy</strong> — Three tiers: the large face (primary), the title text (secondary), the supporting label (tertiary). The eye moves through them in order of size and contrast.',
+				alignment:
+					'<strong style="color:var(--sky)">Alignment Axes</strong> — Text elements share a left edge. The subject\'s eye line aligns with the title baseline. Nothing is placed arbitrarily.',
+				focal:
+					'<strong style="color:var(--amber)">Focal Point</strong> — The single highest-contrast element anchors viewer attention before anything else registers. In thumbnails, this must read at thumbnail scale.',
+				spacing:
+					'<strong style="color:var(--sage)">Spacing System</strong> — Consistent margins and breathing room separate elements without making the composition feel empty. Crowding is the most common beginner mistake.'
+			};
+
+			function drawBaseThumb() {
+				const ctx = srCtx;
+				// Background
+				ctx.fillStyle = '#0f1c2e';
+				ctx.fillRect(0, 0, W, H);
+
+				// Sky gradient suggestion
+				const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+				sky.addColorStop(0, '#0d2140');
+				sky.addColorStop(1, '#0f1c2e');
+				ctx.fillStyle = sky;
+				ctx.fillRect(0, 0, W, Math.floor(H * 0.65));
+
+				// Stylized "subject" silhouette — a figure at left-third
+				ctx.fillStyle = '#1a3050';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(W * 0.32), Math.floor(H * 0.38), 60, 70, 0, 0, Math.PI * 2);
+				ctx.fill();
+				// body
+				ctx.fillStyle = '#243a55';
+				ctx.fillRect(Math.floor(W * 0.32) - 40, Math.floor(H * 0.5), 80, Math.floor(H * 0.5));
+
+				// Face highlight (oval)
+				ctx.fillStyle = '#e8c9a0';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(W * 0.32), Math.floor(H * 0.36), 36, 42, 0, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Eyes (focal indicator)
+				ctx.fillStyle = '#1a2535';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(W * 0.32) - 12, Math.floor(H * 0.33), 5, 4, 0, 0, Math.PI * 2);
+				ctx.ellipse(Math.floor(W * 0.32) + 12, Math.floor(H * 0.33), 5, 4, 0, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Title text block
+				ctx.fillStyle = '#ffffff';
+				ctx.font = `bold ${Math.floor(H * 0.09)}px 'Syne', sans-serif`;
+				ctx.fillText('HOW TO', Math.floor(W * 0.48), Math.floor(H * 0.42));
+
+				ctx.fillStyle = '#f5a623';
+				ctx.font = `bold ${Math.floor(H * 0.12)}px 'Syne', sans-serif`;
+				ctx.fillText('STAND OUT', Math.floor(W * 0.46), Math.floor(H * 0.58));
+
+				ctx.fillStyle = '#90a8c0';
+				ctx.font = `${Math.floor(H * 0.06)}px 'IBM Plex Mono', monospace`;
+				ctx.fillText('without being loud', Math.floor(W * 0.48), Math.floor(H * 0.73));
+
+				// Bottom bar
+				ctx.fillStyle = '#0a1520';
+				ctx.fillRect(0, Math.floor(H * 0.88), W, Math.floor(H * 0.12));
+				ctx.fillStyle = '#5a7090';
+				ctx.font = `${Math.floor(H * 0.055)}px 'IBM Plex Mono', monospace`;
+				ctx.fillText('Design Fundamentals  •  Episode 01', 16, Math.floor(H * 0.96));
+			}
+
+			function drawLayers() {
+				const ctx = srCtx;
+
+				if (activeLayers.has('grid')) {
+					ctx.strokeStyle = 'rgba(155, 109, 255, 0.45)';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([4, 4]);
+					// thirds lines
+					for (let i = 1; i < 3; i++) {
+						ctx.beginPath();
+						ctx.moveTo(Math.floor((W * i) / 3), 0);
+						ctx.lineTo(Math.floor((W * i) / 3), H);
+						ctx.stroke();
+						ctx.beginPath();
+						ctx.moveTo(0, Math.floor((H * i) / 3));
+						ctx.lineTo(W, Math.floor((H * i) / 3));
+						ctx.stroke();
+					}
+					// intersection dots
+					ctx.fillStyle = 'rgba(155, 109, 255, 0.9)';
+					for (let xi = 1; xi < 3; xi++)
+						for (let yi = 1; yi < 3; yi++) {
+							ctx.beginPath();
+							ctx.arc(Math.floor((W * xi) / 3), Math.floor((H * yi) / 3), 4, 0, Math.PI * 2);
+							ctx.fill();
+						}
+					ctx.setLineDash([]);
+				}
+
+				if (activeLayers.has('hierarchy')) {
+					// tier 1 — face
+					ctx.strokeStyle = 'rgba(232, 93, 138, 0.8)';
+					ctx.lineWidth = 2;
+					ctx.strokeRect(Math.floor(W * 0.32) - 44, Math.floor(H * 0.1), 88, Math.floor(H * 0.55));
+					ctx.fillStyle = 'rgba(232, 93, 138, 0.8)';
+					ctx.font = '10px IBM Plex Mono';
+					ctx.fillText('TIER 1 — Primary', Math.floor(W * 0.32) - 44, Math.floor(H * 0.1) - 4);
+
+					// tier 2 — title
+					ctx.strokeStyle = 'rgba(245, 166, 35, 0.7)';
+					ctx.strokeRect(
+						Math.floor(W * 0.45),
+						Math.floor(H * 0.32),
+						Math.floor(W * 0.5),
+						Math.floor(H * 0.34)
+					);
+					ctx.fillStyle = 'rgba(245, 166, 35, 0.7)';
+					ctx.fillText('TIER 2 — Secondary', Math.floor(W * 0.45), Math.floor(H * 0.32) - 4);
+
+					// tier 3 — sub
+					ctx.strokeStyle = 'rgba(86, 208, 160, 0.6)';
+					ctx.setLineDash([3, 3]);
+					ctx.strokeRect(
+						Math.floor(W * 0.46),
+						Math.floor(H * 0.67),
+						Math.floor(W * 0.48),
+						Math.floor(H * 0.1)
+					);
+					ctx.fillStyle = 'rgba(86, 208, 160, 0.6)';
+					ctx.font = '9px IBM Plex Mono';
+					ctx.fillText('TIER 3', Math.floor(W * 0.46), Math.floor(H * 0.67) - 3);
+					ctx.setLineDash([]);
+				}
+
+				if (activeLayers.has('alignment')) {
+					ctx.strokeStyle = 'rgba(56, 192, 232, 0.6)';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([6, 3]);
+					// left edge of text column
+					const textX = Math.floor(W * 0.47);
+					ctx.beginPath();
+					ctx.moveTo(textX, 0);
+					ctx.lineTo(textX, H);
+					ctx.stroke();
+					// eye-line / title baseline
+					const eyeY = Math.floor(H * 0.395);
+					ctx.beginPath();
+					ctx.moveTo(0, eyeY);
+					ctx.lineTo(W, eyeY);
+					ctx.stroke();
+					ctx.setLineDash([]);
+					ctx.fillStyle = 'rgba(56, 192, 232, 0.85)';
+					ctx.font = '9px IBM Plex Mono';
+					ctx.fillText('LEFT AXIS', textX + 4, 14);
+					ctx.fillText('EYE LINE / TITLE BASELINE', 4, eyeY - 4);
+				}
+
+				if (activeLayers.has('focal')) {
+					// Radial highlight on eye area
+					const fx = Math.floor(W * 0.32),
+						fy = Math.floor(H * 0.33);
+					const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, 90);
+					grad.addColorStop(0, 'rgba(245, 166, 35, 0.25)');
+					grad.addColorStop(1, 'rgba(245, 166, 35, 0)');
+					ctx.fillStyle = grad;
+					ctx.beginPath();
+					ctx.arc(fx, fy, 90, 0, Math.PI * 2);
+					ctx.fill();
+					// Ring
+					ctx.strokeStyle = 'rgba(245, 166, 35, 0.9)';
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.arc(fx, fy, 52, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.fillStyle = 'rgba(245, 166, 35, 0.9)';
+					ctx.font = '9px IBM Plex Mono';
+					ctx.fillText('FOCAL POINT', fx - 32, fy + 65);
+				}
+
+				if (activeLayers.has('spacing')) {
+					ctx.strokeStyle = 'rgba(86, 208, 160, 0.5)';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([2, 4]);
+					// Margin guides
+					const mg = 16;
+					ctx.strokeRect(mg, mg, W - mg * 2, H - mg * 2);
+					// Gap between subject and text
+					const gapX1 = Math.floor(W * 0.32) + 48;
+					const gapX2 = Math.floor(W * 0.47);
+					ctx.beginPath();
+					ctx.moveTo(gapX1, Math.floor(H * 0.5));
+					ctx.lineTo(gapX2, Math.floor(H * 0.5));
+					ctx.stroke();
+					ctx.fillStyle = 'rgba(86, 208, 160, 0.75)';
+					ctx.font = '9px IBM Plex Mono';
+					ctx.fillText('← breathing room →', gapX1 + 2, Math.floor(H * 0.5) - 4);
+					ctx.fillText('MARGIN', mg + 4, H - mg - 4);
+					ctx.setLineDash([]);
+				}
+			}
+
+			function redrawSR() {
+				drawBaseThumb();
+				drawLayers();
+			}
+
+			function toggleLayer(btn) {
+				const layer = btn.dataset.layer;
+				if (activeLayers.has(layer)) {
+					activeLayers.delete(layer);
+					btn.classList.remove('active');
+				} else {
+					activeLayers.add(layer);
+					btn.classList.add('active');
+				}
+
+				const parts = [];
+				activeLayers.forEach((l) => parts.push(layerDescriptions[l]));
+				document.getElementById('layer-desc').innerHTML = parts.length
+					? parts.join('<br><br>')
+					: 'Activate a layer above to reveal a structural principle hidden in this composition.';
+
+				redrawSR();
+			}
+
+			redrawSR();
+
+			/* ══════════════════════════════════
+   TASTE vs SKILL SLIDER
+══════════════════════════════════ */
+			const tsTrack = document.getElementById('ts-track');
+			const tsThumb = document.getElementById('ts-thumb');
+			const tsFill = document.getElementById('ts-fill');
+			const tsOut = document.getElementById('ts-output');
+			const tsHead = document.getElementById('ts-heading');
+			const tsBody = document.getElementById('ts-body');
+
+			let tsDragging = false;
+
+			const tsStages = [
+				{
+					pct: 0,
+					mode: 'violet-mode',
+					heading: 'Beginning Designer',
+					body: "You notice when something is wrong but can't fix it yet. You feel frustrated because the work in your head looks better than the work on screen. This is the correct starting condition. This is where everyone starts."
+				},
+				{
+					pct: 33,
+					mode: 'violet-mode',
+					heading: 'Building Vocabulary',
+					body: "You've learned the names for things: hierarchy, contrast, alignment. You can now say why something fails, not just that it does. This is the most important phase — naming things gives you handles to work with."
+				},
+				{
+					pct: 55,
+					mode: 'mix-mode',
+					heading: 'The Productive Gap',
+					body: 'Your taste is outrunning your skill by a visible margin. This feels painful but is actually a sign of progress. The gap narrows every time you finish a piece, get feedback, and make another one.'
+				},
+				{
+					pct: 75,
+					mode: 'mix-mode',
+					heading: 'Skill Approaching Taste',
+					body: 'Your output is now reliable. You can produce work that matches your internal standards more often than not. You still see the gap, but it motivates rather than paralyzes.'
+				},
+				{
+					pct: 100,
+					mode: 'rose-mode',
+					heading: 'Taste and Skill Aligned',
+					body: "You can execute what you imagine. Your taste continues to evolve, which means the gap never fully closes — but now it pulls you forward rather than holding you back. This is the working designer's permanent condition."
+				}
+			];
+
+			function setThumb(pct) {
+				pct = Math.max(0, Math.min(100, pct));
+				tsThumb.style.left = pct + '%';
+				tsFill.style.width = pct + '%';
+
+				let stage = tsStages[0];
+				for (const s of tsStages) {
+					if (pct >= s.pct) stage = s;
+				}
+
+				tsOut.className = 'ts-output ' + stage.mode;
+				tsHead.textContent = stage.heading;
+				tsBody.textContent = stage.body;
+			}
+
+			tsTrack.addEventListener('mousedown', (e) => {
+				tsDragging = true;
+				moveDrag(e);
+			});
+			document.addEventListener('mousemove', (e) => {
+				if (tsDragging) moveDrag(e);
+			});
+			document.addEventListener('mouseup', () => {
+				tsDragging = false;
+			});
+			tsTrack.addEventListener('touchstart', (e) => {
+				tsDragging = true;
+				moveDrag(e.touches[0]);
+			});
+			document.addEventListener('touchmove', (e) => {
+				if (tsDragging) moveDrag(e.touches[0]);
+			});
+			document.addEventListener('touchend', () => {
+				tsDragging = false;
+			});
+
+			function moveDrag(e) {
+				const rect = tsTrack.getBoundingClientRect();
+				const pct = ((e.clientX - rect.left) / rect.width) * 100;
+				setThumb(pct);
+			}
+
+			setThumb(10);
+
+			/* ══════════════════════════════════
+   TEMPLATE vs CUSTOM DEMO
+══════════════════════════════════ */
+			const tcT = document.getElementById('cv-template');
+			const tcC = document.getElementById('cv-custom');
+			const ctxT = tcT.getContext('2d');
+			const ctxC = tcC.getContext('2d');
+
+			function drawTemplate() {
+				const ctx = ctxT,
+					w = tcT.width,
+					h = tcT.height;
+				// Generic gradient background
+				const g = ctx.createLinearGradient(0, 0, w, h);
+				g.addColorStop(0, '#1a1060');
+				g.addColorStop(1, '#3a1580');
+				ctx.fillStyle = g;
+				ctx.fillRect(0, 0, w, h);
+
+				// Decorative circles (template cliché)
+				ctx.fillStyle = 'rgba(255,255,255,0.05)';
+				ctx.beginPath();
+				ctx.arc(w * 0.8, h * 0.2, 80, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.beginPath();
+				ctx.arc(w * 0.1, h * 0.8, 60, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Centered title (dead center — no hierarchy)
+				ctx.fillStyle = '#ffffff';
+				ctx.font = 'bold 22px Syne, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText('MY AMAZING VIDEO', w / 2, h * 0.42);
+
+				// Subtitle (same weight, no differentiation)
+				ctx.fillStyle = '#cccccc';
+				ctx.font = '14px IBM Plex Mono, monospace';
+				ctx.fillText("You Won't Believe This!", w / 2, h * 0.58);
+
+				// Generic divider
+				ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+				ctx.lineWidth = 1;
+				ctx.beginPath();
+				ctx.moveTo(w * 0.2, h * 0.48);
+				ctx.lineTo(w * 0.8, h * 0.48);
+				ctx.stroke();
+
+				// Watermark badge
+				ctx.fillStyle = 'rgba(255,255,255,0.15)';
+				ctx.fillRect(w - 90, h - 24, 84, 18);
+				ctx.fillStyle = '#aaa';
+				ctx.font = '9px IBM Plex Mono, monospace';
+				ctx.fillText('MADE WITH CANVA', w - 84, h - 11);
+
+				ctx.textAlign = 'left';
+			}
+
+			function drawCustom() {
+				const ctx = ctxC,
+					w = tcC.width,
+					h = tcC.height;
+				// Specific, intentional dark background
+				ctx.fillStyle = '#080b10';
+				ctx.fillRect(0, 0, w, h);
+
+				// Left accent bar
+				ctx.fillStyle = '#e85d8a';
+				ctx.fillRect(0, 0, 4, h);
+
+				// Subject area — implied photo block (left third)
+				ctx.fillStyle = '#111822';
+				ctx.fillRect(4, 0, Math.floor(w * 0.38), h);
+				// Face shape
+				ctx.fillStyle = '#d4a07a';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(w * 0.2), Math.floor(h * 0.4), 38, 44, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#111822';
+				ctx.fillRect(Math.floor(w * 0.2) - 38, Math.floor(h * 0.6), 76, h);
+
+				// Eyeline detail
+				ctx.fillStyle = '#1a2535';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(w * 0.2) - 12, Math.floor(h * 0.37), 4, 3.5, 0, 0, Math.PI * 2);
+				ctx.ellipse(Math.floor(w * 0.2) + 12, Math.floor(h * 0.37), 4, 3.5, 0, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Text area — deliberate left alignment
+				const tx = Math.floor(w * 0.43);
+
+				// Eyebrow label
+				ctx.fillStyle = '#e85d8a';
+				ctx.font = '9px IBM Plex Mono, monospace';
+				ctx.fillText('DESIGN SERIES', tx, Math.floor(h * 0.28));
+
+				// Title — large, high contrast, specific
+				ctx.fillStyle = '#ffffff';
+				ctx.font = `bold ${Math.floor(h * 0.17)}px Syne, sans-serif`;
+				ctx.fillText('STAND', tx, Math.floor(h * 0.48));
+				ctx.fillStyle = '#f5a623';
+				ctx.fillText('OUT', tx, Math.floor(h * 0.68));
+
+				// Sub — tertiary, muted
+				ctx.fillStyle = '#5a7090';
+				ctx.font = '9px IBM Plex Mono, monospace';
+				ctx.fillText('without being loud', tx, Math.floor(h * 0.84));
+
+				// Bottom edge accent
+				ctx.fillStyle = '#e85d8a';
+				ctx.fillRect(0, h - 2, w, 2);
+			}
+
+			let issuesVisible = false;
+
+			function toggleIssues() {
+				issuesVisible = !issuesVisible;
+				const btn = document.getElementById('show-issues-btn');
+				const tIssues = document.getElementById('template-issues');
+				const cStrengths = document.getElementById('custom-strengths');
+				const detail = document.getElementById('compare-detail');
+
+				if (issuesVisible) {
+					btn.textContent = 'Hide Analysis';
+					btn.classList.add('active');
+					tIssues.style.display = 'flex';
+					cStrengths.style.display = 'flex';
+
+					tIssues.innerHTML = `
+      <li class="problem">Dead-center placement — no visual tension or hierarchy</li>
+      <li class="problem">Both text elements share the same visual weight — the eye has no clear path</li>
+      <li class="problem">Decorative circles serve no communicative purpose</li>
+      <li class="problem">Generic gradient communicates no specific topic or tone</li>
+      <li class="problem">"You Won't Believe This!" — borrowed voice, not a distinctive identity</li>
+    `;
+					cStrengths.innerHTML = `
+      <li class="strength">Subject in left third — creates tension, eye moves right to text</li>
+      <li class="strength">Three distinct text tiers: eyebrow / primary title / sub-label</li>
+      <li class="strength">Specific color palette communicates a consistent identity</li>
+      <li class="strength">Every element has a job — nothing is decorative</li>
+      <li class="strength">Accent bars add structure, not just decoration</li>
+    `;
+					detail.innerHTML = `
+      Both thumbnails are for the same hypothetical video. The template version follows a predictable pattern that could belong to any channel. 
+      The designed version communicates a specific identity: a consistent color language, deliberate hierarchy, 
+      and a layout where every element has a defined role. <em style="color:#fff;">The difference is intentionality.</em>
+    `;
+				} else {
+					btn.textContent = 'Show Analysis';
+					btn.classList.remove('active');
+					tIssues.style.display = 'none';
+					cStrengths.style.display = 'none';
+					detail.textContent =
+						'Press "Show Analysis" to reveal the structural differences between these two approaches.';
+				}
+			}
+
+			function resetComparison() {
+				issuesVisible = false;
+				const btn = document.getElementById('show-issues-btn');
+				btn.textContent = 'Show Analysis';
+				btn.classList.remove('active');
+				document.getElementById('template-issues').style.display = 'none';
+				document.getElementById('custom-strengths').style.display = 'none';
+				document.getElementById('compare-detail').textContent =
+					'Press "Show Analysis" to reveal the structural differences between these two approaches.';
+			}
+
+			drawTemplate();
+			drawCustom();
+
+			/* ══════════════════════════════════
+   QUIZ
+══════════════════════════════════ */
+			let quizScore = 0;
+			let quizAnswered = 0;
+			const TOTAL_Q = 5;
+
+			const explanations = [
+				'Correct. Design thinking starts with the communication constraint, not the aesthetic preference.',
+				"Correct. Hierarchy is about directing the viewer's eye through a deliberate sequence — size, contrast, weight, and position all contribute.",
+				'Correct. This is the classic Ira Glass gap: taste (the ability to recognize quality) developing ahead of skill (the ability to produce it).',
+				"Correct. Templates are optimized to appeal to the general case, which means they can't express a specific identity.",
+				"Correct. The structural decisions — alignment, hierarchy, spacing — disappear in the final work precisely because they've done their job."
+			];
+			const wrongMsg =
+				'Not quite. Think about what distinguishes design as a discipline from mere decoration or imitation.';
+
+			function handleQuiz(el, idx) {
+				const parent = el.closest('.question');
+				const correct = parseInt(parent.querySelector('.options').dataset.correct);
+				const opts = parent.querySelectorAll('.option');
+				const fbId = 'fb-' + Array.from(document.querySelectorAll('.question')).indexOf(parent);
+				const fb = document.getElementById(fbId);
+
+				if (el.classList.contains('disabled')) return;
+				opts.forEach((o) => o.classList.add('disabled'));
+
+				if (idx === correct) {
+					el.classList.add('correct');
+					fb.textContent = '✓ ' + explanations[parseInt(fbId.split('-')[1])];
+					fb.className = 'feedback ok';
+					quizScore++;
+				} else {
+					el.classList.add('wrong');
+					opts[correct].classList.add('correct');
+					fb.textContent = '✗ ' + wrongMsg;
+					fb.className = 'feedback bad';
+				}
+
+				quizAnswered++;
+				if (quizAnswered === TOTAL_Q) {
+					const scoreEl = document.getElementById('quiz-score');
+					document.getElementById('score-num').textContent = quizScore + ' / ' + TOTAL_Q;
+					scoreEl.style.display = 'block';
+					setTimeout(() => scoreEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
+				}
+			}
+
+			/* ══════════════════════════════════
+   ASSESSMENT / REFLECTION
+══════════════════════════════════ */
+			const reflectArea = document.getElementById('reflect-area');
+			const charCount = document.getElementById('char-count');
+			const reflectFb = document.getElementById('reflect-feedback');
+
+			reflectArea.addEventListener('input', () => {
+				const n = reflectArea.value.length;
+				charCount.textContent = n + ' / 200+ characters';
+				charCount.style.color = n >= 200 ? 'var(--sage)' : 'var(--muted)';
+			});
+
+			function submitReflection() {
+				const n = reflectArea.value.trim().length;
+				if (n < 80) {
+					reflectFb.textContent =
+						'↑ Try to push further — describe at least one structural element specifically.';
+					reflectFb.style.color = 'var(--rose)';
+					return;
+				}
+				reflectFb.textContent =
+					'✓ Reflection recorded. This kind of structural observation is the foundation of design literacy.';
+				reflectFb.style.color = 'var(--sage)';
+			}
+		</script>
+	</body>
+</html>
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 2 — Visual Perception and Composition Foundations</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--bg: #080b0f;
+				--surface: #0d1117;
+				--raised: #131a22;
+				--border: #1e2836;
+				--border2: #2a3a50;
+				--rose: #e85d8a;
+				--violet: #9b6dff;
+				--sky: #38c0e8;
+				--amber: #f5a623;
+				--sage: #56d0a0;
+				--text: #d0dbe8;
+				--muted: #5a7090;
+				--dim: #2a3a50;
+				--code-bg: #070b10;
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				background: var(--bg);
+				color: var(--text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--border2);
+				border-radius: 3px;
+			}
+
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+
+			/* HEADER */
+			.course-header {
+				border-bottom: 1px solid var(--border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+				font-weight: 400;
+			}
+
+			/* HERO */
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--violet);
+				border: 1px solid var(--violet);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 600px;
+			}
+			.module-title span {
+				color: var(--violet);
+			}
+
+			/* TOC */
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--violet);
+				border-color: var(--violet);
+			}
+
+			/* OBJECTIVES */
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--violet);
+				background: var(--surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--violet);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--rose);
+			}
+
+			/* SECTIONS */
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--rose);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+				color: var(--text);
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--sky);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+			code {
+				background: var(--code-bg);
+				border: 1px solid var(--border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--violet);
+				font-family: 'IBM Plex Mono', monospace;
+			}
+
+			/* CALLOUTS */
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--violet);
+				background: color-mix(in srgb, var(--violet) 5%, var(--surface));
+				font-size: 13px;
+			}
+			.callout.green {
+				border-color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 5%, var(--surface));
+			}
+			.callout.info {
+				border-color: var(--amber);
+				background: color-mix(in srgb, var(--amber) 5%, var(--surface));
+			}
+			.callout.warn {
+				border-color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 5%, var(--surface));
+			}
+			.callout.sky {
+				border-color: var(--sky);
+				background: color-mix(in srgb, var(--sky) 5%, var(--surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--violet);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.green .callout-label {
+				color: var(--sage);
+			}
+			.callout.info .callout-label {
+				color: var(--amber);
+			}
+			.callout.warn .callout-label {
+				color: var(--rose);
+			}
+			.callout.sky .callout-label {
+				color: var(--sky);
+			}
+
+			/* DEMO BOXES */
+			.demo-box {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header > span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.interactive {
+				color: var(--violet);
+				border-color: var(--violet);
+				background: color-mix(in srgb, var(--violet) 10%, transparent);
+			}
+			.demo-badge.animated {
+				color: var(--amber);
+				border-color: var(--amber);
+				background: color-mix(in srgb, var(--amber) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			/* CONTROLS */
+			.btn {
+				background: transparent;
+				border: 1px solid var(--border2);
+				color: var(--text);
+				padding: 6px 16px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--violet);
+				color: var(--violet);
+			}
+			.btn.active {
+				border-color: var(--violet);
+				color: var(--violet);
+				background: color-mix(in srgb, var(--violet) 10%, transparent);
+			}
+			.btn.rose:hover {
+				border-color: var(--rose);
+				color: var(--rose);
+			}
+			.btn.rose.active {
+				border-color: var(--rose);
+				color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 10%, transparent);
+			}
+			.btn.sky:hover {
+				border-color: var(--sky);
+				color: var(--sky);
+			}
+			.btn.sky.active {
+				border-color: var(--sky);
+				color: var(--sky);
+				background: color-mix(in srgb, var(--sky) 10%, transparent);
+			}
+			.btn.amber:hover {
+				border-color: var(--amber);
+				color: var(--amber);
+			}
+			.btn.amber.active {
+				border-color: var(--amber);
+				color: var(--amber);
+				background: color-mix(in srgb, var(--amber) 10%, transparent);
+			}
+			.btn.sage:hover {
+				border-color: var(--sage);
+				color: var(--sage);
+			}
+			.btn.sage.active {
+				border-color: var(--sage);
+				color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 10%, transparent);
+			}
+
+			.slider-row {
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+				margin: 0.6rem 0;
+			}
+			.slider-row label {
+				font-size: 12px;
+				min-width: 90px;
+				color: var(--text);
+			}
+			.slider-row input[type='range'] {
+				flex: 1;
+				-webkit-appearance: none;
+				height: 3px;
+				background: var(--border2);
+				outline: none;
+			}
+			.slider-row input[type='range']::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: var(--violet);
+				cursor: pointer;
+			}
+			.slider-val {
+				font-size: 12px;
+				color: var(--violet);
+				min-width: 36px;
+				text-align: right;
+				font-weight: 600;
+			}
+
+			/* LAYOUT HELPERS */
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			@media (max-width: 640px) {
+				.two-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			/* TABLE */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--raised);
+				color: var(--violet);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--border);
+				color: var(--text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--raised) 50%, transparent);
+			}
+
+			/* QUIZ */
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.5rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--violet);
+				margin-right: 0.5rem;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--border2);
+				background: var(--raised);
+			}
+			.option.correct {
+				border-color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 10%, transparent);
+				color: var(--sage);
+			}
+			.option.wrong {
+				border-color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 10%, transparent);
+				color: var(--rose);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--muted);
+			}
+			.feedback.ok {
+				color: var(--sage);
+			}
+			.feedback.bad {
+				color: var(--rose);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--violet);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 0.25rem;
+			}
+
+			/* ASSESSMENT */
+			.assessment-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--border);
+				background: var(--surface);
+			}
+			.assessment-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.25rem;
+			}
+			.assessment-sub {
+				font-size: 12px;
+				color: var(--muted);
+				margin-bottom: 2rem;
+			}
+
+			/* PROGRESS */
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--violet);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			/* DIVIDER */
+			.divider {
+				border: none;
+				border-top: 1px solid var(--border);
+				margin: 3rem 0;
+			}
+
+			/* NAV LINKS */
+			.nav-links {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 4rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+			.prev-link {
+				font-size: 12px;
+				color: var(--muted);
+				text-decoration: none;
+				border: 1px solid var(--border);
+				padding: 0.75rem 1.25rem;
+				transition: all 0.2s;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			.prev-link:hover {
+				border-color: var(--violet);
+				color: var(--violet);
+			}
+			.next-module {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--border);
+				text-decoration: none;
+				transition: all 0.2s;
+				background: var(--surface);
+			}
+			.next-module:hover {
+				border-color: var(--rose);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--rose);
+			}
+
+			/* ═══════════════════════════════════
+     DEMO-SPECIFIC
+  ═══════════════════════════════════ */
+
+			/* Eye Path Demo */
+			#ep-canvas {
+				display: block;
+				max-width: 100%;
+				border: 1px solid var(--border2);
+				background: #0a0f18;
+			}
+			.ep-controls {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-bottom: 1rem;
+			}
+			.ep-info {
+				margin-top: 1rem;
+				font-size: 12px;
+				line-height: 1.7;
+				padding: 0.75rem 1rem;
+				border: 1px solid var(--border);
+				background: var(--code-bg);
+				min-height: 60px;
+				color: var(--text);
+			}
+			.ep-info strong {
+				color: var(--violet);
+			}
+
+			/* Rule of Thirds */
+			#rot-canvas {
+				display: block;
+				max-width: 100%;
+				cursor: grab;
+				border: 1px solid var(--border2);
+			}
+			#rot-canvas:active {
+				cursor: grabbing;
+			}
+			.rot-controls {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-bottom: 1rem;
+				align-items: center;
+			}
+			.rot-score-wrap {
+				margin-top: 1rem;
+			}
+			.rot-score-bar-bg {
+				height: 4px;
+				background: var(--border2);
+				position: relative;
+			}
+			.rot-score-bar {
+				height: 100%;
+				background: var(--violet);
+				transition: width 0.3s;
+			}
+			.rot-score-label {
+				font-size: 11px;
+				color: var(--muted);
+				margin-top: 0.4rem;
+			}
+			.rot-score-label span {
+				color: var(--violet);
+				font-weight: 600;
+			}
+			.rot-tip {
+				font-size: 11px;
+				color: var(--muted);
+				margin-top: 0.5rem;
+				min-height: 1.4em;
+				transition: color 0.2s;
+			}
+
+			/* Contrast Demo */
+			#ct-canvas {
+				display: block;
+				max-width: 100%;
+				border: 1px solid var(--border2);
+			}
+			.ct-controls {
+				margin-top: 1rem;
+			}
+			.ct-presets {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-top: 0.75rem;
+			}
+			.ct-note {
+				font-size: 12px;
+				color: var(--muted);
+				margin-top: 0.75rem;
+				min-height: 1.8em;
+				transition: color 0.2s;
+			}
+
+			/* Cluttered/Clean Demo */
+			.cc-toggle-wrap {
+				display: flex;
+				gap: 0.5rem;
+				margin-bottom: 1rem;
+				align-items: center;
+			}
+			#cc-canvas {
+				display: block;
+				max-width: 100%;
+				border: 1px solid var(--border2);
+			}
+			.cc-annotation-list {
+				margin-top: 1rem;
+				font-size: 11px;
+				display: flex;
+				flex-direction: column;
+				gap: 0.35rem;
+				min-height: 80px;
+			}
+			.cc-item {
+				padding: 3px 8px;
+				border-left: 2px solid;
+				line-height: 1.5;
+			}
+			.cc-item.bad {
+				border-color: var(--rose);
+				color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 6%, transparent);
+			}
+			.cc-item.good {
+				border-color: var(--sage);
+				color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 6%, transparent);
+			}
+			.cc-state-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				margin-bottom: 0.4rem;
+			}
+
+			/* Assessment */
+			.debug-question {
+				margin: 2rem 0;
+				border: 1px solid var(--border);
+			}
+			.debug-q-header {
+				padding: 0.75rem 1rem;
+				border-bottom: 1px solid var(--border);
+				background: var(--raised);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--muted);
+			}
+			.debug-body {
+				padding: 1rem 1.25rem;
+				font-size: 13px;
+			}
+			.debug-canvas-wrap {
+				margin: 1rem 0;
+			}
+			#diag-canvas {
+				display: block;
+				max-width: 100%;
+				border: 1px solid var(--border2);
+			}
+			.debug-options {
+				padding: 0 1.25rem 1.25rem;
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.debug-option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				font-family: 'IBM Plex Mono', monospace;
+				user-select: none;
+			}
+			.debug-option:hover {
+				border-color: var(--border2);
+				background: var(--raised);
+			}
+			.debug-option.correct {
+				border-color: var(--sage);
+				background: color-mix(in srgb, var(--sage) 10%, transparent);
+				color: var(--sage);
+			}
+			.debug-option.wrong {
+				border-color: var(--rose);
+				background: color-mix(in srgb, var(--rose) 10%, transparent);
+				color: var(--rose);
+			}
+			.debug-option.disabled {
+				pointer-events: none;
+			}
+			.debug-feedback {
+				padding: 0.75rem 1.25rem;
+				font-size: 12px;
+				border-top: 1px solid var(--border);
+				min-height: 2em;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<!-- HEADER -->
+			<header class="course-header">
+				<div>
+					<div class="course-label">Graphic Design &amp; Visual Storytelling</div>
+					<div class="course-title">Building a Personal Creative Identity</div>
+				</div>
+				<div style="font-size: 11px; color: var(--muted); text-align: right">Module 02 of 10</div>
+			</header>
+
+			<!-- HERO -->
+			<div class="module-hero">
+				<div class="module-number">02</div>
+				<div class="module-tag">Module 02 · Perception + Composition</div>
+				<h1 class="module-title">Visual Perception<br /><span>and Composition</span></h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<!-- TOC -->
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#how-eye-moves">How the Eye Moves</a></li>
+					<li><a href="#hierarchy-focal">Hierarchy &amp; Focal Points</a></li>
+					<li><a href="#thirds-balance">Rule of Thirds &amp; Balance</a></li>
+					<li><a href="#contrast-grouping">Contrast, Spacing &amp; Grouping</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+					<li><a href="#assessment">Assessment</a></li>
+				</ul>
+			</nav>
+
+			<!-- OBJECTIVES -->
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Understand how the eye moves across a composition and why</li>
+					<li>Apply visual hierarchy to control the viewer's reading order</li>
+					<li>Use the rule of thirds, balance, and asymmetry as deliberate tools</li>
+					<li>Apply contrast, alignment, spacing, and grouping to achieve clarity</li>
+				</ul>
+			</section>
+
+			<!-- ═══════════════════════════════
+       SECTION 1: HOW THE EYE MOVES
+  ═══════════════════════════════ -->
+			<section id="how-eye-moves" class="section">
+				<div class="section-header">
+					<span class="section-num">02.01</span>
+					<h2 class="section-title">How the Eye Moves Across an Image</h2>
+				</div>
+
+				<p>
+					The human visual system does not take in an image all at once. It performs rapid,
+					involuntary movements called <em>saccades</em> — darting from one point of visual interest
+					to the next in a sequence your viewer has no conscious control over. Your job as a
+					designer is to predict and direct that sequence.
+				</p>
+
+				<p>
+					The eye is drawn toward certain visual properties: <strong>high contrast</strong> (a
+					bright object on a dark field), <strong>faces</strong> and eyes (a deeply hardwired
+					instinct), <strong>large elements</strong> before small ones,
+					<strong>warm or saturated colors</strong> before cool or muted ones, and
+					<strong>text</strong> in a viewer's native language. These are not preferences — they are
+					perceptual reflexes, consistent across cultures.
+				</p>
+
+				<div class="callout sky">
+					<div class="callout-label">What This Means for Design</div>
+					Every element you place in a composition competes for one of a limited number of saccade
+					stops. The viewer's eye will only settle on five to seven distinct points before forming a
+					first impression. Design the path through those points deliberately.
+				</div>
+
+				<p>
+					When a composition has no hierarchy — when every element has the same weight, the same
+					contrast, the same size — the eye has nowhere to start and nowhere logical to go. It
+					wanders, finds no path, and the viewer's brain categorizes the design as confusing without
+					being able to say why.
+				</p>
+
+				<p>
+					When a composition is over-hierarchied — when so many elements are trying to be primary
+					that the field is chaotic — the same thing happens: the eye doesn't know where to land.
+					Maximum contrast everywhere is equivalent to no contrast anywhere.
+				</p>
+
+				<!-- DEMO: Eye Path -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Eye Path Simulator</span>
+						<span class="demo-badge animated">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							Each composition is built from the same elements with different hierarchy decisions.
+							Press Play to watch the predicted eye path animate through the composition.
+						</p>
+						<div class="ep-controls">
+							<button class="btn active" id="ep-btn-strong" onclick="setEpMode('strong')">
+								Strong Hierarchy
+							</button>
+							<button class="btn" id="ep-btn-conflict" onclick="setEpMode('conflict')">
+								Competing Focal Points
+							</button>
+							<button class="btn" id="ep-btn-flat" onclick="setEpMode('flat')">No Hierarchy</button>
+						</div>
+						<canvas id="ep-canvas" width="620" height="340"></canvas>
+						<div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap">
+							<button class="btn sky" id="ep-play-btn" onclick="playEyePath()">▶ Play Path</button>
+							<button class="btn" onclick="resetEyePath()">Reset</button>
+						</div>
+						<div class="ep-info" id="ep-info">
+							Select a hierarchy mode above, then press Play to animate the predicted eye movement
+							path through the composition.
+						</div>
+					</div>
+				</div>
+
+				<p>
+					Notice that "strong hierarchy" doesn't mean simple. A composition can have many elements
+					while still providing a clear reading order. What matters is that no two elements share
+					the same visual weight at the same moment in the reading sequence.
+				</p>
+			</section>
+
+			<!-- ═══════════════════════════════
+       SECTION 2: HIERARCHY + FOCAL POINTS
+  ═══════════════════════════════ -->
+			<section id="hierarchy-focal" class="section">
+				<div class="section-header">
+					<span class="section-num">02.02</span>
+					<h2 class="section-title">Visual Hierarchy and Focal Points</h2>
+				</div>
+
+				<p>
+					<em>Visual hierarchy</em> is the system of visual relationships that tells the viewer
+					which element to look at first, second, and third. It is not about what is most important
+					to the <em>designer</em>. It is about what needs to be communicated first to the
+					<em>viewer</em> to serve the design's purpose.
+				</p>
+
+				<p>
+					Hierarchy is expressed through six properties. These can be applied independently or
+					combined, and the more of them that distinguish an element from its neighbors, the more
+					dominant it becomes:
+				</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Property</th>
+							<th>How to Apply It</th>
+							<th>Effect</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Size</td>
+							<td>Make the primary element significantly larger</td>
+							<td>The eye registers larger objects first, universally</td>
+						</tr>
+						<tr>
+							<td>Value contrast</td>
+							<td>White text on dark, or dark on light — extreme contrast</td>
+							<td>High contrast pulls attention before color or shape</td>
+						</tr>
+						<tr>
+							<td>Color</td>
+							<td>One warm/saturated element in a muted field</td>
+							<td>Chromatically distinct elements read as "active"</td>
+						</tr>
+						<tr>
+							<td>Weight</td>
+							<td>Bold or heavy type versus light surroundings</td>
+							<td>Heavier elements feel closer and more important</td>
+						</tr>
+						<tr>
+							<td>Position</td>
+							<td>Upper-left (Western reading cultures) or true center</td>
+							<td>Reading order defaults to top-left; center = importance signal</td>
+						</tr>
+						<tr>
+							<td>Isolation</td>
+							<td>Surround the primary element with empty space</td>
+							<td>Negative space says "stop here"</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<p>
+					A <em>focal point</em> is a specific location in the composition where the primary visual
+					hierarchy lands — where the eye goes first. In a thumbnail, the focal point is typically
+					the face or the single most visually distinct element. In a logo, it is often the most
+					distinctive letterform or the icon. In a diagram, it is the concept being explained.
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">Single Focal Point Rule</div>
+					A composition should have exactly one primary focal point. Two elements of equal visual
+					weight create what designers call "visual conflict" — the eye oscillates between them and
+					the viewer's brain interprets the uncertainty as confusion. This is one of the most common
+					and most damaging beginner mistakes.
+				</div>
+
+				<p>
+					Achieving a single focal point doesn't mean the composition is boring. A complex
+					composition can have one primary focal point, two or three secondary stops, and several
+					tertiary elements — all at distinct visual weights. The hierarchy is like a melody: one
+					lead voice, harmonies below it, no two voices at the same volume at the same time.
+				</p>
+			</section>
+
+			<!-- ═══════════════════════════════
+       SECTION 3: RULE OF THIRDS + BALANCE
+  ═══════════════════════════════ -->
+			<section id="thirds-balance" class="section">
+				<div class="section-header">
+					<span class="section-num">02.03</span>
+					<h2 class="section-title">Rule of Thirds, Balance, and Asymmetry</h2>
+				</div>
+
+				<p>
+					The <em>rule of thirds</em> divides any rectangular composition into a 3×3 grid by drawing
+					two equally-spaced horizontal and two vertical lines. The four points where these lines
+					intersect are called <em>power points</em> or <em>crash points</em>. Placing your focal
+					element at or near one of these intersections produces a composition that feels more
+					dynamic and visually stable than placing it dead-center.
+				</p>
+
+				<p>
+					Dead-center placement is not wrong — it creates a specific feeling of formality, symmetry,
+					and authority. Logos are often centered for exactly this reason. But in storytelling
+					compositions — thumbnails, posters, editorial images — dead center can feel static,
+					predictable, and boring. Off-center placement creates <strong>visual tension</strong>: the
+					subject pulls against the frame, and that tension is what holds a viewer's eye.
+				</p>
+
+				<div class="callout info">
+					<div class="callout-label">Why It Works Perceptually</div>
+					The rule of thirds roughly approximates the golden ratio distribution. More practically:
+					off-center subjects create implied space — the viewer's eye wants to follow where the
+					subject is "looking" or "moving," and that implied direction generates visual energy.
+				</div>
+
+				<!-- DEMO: Rule of Thirds -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Rule of Thirds Builder</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							Drag the subject (the colored block) anywhere in the frame. The composition strength
+							meter responds in real time. Toggle the grid overlay to see the thirds lines and power
+							points.
+						</p>
+						<div class="rot-controls">
+							<button class="btn" id="rot-grid-btn" onclick="toggleRotGrid()">Show Grid</button>
+							<button class="btn rose" onclick="resetRotSubject()">Center Subject</button>
+						</div>
+						<canvas id="rot-canvas" width="560" height="340"></canvas>
+						<div class="rot-score-wrap">
+							<div
+								style="
+									display: flex;
+									justify-content: space-between;
+									font-size: 10px;
+									color: var(--muted);
+									margin-bottom: 4px;
+									letter-spacing: 0.1em;
+									text-transform: uppercase;
+								"
+							>
+								<span>Composition Strength</span>
+								<span id="rot-score-pct">—</span>
+							</div>
+							<div class="rot-score-bar-bg">
+								<div class="rot-score-bar" id="rot-score-bar" style="width: 0%"></div>
+							</div>
+							<div class="rot-tip" id="rot-tip">
+								Drag the subject to explore composition strength.
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<p>
+					<em>Balance</em> is a related but distinct concept. A composition is visually balanced
+					when the implied weights of elements on each side of the composition's center feel roughly
+					equal — not necessarily symmetrical, but stable. A large dark shape on the left can be
+					balanced by a smaller but highly saturated element on the right. Visual weight includes
+					size, value, color intensity, and even textural density.
+				</p>
+
+				<p>
+					<em>Symmetry</em> divides a composition identically on either side of a central axis. It
+					communicates stability, authority, and formality — which is why it appears in
+					institutional logos, government seals, and religious iconography.
+					<em>Asymmetry</em> creates visual tension and dynamism. Most effective storytelling design
+					is asymmetric but balanced — the two sides are not identical, but they feel equally
+					weighted.
+				</p>
+			</section>
+
+			<!-- ═══════════════════════════════
+       SECTION 4: CONTRAST, SPACING, GROUPING
+  ═══════════════════════════════ -->
+			<section id="contrast-grouping" class="section">
+				<div class="section-header">
+					<span class="section-num">02.04</span>
+					<h2 class="section-title">Contrast, Alignment, Spacing, and Grouping</h2>
+				</div>
+
+				<p>
+					Four mechanical tools produce most of the structural clarity in professional design:
+					contrast, alignment, spacing, and grouping. These are not stylistic choices — they are
+					decisions about how visual information is organized. They work below the level of
+					aesthetics.
+				</p>
+
+				<p>
+					<strong>Contrast</strong> is difference. Size contrast, value contrast, color contrast,
+					shape contrast — any property that makes one element distinct from its neighbors. Contrast
+					is how you make something matter. The greater the contrast between an element and its
+					surrounding field, the more attention it demands. Critically, contrast is relational: an
+					element is only high-contrast relative to what surrounds it. There is no absolute "high
+					contrast" — only "more contrast than the neighboring elements."
+				</p>
+
+				<!-- DEMO: Contrast Focal Point -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Contrast &amp; Focal Point</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							A field of identical elements. Use the controls to apply contrast properties to a
+							single target element and observe how attention snaps to it. Try the "Maximum
+							Contrast" preset to see what happens when everything competes.
+						</p>
+						<div class="two-col" style="align-items: start; gap: 1.5rem">
+							<div>
+								<canvas id="ct-canvas" width="300" height="260"></canvas>
+							</div>
+							<div>
+								<div class="ct-controls">
+									<div class="slider-row">
+										<label>Size</label>
+										<input
+											type="range"
+											id="ct-size"
+											min="1"
+											max="3"
+											step="0.05"
+											value="1"
+											oninput="updateContrast()"
+										/>
+										<span class="slider-val" id="ct-size-val">1×</span>
+									</div>
+									<div class="slider-row">
+										<label>Brightness</label>
+										<input
+											type="range"
+											id="ct-bright"
+											min="0"
+											max="1"
+											step="0.02"
+											value="0.5"
+											oninput="updateContrast()"
+										/>
+										<span class="slider-val" id="ct-bright-val">50%</span>
+									</div>
+									<div class="slider-row">
+										<label>Hue</label>
+										<input
+											type="range"
+											id="ct-hue"
+											min="0"
+											max="1"
+											step="0.02"
+											value="0"
+											oninput="updateContrast()"
+										/>
+										<span class="slider-val" id="ct-hue-val">0%</span>
+									</div>
+									<div class="ct-presets">
+										<button class="btn" onclick="setCtPreset('size')">Size Only</button>
+										<button class="btn" onclick="setCtPreset('value')">Value Only</button>
+										<button class="btn" onclick="setCtPreset('color')">Color Only</button>
+										<button class="btn rose" onclick="setCtPreset('chaos')">Max Contrast</button>
+										<button class="btn" onclick="setCtPreset('reset')">Reset</button>
+									</div>
+								</div>
+								<div class="ct-note" id="ct-note">
+									Adjust a property to see how contrast directs attention.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<p>
+					<strong>Alignment</strong> is the practice of placing elements along shared invisible axes
+					— a common left edge, a shared center line, a consistent grid column. Alignment creates
+					the sense of order and intentionality that makes a design feel professional. Misalignment,
+					conversely, creates subtle visual noise that viewers cannot identify but respond to as
+					disorder. The rule is simple: if two elements are near each other, they should either
+					share an edge exactly or be clearly separated. The visual problem happens in the ambiguous
+					middle.
+				</p>
+
+				<p>
+					<strong>Spacing</strong> — sometimes called white space or negative space — is one of the
+					most misunderstood tools in design. Beginners typically try to fill available space,
+					treating emptiness as waste. Empty space is not nothing; it is an active ingredient.
+					Generous spacing around an element signals that it is important. Tight, crowded spacing
+					suggests hierarchy has collapsed and everything is competing. As a rule: when in doubt,
+					give elements more space than you think they need.
+				</p>
+
+				<p>
+					<strong>Grouping</strong> is a perceptual principle rooted in Gestalt psychology: elements
+					that are close together are perceived as belonging together. You use this constantly in
+					design — placing a headline close to its subheading, keeping a caption near its image,
+					grouping related navigation items. The boundary between groups is created by spacing, not
+					by visual containers. You don't need a box or a line to create a group — just enough space
+					between items to make the separation read.
+				</p>
+
+				<div class="callout green">
+					<div class="callout-label">Gestalt: Proximity</div>
+					If you find yourself reaching for boxes, dividers, or background fills to separate content
+					sections, ask first whether additional spacing would do the same job. In almost every case
+					it will — and the result will be cleaner.
+				</div>
+			</section>
+
+			<!-- ═══════════════════════════════
+       SECTION 5: PRACTICAL WORK
+  ═══════════════════════════════ -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">02.05</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<!-- DEMO: Cluttered vs Clean -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Exercise · Rebuild a Composition</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+							The same poster content in two states: a cluttered, unstructured version and a
+							rebuilt, principled version. Toggle between them and read the annotations to identify
+							each structural change.
+						</p>
+						<div class="cc-toggle-wrap">
+							<button class="btn rose active" id="cc-btn-bad" onclick="setCcMode('bad')">
+								Cluttered
+							</button>
+							<button class="btn sage" id="cc-btn-good" onclick="setCcMode('good')">Rebuilt</button>
+						</div>
+						<div id="cc-state-label" class="cc-state-label" style="color: var(--rose)">
+							Before: Cluttered Layout
+						</div>
+						<canvas id="cc-canvas" width="560" height="380"></canvas>
+						<div class="cc-annotation-list" id="cc-annotations"></div>
+					</div>
+				</div>
+
+				<div class="callout info">
+					<div class="callout-label">Exercise 1 — Composition Rebuild</div>
+					Take any piece of content you have — a social post, a slide, a document heading — and
+					rebuild it using only these four tools: one primary element (contrast), shared edges
+					(alignment), breathing room (spacing), and logical proximity (grouping). You are not
+					allowed to change the content, only the structural decisions.
+				</div>
+
+				<div class="callout green">
+					<div class="callout-label">Exercise 2 — Focus Poster</div>
+					Create a simple poster (any tool: Canva, Figma, even Keynote) for a real or invented
+					event. Constraint: the viewer must be able to identify the event name, date, and location
+					within three seconds — in that order. Your hierarchy must force that reading sequence.
+					After you create it, cover up the lower two-thirds and see what a viewer gets from the top
+					third alone.
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- ═══════════════════════════════
+       QUIZ
+  ═══════════════════════════════ -->
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module 02 — Check Your Understanding</div>
+				<div class="quiz-sub">
+					Five questions · No time limit · Select the best answer for each.
+				</div>
+
+				<!-- Q1 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">01.</span> A designer places two headlines in a composition — both
+						bold, both the same size, both high contrast against the background. What problem has
+						this created?
+					</div>
+					<div class="options" data-correct="2">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. The composition is now overdesigned and should be simplified
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. The headlines will be too large for mobile viewing
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. Two equally-weighted primary elements create visual conflict — the eye oscillates
+							between them without a clear reading order
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. The composition is actually stronger because it has more emphasis
+						</div>
+					</div>
+					<div class="feedback" id="fb-0"></div>
+				</div>
+
+				<!-- Q2 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">02.</span> Why does placing a subject at a rule-of-thirds power
+						point typically produce a more dynamic composition than centering it?
+					</div>
+					<div class="options" data-correct="1">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. Centered compositions always feel unbalanced
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. Off-center placement creates visual tension — the subject pulls against the frame,
+							generating energy and implied direction
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. Power points are mathematically more visible than the center
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. The rule of thirds prevents cropping issues on social platforms
+						</div>
+					</div>
+					<div class="feedback" id="fb-1"></div>
+				</div>
+
+				<!-- Q3 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">03.</span> A design has every element at maximum contrast — large,
+						bright, bold, colored. What is the perceptual result?
+					</div>
+					<div class="options" data-correct="3">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. The design communicates more information faster
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. Every element feels equally important, which reinforces the message
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. The high contrast makes the design legible at small sizes
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. Maximum contrast everywhere is equivalent to no contrast anywhere — there is no
+							focal point, and the composition reads as chaotic
+						</div>
+					</div>
+					<div class="feedback" id="fb-2"></div>
+				</div>
+
+				<!-- Q4 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">04.</span> A designer wants to separate two content groups on a
+						webpage. They are considering adding a horizontal dividing line. What should they try
+						first?
+					</div>
+					<div class="options" data-correct="0">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. Increase the spacing between the groups — proximity alone creates perceived
+							grouping, and a line may not be necessary
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. Use a different background color for one group
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. Add a border box around each group
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. Reduce the font size of one group to indicate it is secondary
+						</div>
+					</div>
+					<div class="feedback" id="fb-3"></div>
+				</div>
+
+				<!-- Q5 -->
+				<div class="question">
+					<div class="q-text">
+						<span class="q-num">05.</span> Which of the following most accurately describes what
+						"visual weight" means in the context of balance?
+					</div>
+					<div class="options" data-correct="2">
+						<div class="option" onclick="handleQuiz(this, 0)">
+							A. The physical file size of an image element
+						</div>
+						<div class="option" onclick="handleQuiz(this, 1)">
+							B. The number of pixels an element occupies on screen
+						</div>
+						<div class="option" onclick="handleQuiz(this, 2)">
+							C. The perceived heaviness of an element based on its size, value, color, and
+							isolation relative to surrounding elements
+						</div>
+						<div class="option" onclick="handleQuiz(this, 3)">
+							D. The amount of visual information (detail) contained in an element
+						</div>
+					</div>
+					<div class="feedback" id="fb-4"></div>
+				</div>
+
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-num">—</div>
+					<div class="score-label">questions correct out of 5</div>
+				</div>
+			</section>
+
+			<!-- ═══════════════════════════════
+       ASSESSMENT
+  ═══════════════════════════════ -->
+			<section id="assessment" class="assessment-section">
+				<div class="assessment-header">Module Assessment — Diagnose a Failing Hierarchy</div>
+				<div class="assessment-sub">
+					Given a broken composition, identify which principle is failing and why.
+				</div>
+
+				<p style="font-size: 13px; margin-bottom: 1rem">
+					The composition below was designed for a YouTube channel announcement. The creator wants
+					viewers to read: channel name first, then the launch date, then the topic description.
+					Examine the layout and identify what is structurally preventing that reading order.
+				</p>
+
+				<div class="debug-question">
+					<div class="debug-q-header">Diagnosis Exercise · Composition Analysis</div>
+					<div class="debug-body">
+						<p style="font-size: 12px; color: var(--muted)">
+							The intended reading order is: Channel Name → Launch Date → Topic Description.
+							Identify the primary structural problem.
+						</p>
+						<div class="debug-canvas-wrap">
+							<canvas id="diag-canvas" width="560" height="300"></canvas>
+						</div>
+					</div>
+					<div class="debug-options">
+						<div class="debug-option" onclick="handleDiag(this, 0)">
+							A. The color palette is too limited — more colors would create better hierarchy
+						</div>
+						<div class="debug-option" onclick="handleDiag(this, 1)">
+							B. The Launch Date and Topic Description have nearly identical visual weight, so the
+							eye cannot determine which to read second — the intended sequence fails at step two
+						</div>
+						<div class="debug-option" onclick="handleDiag(this, 2)">
+							C. The Channel Name is too large and crowds out the other elements
+						</div>
+						<div class="debug-option" onclick="handleDiag(this, 3)">
+							D. There are too few elements — more content would fill the composition and fix the
+							hierarchy
+						</div>
+					</div>
+					<div
+						class="debug-feedback"
+						id="diag-feedback"
+						style="color: var(--muted); font-size: 12px"
+					></div>
+				</div>
+			</section>
+
+			<!-- NAV -->
+			<div class="nav-links">
+				<a href="gd-module-01.html" class="prev-link">← Module 01: What Design Is</a>
+				<a href="gd-module-03.html" class="next-module" style="flex: 1; max-width: 420px">
+					<div>
+						<div class="next-label">Next — Module 03</div>
+						<div class="next-title">Typography Essentials</div>
+					</div>
+					<div class="next-arrow">→</div>
+				</a>
+			</div>
+		</div>
+		<!-- .page-wrapper -->
+
+		<script>
+			/* ═══════════════════════════════════════
+   READING PROGRESS
+═══════════════════════════════════════ */
+			window.addEventListener('scroll', () => {
+				const el = document.documentElement;
+				const pct = el.scrollTop / (el.scrollHeight - el.clientHeight);
+				document.getElementById('reading-progress').style.width = pct * 100 + '%';
+			});
+
+			/* ═══════════════════════════════════════
+   EYE PATH DEMO
+═══════════════════════════════════════ */
+			const epCanvas = document.getElementById('ep-canvas');
+			const epCtx = epCanvas.getContext('2d');
+			const EW = epCanvas.width,
+				EH = epCanvas.height;
+
+			let epMode = 'strong';
+			let epAnimId = null;
+			let epStep = 0;
+			let epT = 0; // 0-1 within a segment
+
+			const EP_MODES = {
+				strong: {
+					info: '<strong>Strong Hierarchy</strong> — One clear primary element anchors the eye. The path moves logically from the highest-contrast element (the face/subject) to the headline, then to the sub-label, then to the call-to-action. The eye never has to backtrack.',
+					waypoints: [
+						{ x: 0.22, y: 0.38, r: 18, label: '1', color: '#9b6dff' },
+						{ x: 0.56, y: 0.32, r: 13, label: '2', color: '#9b6dff' },
+						{ x: 0.57, y: 0.58, r: 9, label: '3', color: '#9b6dff' },
+						{ x: 0.57, y: 0.76, r: 6, label: '4', color: '#9b6dff' }
+					],
+					draw: drawStrongComposition
+				},
+				conflict: {
+					info: '<strong>Competing Focal Points</strong> — Two elements share equal visual dominance. The eye lands on one, then the other, oscillates, and cannot commit. The viewer experiences this as confusion or visual tension without being able to name it.',
+					waypoints: [
+						{ x: 0.22, y: 0.38, r: 16, label: '1', color: '#e85d8a' },
+						{ x: 0.7, y: 0.38, r: 16, label: '2', color: '#e85d8a' },
+						{ x: 0.22, y: 0.38, r: 16, label: '3', color: '#e85d8a' },
+						{ x: 0.7, y: 0.38, r: 16, label: '4', color: '#e85d8a' },
+						{ x: 0.45, y: 0.72, r: 7, label: '5', color: '#e85d8a' }
+					],
+					draw: drawConflictComposition
+				},
+				flat: {
+					info: '<strong>No Hierarchy</strong> — All elements share the same visual weight. The eye has no logical entry point and moves erratically, attempting to find a starting point. First impressions form in under 50ms — if nothing says "start here," the viewer moves on.',
+					waypoints: [
+						{ x: 0.22, y: 0.3, r: 8, label: '1', color: '#f5a623' },
+						{ x: 0.65, y: 0.55, r: 8, label: '2', color: '#f5a623' },
+						{ x: 0.4, y: 0.72, r: 8, label: '3', color: '#f5a623' },
+						{ x: 0.78, y: 0.28, r: 8, label: '4', color: '#f5a623' },
+						{ x: 0.15, y: 0.65, r: 8, label: '5', color: '#f5a623' },
+						{ x: 0.55, y: 0.35, r: 8, label: '6', color: '#f5a623' }
+					],
+					draw: drawFlatComposition
+				}
+			};
+
+			function drawBaseField(ctx) {
+				ctx.fillStyle = '#0c1420';
+				ctx.fillRect(0, 0, EW, EH);
+			}
+
+			function drawStrongComposition() {
+				const ctx = epCtx;
+				drawBaseField(ctx);
+
+				// Subject — face block, left third
+				const fx = Math.floor(EW * 0.22),
+					fy = Math.floor(EH * 0.38);
+				ctx.fillStyle = '#1a2e44';
+				ctx.fillRect(Math.floor(EW * 0.04), 0, Math.floor(EW * 0.36), EH);
+				ctx.fillStyle = '#d4a07a';
+				ctx.beginPath();
+				ctx.ellipse(fx, fy, 52, 60, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#1a2e44';
+				ctx.beginPath();
+				ctx.ellipse(fx - 16, fy - 10, 6, 5, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.beginPath();
+				ctx.ellipse(fx + 16, fy - 10, 6, 5, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#0d1c2a';
+				ctx.fillRect(fx - 52, Math.floor(EH * 0.56), 104, EH);
+
+				// Primary title — large, white, high contrast
+				ctx.fillStyle = '#ffffff';
+				ctx.font = `bold ${Math.floor(EH * 0.15)}px Syne, sans-serif`;
+				ctx.fillText('DESIGN', Math.floor(EW * 0.44), Math.floor(EH * 0.35));
+
+				// Secondary — medium, accent
+				ctx.fillStyle = '#9b6dff';
+				ctx.font = `bold ${Math.floor(EH * 0.11)}px Syne, sans-serif`;
+				ctx.fillText('THINKING', Math.floor(EW * 0.44), Math.floor(EH * 0.52));
+
+				// Tertiary — small, muted
+				ctx.fillStyle = '#5a7090';
+				ctx.font = `${Math.floor(EH * 0.055)}px IBM Plex Mono, monospace`;
+				ctx.fillText('A course for systematic minds', Math.floor(EW * 0.44), Math.floor(EH * 0.65));
+
+				// CTA — tiny, low weight
+				ctx.fillStyle = '#2a4060';
+				ctx.fillRect(Math.floor(EW * 0.44), Math.floor(EH * 0.72), 140, 22);
+				ctx.fillStyle = '#5a7090';
+				ctx.font = `${Math.floor(EH * 0.045)}px IBM Plex Mono, monospace`;
+				ctx.fillText('ENROLL NOW →', Math.floor(EW * 0.455), Math.floor(EH * 0.775));
+			}
+
+			function drawConflictComposition() {
+				const ctx = epCtx;
+				drawBaseField(ctx);
+
+				// TWO competing subjects — same size, same contrast
+				const r = 55;
+				ctx.fillStyle = '#d4a07a';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(EW * 0.22), Math.floor(EH * 0.38), r, r + 10, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#c4907a';
+				ctx.beginPath();
+				ctx.ellipse(Math.floor(EW * 0.7), Math.floor(EH * 0.38), r, r + 10, 0, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Eyes on both
+				[
+					[0.22, 0.38],
+					[0.7, 0.38]
+				].forEach(([px, py]) => {
+					ctx.fillStyle = '#1a2e44';
+					ctx.beginPath();
+					ctx.ellipse(EW * px - 14, EH * py - 8, 5, 4, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.beginPath();
+					ctx.ellipse(EW * px + 14, EH * py - 8, 5, 4, 0, 0, Math.PI * 2);
+					ctx.fill();
+				});
+
+				// Shared title — dead center, medium weight (contributes to confusion)
+				ctx.fillStyle = '#8090a8';
+				ctx.font = `${Math.floor(EH * 0.08)}px IBM Plex Mono, monospace`;
+				ctx.textAlign = 'center';
+				ctx.fillText('featuring two guests', EW / 2, EH * 0.75);
+				ctx.textAlign = 'left';
+
+				// Labels beneath each — same weight
+				ctx.fillStyle = '#ffffff';
+				ctx.font = `bold ${Math.floor(EH * 0.07)}px Syne, sans-serif`;
+				ctx.textAlign = 'center';
+				ctx.fillText('ALEX', Math.floor(EW * 0.22), Math.floor(EH * 0.62));
+				ctx.fillText('JORDAN', Math.floor(EW * 0.7), Math.floor(EH * 0.62));
+				ctx.textAlign = 'left';
+			}
+
+			function drawFlatComposition() {
+				const ctx = epCtx;
+				drawBaseField(ctx);
+
+				// Six elements, all similar weight
+				const items = [
+					{ x: 0.1, y: 0.22, w: 0.2, h: 0.09, col: '#2a4060', text: 'EPISODE 47', ts: 11 },
+					{ x: 0.5, y: 0.18, w: 0.22, h: 0.09, col: '#2a3855', text: 'subscribe', ts: 11 },
+					{ x: 0.1, y: 0.4, w: 0.35, h: 0.12, col: '#243550', text: 'Design Basics', ts: 13 },
+					{ x: 0.1, y: 0.6, w: 0.3, h: 0.1, col: '#1e2e45', text: 'watch now', ts: 12 },
+					{ x: 0.55, y: 0.45, w: 0.38, h: 0.1, col: '#253348', text: 'this week only', ts: 12 },
+					{ x: 0.4, y: 0.72, w: 0.28, h: 0.09, col: '#1a2840', text: 'new video', ts: 11 }
+				];
+				items.forEach((it) => {
+					ctx.fillStyle = it.col;
+					ctx.fillRect(
+						Math.floor(EW * it.x),
+						Math.floor(EH * it.y),
+						Math.floor(EW * it.w),
+						Math.floor(EH * it.h)
+					);
+					ctx.fillStyle = '#708aaa';
+					ctx.font = `${it.ts}px IBM Plex Mono, monospace`;
+					ctx.fillText(
+						it.text,
+						Math.floor(EW * it.x) + 8,
+						Math.floor(EH * it.y) + Math.floor(EH * it.h) * 0.64
+					);
+				});
+			}
+
+			let epDotX = 0,
+				epDotY = 0;
+			let epPathDrawn = []; // segments drawn so far
+			let epAnimating = false;
+
+			function drawEpFrame() {
+				const mode = EP_MODES[epMode];
+				mode.draw();
+
+				const wps = mode.waypoints;
+
+				// Draw completed path segments
+				epPathDrawn.forEach((seg) => {
+					ctx_ep_drawSegment(seg.x1, seg.y1, seg.x2, seg.y2, seg.color, 1.0);
+				});
+
+				// Draw waypoint numbers (all visible)
+				wps.forEach((wp, i) => {
+					const px = EW * wp.x,
+						py = EH * wp.y;
+					if (i < epStep || (i === epStep && epT > 0.05)) {
+						ctx_ep_drawWaypoint(px, py, wp.label, wp.color, 1.0);
+					}
+				});
+
+				// Animate current segment
+				if (epAnimating && epStep < wps.length - 1) {
+					const a = wps[epStep],
+						b = wps[epStep + 1];
+					const ax = EW * a.x,
+						ay = EH * a.y,
+						bx = EW * b.x,
+						by = EH * b.y;
+					const cx = ax + (bx - ax) * epT,
+						cy = ay + (by - ay) * epT;
+
+					// Partial path
+					ctx_ep_drawSegment(ax, ay, cx, cy, a.color, 0.8);
+
+					// Animated dot
+					epCtx.beginPath();
+					epCtx.arc(cx, cy, 7, 0, Math.PI * 2);
+					epCtx.fillStyle = 'rgba(255,255,255,0.95)';
+					epCtx.fill();
+					epCtx.beginPath();
+					epCtx.arc(cx, cy, 4, 0, Math.PI * 2);
+					epCtx.fillStyle = a.color;
+					epCtx.fill();
+				}
+			}
+
+			function ctx_ep_drawSegment(x1, y1, x2, y2, color, alpha) {
+				epCtx.save();
+				epCtx.globalAlpha = alpha;
+				epCtx.strokeStyle = color;
+				epCtx.lineWidth = 2;
+				epCtx.setLineDash([6, 4]);
+				epCtx.beginPath();
+				epCtx.moveTo(x1, y1);
+				epCtx.lineTo(x2, y2);
+				epCtx.stroke();
+				epCtx.setLineDash([]);
+				epCtx.restore();
+			}
+
+			function ctx_ep_drawWaypoint(px, py, label, color, alpha) {
+				epCtx.save();
+				epCtx.globalAlpha = alpha;
+				epCtx.beginPath();
+				epCtx.arc(px, py, 13, 0, Math.PI * 2);
+				epCtx.strokeStyle = color;
+				epCtx.lineWidth = 1.5;
+				epCtx.stroke();
+				epCtx.fillStyle = color + '30';
+				epCtx.fill();
+				epCtx.fillStyle = '#fff';
+				epCtx.font = 'bold 11px IBM Plex Mono, monospace';
+				epCtx.textAlign = 'center';
+				epCtx.fillText(label, px, py + 4);
+				epCtx.textAlign = 'left';
+				epCtx.restore();
+			}
+
+			function setEpMode(mode) {
+				epMode = mode;
+				epStep = 0;
+				epT = 0;
+				epPathDrawn = [];
+				epAnimating = false;
+				if (epAnimId) {
+					cancelAnimationFrame(epAnimId);
+					epAnimId = null;
+				}
+				document.getElementById('ep-btn-strong').classList.toggle('active', mode === 'strong');
+				document.getElementById('ep-btn-conflict').classList.toggle('active', mode === 'conflict');
+				document.getElementById('ep-btn-flat').classList.toggle('active', mode === 'flat');
+				drawEpFrame();
+				document.getElementById('ep-info').innerHTML =
+					'Press <strong style="color:var(--violet)">▶ Play Path</strong> to animate the eye movement through this composition.';
+			}
+
+			function playEyePath() {
+				if (epAnimId) {
+					cancelAnimationFrame(epAnimId);
+					epAnimId = null;
+				}
+				epStep = 0;
+				epT = 0;
+				epPathDrawn = [];
+				epAnimating = true;
+
+				const SPEED = 0.018;
+				const wps = EP_MODES[epMode].waypoints;
+
+				function tick() {
+					epT += SPEED;
+					if (epT >= 1) {
+						epT = 0;
+						// Commit this segment
+						const a = wps[epStep],
+							b = wps[epStep + 1];
+						epPathDrawn.push({
+							x1: EW * a.x,
+							y1: EH * a.y,
+							x2: EW * b.x,
+							y2: EH * b.y,
+							color: a.color
+						});
+						epStep++;
+						if (epStep >= wps.length - 1) {
+							epAnimating = false;
+							drawEpFrame();
+							document.getElementById('ep-info').innerHTML = EP_MODES[epMode].info;
+							return;
+						}
+					}
+					drawEpFrame();
+					epAnimId = requestAnimationFrame(tick);
+				}
+				epAnimId = requestAnimationFrame(tick);
+			}
+
+			function resetEyePath() {
+				if (epAnimId) {
+					cancelAnimationFrame(epAnimId);
+					epAnimId = null;
+				}
+				epStep = 0;
+				epT = 0;
+				epPathDrawn = [];
+				epAnimating = false;
+				drawEpFrame();
+				document.getElementById('ep-info').innerHTML =
+					'Press <strong style="color:var(--violet)">▶ Play Path</strong> to animate the eye movement through this composition.';
+			}
+
+			// Init
+			drawEpFrame();
+
+			/* ═══════════════════════════════════════
+   RULE OF THIRDS DEMO
+═══════════════════════════════════════ */
+			const rotCanvas = document.getElementById('rot-canvas');
+			const rotCtx = rotCanvas.getContext('2d');
+			const RW = rotCanvas.width,
+				RH = rotCanvas.height;
+
+			let rotShowGrid = false;
+			let rotSubject = { x: RW / 2, y: RH / 2, w: 100, h: 130 }; // center start
+			let rotDragging = false;
+			let rotDragOff = { x: 0, y: 0 };
+
+			function getRotPowerPoints() {
+				return [
+					{ x: RW / 3, y: RH / 3 },
+					{ x: (2 * RW) / 3, y: RH / 3 },
+					{ x: RW / 3, y: (2 * RH) / 3 },
+					{ x: (2 * RW) / 3, y: (2 * RH) / 3 }
+				];
+			}
+
+			function calcRotScore() {
+				const sx = rotSubject.x,
+					sy = rotSubject.y;
+				const pts = getRotPowerPoints();
+				let minDist = Infinity;
+				pts.forEach((p) => {
+					const d = Math.sqrt((sx - p.x) ** 2 + (sy - p.y) ** 2);
+					if (d < minDist) minDist = d;
+				});
+				// Score: 100 at power point, 0 at max distance (RW/2)
+				const maxD = Math.sqrt(RW * RW + RH * RH) * 0.5;
+				// Center penalty
+				const cDist = Math.sqrt((sx - RW / 2) ** 2 + (sy - RH / 2) ** 2);
+				const centerPenalty = Math.max(0, 1 - cDist / (RW * 0.15));
+				const rawScore = Math.max(0, 1 - minDist / (RW * 0.35));
+				return Math.round((rawScore * 0.8 + (1 - centerPenalty) * 0.2) * 100);
+			}
+
+			function drawRotFrame() {
+				const ctx = rotCtx;
+
+				// Background
+				ctx.fillStyle = '#0c1420';
+				ctx.fillRect(0, 0, RW, RH);
+
+				// Horizon gradient
+				const bg = ctx.createLinearGradient(0, 0, 0, RH * 0.7);
+				bg.addColorStop(0, '#0e1e30');
+				bg.addColorStop(1, '#0c1420');
+				ctx.fillStyle = bg;
+				ctx.fillRect(0, 0, RW, RH * 0.7);
+				ctx.fillStyle = '#0a1018';
+				ctx.fillRect(0, RH * 0.7, RW, RH * 0.3);
+
+				// Subject block
+				const sx = rotSubject.x,
+					sy = rotSubject.y;
+				const sw = rotSubject.w,
+					sh = rotSubject.h;
+
+				// Shadow
+				ctx.save();
+				ctx.shadowColor = 'rgba(155, 109, 255, 0.25)';
+				ctx.shadowBlur = 20;
+				ctx.fillStyle = '#1e3050';
+				ctx.fillRect(sx - sw / 2, sy - sh / 2, sw, sh);
+				ctx.restore();
+
+				// Subject face
+				ctx.fillStyle = '#d4a07a';
+				ctx.beginPath();
+				ctx.ellipse(sx, sy - sh * 0.05, sw * 0.38, sh * 0.35, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#1a2e44';
+				ctx.beginPath();
+				ctx.ellipse(sx - 10, sy - sh * 0.11, 5, 4, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.beginPath();
+				ctx.ellipse(sx + 10, sy - sh * 0.11, 5, 4, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#1a2e44';
+				ctx.fillRect(sx - sw / 2, sy + sh * 0.2, sw, sh * 0.3);
+
+				// Subject label
+				ctx.fillStyle = 'rgba(155,109,255,0.9)';
+				ctx.font = '9px IBM Plex Mono, monospace';
+				ctx.textAlign = 'center';
+				ctx.fillText('SUBJECT', sx, sy - sh / 2 - 5);
+				ctx.textAlign = 'left';
+
+				// Grid overlay
+				if (rotShowGrid) {
+					const pts = getRotPowerPoints();
+
+					ctx.strokeStyle = 'rgba(155, 109, 255, 0.3)';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([5, 5]);
+					[RW / 3, (2 * RW) / 3].forEach((x) => {
+						ctx.beginPath();
+						ctx.moveTo(x, 0);
+						ctx.lineTo(x, RH);
+						ctx.stroke();
+					});
+					[RH / 3, (2 * RH) / 3].forEach((y) => {
+						ctx.beginPath();
+						ctx.moveTo(0, y);
+						ctx.lineTo(RW, y);
+						ctx.stroke();
+					});
+					ctx.setLineDash([]);
+
+					// Power points
+					pts.forEach((p) => {
+						const dist = Math.sqrt((sx - p.x) ** 2 + (sy - p.y) ** 2);
+						const near = dist < 60;
+						ctx.beginPath();
+						ctx.arc(p.x, p.y, near ? 10 : 6, 0, Math.PI * 2);
+						ctx.fillStyle = near ? 'rgba(155,109,255,0.9)' : 'rgba(155,109,255,0.35)';
+						ctx.fill();
+						if (near) {
+							ctx.beginPath();
+							ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+							ctx.strokeStyle = 'rgba(155,109,255,0.5)';
+							ctx.lineWidth = 1.5;
+							ctx.stroke();
+						}
+					});
+				}
+
+				// Score update
+				const score = calcRotScore();
+				const bar = document.getElementById('rot-score-bar');
+				const pctEl = document.getElementById('rot-score-pct');
+				bar.style.width = score + '%';
+				bar.style.background =
+					score > 75 ? 'var(--sage)' : score > 45 ? 'var(--violet)' : 'var(--rose)';
+				pctEl.textContent = score + ' / 100';
+
+				const tipEl = document.getElementById('rot-tip');
+				const cDist = Math.sqrt((sx - RW / 2) ** 2 + (sy - RH / 2) ** 2);
+				if (cDist < RW * 0.1) {
+					tipEl.style.color = 'var(--rose)';
+					tipEl.textContent =
+						'Subject is near dead-center — stable, but low tension. Try dragging to a grid intersection.';
+				} else if (score > 75) {
+					tipEl.style.color = 'var(--sage)';
+					tipEl.textContent =
+						'Subject is near a power point — strong compositional tension. The frame feels dynamic.';
+				} else {
+					tipEl.style.color = 'var(--muted)';
+					tipEl.textContent =
+						'Move toward a rule-of-thirds intersection to increase composition strength.';
+				}
+			}
+
+			function toggleRotGrid() {
+				rotShowGrid = !rotShowGrid;
+				document.getElementById('rot-grid-btn').classList.toggle('active', rotShowGrid);
+				document.getElementById('rot-grid-btn').textContent = rotShowGrid
+					? 'Hide Grid'
+					: 'Show Grid';
+				drawRotFrame();
+			}
+
+			function resetRotSubject() {
+				rotSubject.x = RW / 2;
+				rotSubject.y = RH / 2;
+				drawRotFrame();
+			}
+
+			function getRotPos(e) {
+				const rect = rotCanvas.getBoundingClientRect();
+				const scaleX = RW / rect.width,
+					scaleY = RH / rect.height;
+				const src = e.touches ? e.touches[0] : e;
+				return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
+			}
+
+			rotCanvas.addEventListener('mousedown', (e) => {
+				const p = getRotPos(e);
+				const dx = p.x - rotSubject.x,
+					dy = p.y - rotSubject.y;
+				if (Math.abs(dx) < 60 && Math.abs(dy) < 70) {
+					rotDragging = true;
+					rotDragOff = { x: dx, y: dy };
+				}
+			});
+			rotCanvas.addEventListener(
+				'touchstart',
+				(e) => {
+					e.preventDefault();
+					const p = getRotPos(e);
+					rotDragging = true;
+					rotDragOff = { x: p.x - rotSubject.x, y: p.y - rotSubject.y };
+				},
+				{ passive: false }
+			);
+			document.addEventListener('mousemove', (e) => {
+				if (!rotDragging) return;
+				const p = getRotPos(e);
+				rotSubject.x = Math.max(50, Math.min(RW - 50, p.x - rotDragOff.x));
+				rotSubject.y = Math.max(65, Math.min(RH - 65, p.y - rotDragOff.y));
+				drawRotFrame();
+			});
+			document.addEventListener(
+				'touchmove',
+				(e) => {
+					if (!rotDragging) return;
+					const p = getRotPos(e);
+					rotSubject.x = Math.max(50, Math.min(RW - 50, p.x - rotDragOff.x));
+					rotSubject.y = Math.max(65, Math.min(RH - 65, p.y - rotDragOff.y));
+					drawRotFrame();
+				},
+				{ passive: false }
+			);
+			document.addEventListener('mouseup', () => {
+				rotDragging = false;
+			});
+			document.addEventListener('touchend', () => {
+				rotDragging = false;
+			});
+
+			drawRotFrame();
+
+			/* ═══════════════════════════════════════
+   CONTRAST DEMO
+═══════════════════════════════════════ */
+			const ctCanvas = document.getElementById('ct-canvas');
+			const ctCtx = ctCanvas.getContext('2d');
+			const CTW = ctCanvas.width,
+				CTH = ctCanvas.height;
+
+			// 4x3 grid of circles
+			const CT_COLS = 4,
+				CT_ROWS = 3;
+			const CT_TARGET = 5; // index of target element
+
+			function getCtValues() {
+				return {
+					size: parseFloat(document.getElementById('ct-size').value),
+					bright: parseFloat(document.getElementById('ct-bright').value),
+					hue: parseFloat(document.getElementById('ct-hue').value)
+				};
+			}
+
+			function drawContrast() {
+				const ctx = ctCtx;
+				const v = getCtValues();
+				ctx.fillStyle = '#0c1420';
+				ctx.fillRect(0, 0, CTW, CTH);
+
+				const cellW = CTW / CT_COLS,
+					cellH = CTH / CT_ROWS;
+				const baseR = Math.min(cellW, cellH) * 0.28;
+
+				for (let i = 0; i < CT_COLS * CT_ROWS; i++) {
+					const col = i % CT_COLS,
+						row = Math.floor(i / CT_COLS);
+					const cx = cellW * col + cellW / 2;
+					const cy = cellH * row + cellH / 2;
+
+					let r = baseR;
+					let fillColor;
+					const isTarget = i === CT_TARGET;
+
+					if (isTarget) {
+						r = baseR * v.size;
+						if (v.hue > 0.05) {
+							const hue = Math.round(v.hue * 280);
+							const sat = Math.round(40 + v.hue * 60);
+							const lit = Math.round(v.bright * 65 + 15);
+							fillColor = `hsl(${hue}, ${sat}%, ${lit}%)`;
+						} else {
+							const lit = Math.round(v.bright * 85 + 8);
+							fillColor = `hsl(220, 15%, ${lit}%)`;
+						}
+
+						// Glow if highly contrasted
+						const contrast = Math.abs(v.bright - 0.5) * 2 + v.hue * 0.6 + ((v.size - 1) / 2) * 0.4;
+						if (contrast > 0.4) {
+							ctx.save();
+							ctx.shadowColor = fillColor;
+							ctx.shadowBlur = 16 * contrast;
+							ctx.beginPath();
+							ctx.arc(cx, cy, r, 0, Math.PI * 2);
+							ctx.fillStyle = fillColor;
+							ctx.fill();
+							ctx.restore();
+						}
+					} else {
+						// Background elements: if chaos mode, each gets random properties
+						if (v.size > 2.5 && v.bright > 0.75 && v.hue > 0.75) {
+							// chaos — everyone contrasts
+							const hue = (i * 37 + 120) % 360;
+							const lit = 35 + (i % 3) * 15;
+							const sr = baseR * (0.7 + (i % 3) * 0.3);
+							fillColor = `hsl(${hue}, 60%, ${lit}%)`;
+							ctx.beginPath();
+							ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+							ctx.fillStyle = fillColor;
+							ctx.fill();
+							continue;
+						} else {
+							fillColor = 'hsl(220, 12%, 22%)';
+						}
+					}
+
+					ctx.beginPath();
+					ctx.arc(cx, cy, r, 0, Math.PI * 2);
+					ctx.fillStyle = fillColor;
+					ctx.fill();
+				}
+
+				// Note
+				const v2 = getCtValues();
+				const noteEl = document.getElementById('ct-note');
+				const totalContrast =
+					Math.abs(v2.bright - 0.5) * 2 + v2.hue * 0.6 + ((v2.size - 1) / 2) * 0.4;
+				const isChaos = v2.size > 2.5 && v2.bright > 0.75 && v2.hue > 0.75;
+
+				if (isChaos) {
+					noteEl.style.color = 'var(--rose)';
+					noteEl.textContent =
+						'Maximum contrast on all elements — nothing stands out because everything is competing. The field is equally chaotic.';
+				} else if (totalContrast > 0.7) {
+					noteEl.style.color = 'var(--sage)';
+					noteEl.textContent =
+						'Strong focal point established. The target element dominates because it is distinctly different from its neighbors — contrast is relational.';
+				} else if (totalContrast > 0.3) {
+					noteEl.style.color = 'var(--violet)';
+					noteEl.textContent =
+						'A focal point is forming. Increase the difference to make it stronger.';
+				} else {
+					noteEl.style.color = 'var(--muted)';
+					noteEl.textContent = 'Adjust a property to see how contrast directs attention.';
+				}
+
+				document.getElementById('ct-size-val').textContent = parseFloat(v.size).toFixed(1) + '×';
+				document.getElementById('ct-bright-val').textContent = Math.round(v.bright * 100) + '%';
+				document.getElementById('ct-hue-val').textContent = Math.round(v.hue * 100) + '%';
+			}
+
+			function updateContrast() {
+				drawContrast();
+			}
+
+			function setCtPreset(p) {
+				const s = document.getElementById('ct-size');
+				const b = document.getElementById('ct-bright');
+				const h = document.getElementById('ct-hue');
+				if (p === 'size') {
+					s.value = '2.8';
+					b.value = '0.5';
+					h.value = '0';
+				}
+				if (p === 'value') {
+					s.value = '1';
+					b.value = '0.92';
+					h.value = '0';
+				}
+				if (p === 'color') {
+					s.value = '1';
+					b.value = '0.5';
+					h.value = '0.85';
+				}
+				if (p === 'chaos') {
+					s.value = '3';
+					b.value = '0.9';
+					h.value = '0.9';
+				}
+				if (p === 'reset') {
+					s.value = '1';
+					b.value = '0.5';
+					h.value = '0';
+				}
+				drawContrast();
+			}
+
+			drawContrast();
+
+			/* ═══════════════════════════════════════
+   CLUTTERED → CLEAN DEMO
+═══════════════════════════════════════ */
+			const ccCanvas = document.getElementById('cc-canvas');
+			const ccCtx = ccCanvas.getContext('2d');
+			const CCW = ccCanvas.width,
+				CCH = ccCanvas.height;
+
+			let ccMode = 'bad';
+
+			const CC_ANNOTATIONS = {
+				bad: [
+					{ cls: 'bad', text: 'No consistent margin — text touches edges at irregular distances' },
+					{
+						cls: 'bad',
+						text: 'Three competing focal points: title, subhead, and photo are similar weights'
+					},
+					{ cls: 'bad', text: 'Five different font sizes with no clear hierarchy relationship' },
+					{ cls: 'bad', text: 'Elements are center, left, and right aligned with no shared axis' },
+					{
+						cls: 'bad',
+						text: 'Decorative element (circle) adds visual noise without communicating anything'
+					}
+				],
+				good: [
+					{
+						cls: 'good',
+						text: 'Consistent 24px margin on all sides — every element respects the same boundary'
+					},
+					{
+						cls: 'good',
+						text: 'One dominant primary element (title), two clear secondary elements, one tertiary'
+					},
+					{
+						cls: 'good',
+						text: 'Type scale: 38px / 22px / 14px / 11px — each tier clearly subordinate to the one above'
+					},
+					{
+						cls: 'good',
+						text: 'Strict left-axis alignment creates a single invisible vertical line'
+					},
+					{
+						cls: 'good',
+						text: 'Spacing between groups creates perceived sections without visual dividers'
+					}
+				]
+			};
+
+			function drawCluttered() {
+				const ctx = ccCtx;
+				ctx.fillStyle = '#0c1520';
+				ctx.fillRect(0, 0, CCW, CCH);
+
+				// Decorative circle — noise
+				ctx.beginPath();
+				ctx.arc(CCW * 0.82, CCH * 0.22, 68, 0, Math.PI * 2);
+				ctx.fillStyle = 'rgba(100,80,200,0.12)';
+				ctx.fill();
+				ctx.strokeStyle = 'rgba(100,80,200,0.2)';
+				ctx.lineWidth = 1;
+				ctx.stroke();
+
+				// Photo block — takes lots of visual attention
+				ctx.fillStyle = '#1a2c44';
+				ctx.fillRect(CCW * 0.58, CCH * 0.08, CCW * 0.36, CCH * 0.42);
+				ctx.fillStyle = '#d4a07a';
+				ctx.beginPath();
+				ctx.ellipse(CCW * 0.76, CCH * 0.22, 38, 44, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#1a2c44';
+				ctx.fillRect(CCW * 0.58, CCH * 0.34, CCW * 0.36, CCH * 0.16);
+
+				// Title — large but not dominant enough
+				ctx.fillStyle = '#c8d8e8';
+				ctx.font = `bold 28px Syne, sans-serif`;
+				ctx.textAlign = 'center';
+				ctx.fillText('DESIGN CHANNEL', CCW * 0.3, CCH * 0.18);
+
+				// Subhead — too close in weight to title
+				ctx.fillStyle = '#9b6dff';
+				ctx.font = `bold 22px IBM Plex Mono, monospace`;
+				ctx.fillText('NEW SERIES', CCW * 0.3, CCH * 0.34);
+
+				// Date — same weight as subhead
+				ctx.fillStyle = '#c8d8e8';
+				ctx.font = `18px IBM Plex Mono, monospace`;
+				ctx.fillText('STARTS JAN 15', CCW * 0.3, CCH * 0.5);
+
+				// Random small text, misaligned right
+				ctx.textAlign = 'right';
+				ctx.fillStyle = '#5a7090';
+				ctx.font = `11px IBM Plex Mono, monospace`;
+				ctx.fillText('Subscribe for updates', CCW * 0.94, CCH * 0.64);
+
+				// Bottom text, centered again
+				ctx.textAlign = 'center';
+				ctx.fillStyle = '#4a6080';
+				ctx.font = `14px IBM Plex Mono, monospace`;
+				ctx.fillText('Visual design · Typography · Motion', CCW * 0.5, CCH * 0.8);
+				ctx.fillText('New episode every Thursday', CCW * 0.5, CCH * 0.9);
+
+				ctx.textAlign = 'left';
+			}
+
+			function drawClean() {
+				const ctx = ccCtx;
+				ctx.fillStyle = '#0a1018';
+				ctx.fillRect(0, 0, CCW, CCH);
+
+				const M = 24; // consistent margin
+				const LX = M; // left alignment axis
+
+				// Accent bar
+				ctx.fillStyle = '#9b6dff';
+				ctx.fillRect(0, 0, 4, CCH);
+
+				// Primary — title, large, white, maximum contrast
+				ctx.fillStyle = '#ffffff';
+				ctx.font = `bold 38px Syne, sans-serif`;
+				ctx.fillText('DESIGN', LX + 8, CCH * 0.22);
+
+				ctx.fillStyle = '#9b6dff';
+				ctx.font = `bold 38px Syne, sans-serif`;
+				ctx.fillText('CHANNEL', LX + 8, CCH * 0.37);
+
+				// Eyebrow label — tertiary, above title
+				ctx.fillStyle = '#5a7090';
+				ctx.font = `10px IBM Plex Mono, monospace`;
+				ctx.fillText('NEW SERIES  ·  EST. 2025', LX + 8, CCH * 0.11);
+
+				// Divider line — short, aligned
+				ctx.fillStyle = '#1e3050';
+				ctx.fillRect(LX + 8, CCH * 0.41, 180, 1);
+
+				// Secondary — date, clearly subordinate
+				ctx.fillStyle = '#d0dbe8';
+				ctx.font = `bold 18px IBM Plex Mono, monospace`;
+				ctx.fillText('Starts January 15', LX + 8, CCH * 0.54);
+
+				// Tertiary — description, muted
+				ctx.fillStyle = '#5a7090';
+				ctx.font = `12px IBM Plex Mono, monospace`;
+				ctx.fillText('Visual design · Typography · Motion', LX + 8, CCH * 0.65);
+
+				// CTA — bottom, consistent margin
+				ctx.fillStyle = '#1a2e48';
+				ctx.fillRect(LX + 8, CCH * 0.76, 140, 26);
+				ctx.fillStyle = '#9b6dff';
+				ctx.font = `10px IBM Plex Mono, monospace`;
+				ctx.fillText('SUBSCRIBE →', LX + 22, CCH * 0.76 + 17);
+
+				// Photo — right column, doesn't compete with text
+				ctx.fillStyle = '#131e2e';
+				ctx.fillRect(CCW * 0.6, CCH * 0.06, CCW * 0.37, CCH * 0.88);
+				ctx.fillStyle = '#d4a07a';
+				ctx.beginPath();
+				ctx.ellipse(CCW * 0.785, CCH * 0.36, 52, 60, 0, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#131e2e';
+				ctx.fillRect(CCW * 0.6, CCH * 0.58, CCW * 0.37, CCH * 0.36);
+
+				// Bottom margin line (visual boundary)
+				ctx.fillStyle = '#9b6dff';
+				ctx.fillRect(0, CCH - 3, CCW, 3);
+			}
+
+			function setCcMode(mode) {
+				ccMode = mode;
+				document.getElementById('cc-btn-bad').classList.toggle('active', mode === 'bad');
+				document.getElementById('cc-btn-good').classList.toggle('active', mode === 'good');
+
+				const label = document.getElementById('cc-state-label');
+				if (mode === 'bad') {
+					label.textContent = 'Before: Cluttered Layout';
+					label.style.color = 'var(--rose)';
+					drawCluttered();
+				} else {
+					label.textContent = 'After: Rebuilt Layout';
+					label.style.color = 'var(--sage)';
+					drawClean();
+				}
+
+				const list = document.getElementById('cc-annotations');
+				list.innerHTML = CC_ANNOTATIONS[mode]
+					.map((a) => `<div class="cc-item ${a.cls}">${a.text}</div>`)
+					.join('');
+			}
+
+			setCcMode('bad');
+
+			/* ═══════════════════════════════════════
+   DIAGNOSTIC CANVAS
+═══════════════════════════════════════ */
+			const diagCanvas = document.getElementById('diag-canvas');
+			const diagCtx = diagCanvas.getContext('2d');
+			const DW = diagCanvas.width,
+				DH = diagCanvas.height;
+
+			function drawDiagComposition() {
+				const ctx = diagCtx;
+				ctx.fillStyle = '#0c1520';
+				ctx.fillRect(0, 0, DW, DH);
+
+				// Channel name — correct, dominant
+				ctx.fillStyle = '#ffffff';
+				ctx.font = `bold 44px Syne, sans-serif`;
+				ctx.textAlign = 'center';
+				ctx.fillText('VISUAL NOTES', DW / 2, DH * 0.3);
+
+				// Launch date — medium weight
+				ctx.fillStyle = '#9b8fd8'; // similar visual weight to description below
+				ctx.font = `bold 19px IBM Plex Mono, monospace`;
+				ctx.fillText('LAUNCHING MARCH 1ST', DW / 2, DH * 0.52);
+
+				// Topic description — same weight as launch date
+				ctx.fillStyle = '#8a9ec8'; // nearly identical to above
+				ctx.font = `18px IBM Plex Mono, monospace`; // nearly same size
+				ctx.fillText('Design · Motion · Storytelling', DW / 2, DH * 0.68);
+
+				// Tiny label
+				ctx.fillStyle = '#3a5070';
+				ctx.font = `10px IBM Plex Mono, monospace`;
+				ctx.fillText('youtube.com/@visualnotes', DW / 2, DH * 0.85);
+
+				ctx.textAlign = 'left';
+
+				// Annotation arrows pointing to the problem elements
+				ctx.strokeStyle = 'rgba(232, 93, 138, 0.4)';
+				ctx.lineWidth = 1;
+				ctx.setLineDash([3, 3]);
+				ctx.beginPath();
+				ctx.moveTo(DW * 0.05, DH * 0.52);
+				ctx.lineTo(DW * 0.95, DH * 0.52);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(DW * 0.05, DH * 0.68);
+				ctx.lineTo(DW * 0.95, DH * 0.68);
+				ctx.stroke();
+				ctx.setLineDash([]);
+
+				// Bracket showing the problem zone
+				ctx.strokeStyle = 'rgba(232, 93, 138, 0.6)';
+				ctx.lineWidth = 1.5;
+				ctx.beginPath();
+				ctx.moveTo(DW * 0.04, DH * 0.44);
+				ctx.lineTo(DW * 0.04, DH * 0.76);
+				ctx.stroke();
+				ctx.fillStyle = 'rgba(232,93,138,0.7)';
+				ctx.font = '9px IBM Plex Mono, monospace';
+				ctx.save();
+				ctx.translate(DW * 0.016, DH * 0.62);
+				ctx.rotate(-Math.PI / 2);
+				ctx.fillText('SIMILAR WEIGHT', 0, 0);
+				ctx.restore();
+			}
+
+			drawDiagComposition();
+
+			let diagAnswered = false;
+			function handleDiag(el, idx) {
+				if (diagAnswered) return;
+				diagAnswered = true;
+				const opts = document.querySelectorAll('.debug-option');
+				opts.forEach((o) => o.classList.add('disabled'));
+				const fb = document.getElementById('diag-feedback');
+				if (idx === 1) {
+					el.classList.add('correct');
+					fb.style.color = 'var(--sage)';
+					fb.innerHTML =
+						'<strong style="color:var(--sage)">✓ Correct.</strong> The Channel Name is clearly primary — its size and contrast force the eye there first. But the Launch Date and Topic Description share nearly identical font size, weight, and color. The eye cannot determine which to read second. The fix: reduce the Topic Description to a clearly smaller/lighter tier, making the reading sequence unambiguous.';
+				} else {
+					el.classList.add('wrong');
+					opts[1].classList.add('correct');
+					fb.style.color = 'var(--rose)';
+					fb.innerHTML =
+						'<strong style="color:var(--rose)">✗ Not quite.</strong> The primary problem is that the Launch Date and Topic Description have nearly identical visual weight — the second and third tiers of hierarchy are indistinguishable from each other. More colors, more content, or reducing the title size would not fix this. The hierarchy must make each tier clearly subordinate to the one above it.';
+				}
+			}
+
+			/* ═══════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════ */
+			let quizScore = 0,
+				quizAnswered = 0;
+			const explanations = [
+				'Correct. Two elements at equal visual weight create visual conflict — the eye oscillates between them. Only one element can be primary at a given moment in the reading sequence.',
+				'Correct. Off-center placement creates visual tension — the subject pulls against the frame edges, and that tension generates dynamism. Centered subjects feel more static and formal.',
+				'Correct. Contrast is relational. When every element is maximally contrasting, none of them is contrasting relative to any other — the field becomes uniformly chaotic, and the eye cannot find an entry point.',
+				'Correct. Proximity creates perceived grouping without any visual elements needed. Space is the separator. Reaching for boxes and dividers is almost always a sign that spacing decisions should be reconsidered first.',
+				'Correct. Visual weight is a perception, not a measurement. A small but saturated colored element can outweigh a large grey block because weight is determined by multiple relational properties, not size alone.'
+			];
+			const wrongMsg =
+				'Not quite. Revisit the principle at stake — focus on the perceptual experience of the viewer, not the mechanics of the software.';
+
+			function handleQuiz(el, idx) {
+				const parent = el.closest('.question');
+				const correct = parseInt(parent.querySelector('.options').dataset.correct);
+				const opts = parent.querySelectorAll('.option');
+				const fbIdx = Array.from(document.querySelectorAll('.question')).indexOf(parent);
+				const fb = document.getElementById('fb-' + fbIdx);
+				if (el.classList.contains('disabled')) return;
+				opts.forEach((o) => o.classList.add('disabled'));
+				if (idx === correct) {
+					el.classList.add('correct');
+					fb.textContent = '✓ ' + explanations[fbIdx];
+					fb.className = 'feedback ok';
+					quizScore++;
+				} else {
+					el.classList.add('wrong');
+					opts[correct].classList.add('correct');
+					fb.textContent = '✗ ' + wrongMsg;
+					fb.className = 'feedback bad';
+				}
+				quizAnswered++;
+				if (quizAnswered === 5) {
+					const scoreEl = document.getElementById('quiz-score');
+					document.getElementById('score-num').textContent = quizScore + ' / 5';
+					scoreEl.style.display = 'block';
+					setTimeout(() => scoreEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
+				}
+			}
+		</script>
+	</body>
+</html>

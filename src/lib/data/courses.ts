@@ -296,7 +296,7 @@ export const graphicDesignModules: Module[] = [
 		number: 2,
 		title: 'Visual Perception & Composition',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-violet',
 		description:
 			'How the eye moves across an image. Visual hierarchy, rule of thirds, balance, contrast, alignment, spacing, and grouping.'
