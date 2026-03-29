@@ -59,6 +59,11 @@
 	--text: var(--gd-text);
 	--muted: var(--gd-muted);
 	--dim: var(--gd-dim);
+	--accent: var(--gd-rose);
+	--accent2: var(--gd-violet);
+	--accent3: var(--gd-sky);
+	--accent4: var(--gd-amber);
+	--code-bg: var(--gd-surface);
 }
 
 /* ═══════════════════════════════════════════════════════
