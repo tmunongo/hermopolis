@@ -1,8 +1,18 @@
-<script>
+<script lang="ts">
 	/* eslint-disable @typescript-eslint/no-unused-vars, svelte/prefer-svelte-reactivity */
 	import { onMount } from 'svelte';
 
-	let actions = {};
+	let actions: Record<string, unknown> = new Proxy(
+		{},
+		{
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
+		}
+	);
 
 	onMount(() => {
 		const _listeners = [];
@@ -20,10 +30,11 @@
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
 			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
-			const bar = document.getElementById('reading-progress');
-			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-			bar.style.width = pct + '%';
-			bar.setAttribute('aria-valuenow', String(pct));
+			const _rp = document.getElementById('reading-progress');
+			if (_rp) {
+				_rp.style.width = progress * 100 + '%';
+				_rp.setAttribute('aria-valuenow', String(Math.round(parseFloat(_rp.style.width) || 0)));
+			}
 		});
 
 		/* ══════════════════════════════════
@@ -801,43 +812,33 @@
 					<button
 						class="btn"
 						data-layer="grid"
-						onclick={(e) => {
-							actions.toggleLayer(e.currentTarget);
-						}}>Grid</button
+						onclick={(e) => actions.toggleLayer(e.currentTarget)}>Grid</button
 					>
 					<button
 						class="btn"
 						data-layer="hierarchy"
-						onclick={(e) => {
-							actions.toggleLayer(e.currentTarget);
-						}}
+						onclick={(e) => actions.toggleLayer(e.currentTarget)}
 					>
 						Hierarchy
 					</button>
 					<button
 						class="btn"
 						data-layer="alignment"
-						onclick={(e) => {
-							actions.toggleLayer(e.currentTarget);
-						}}
+						onclick={(e) => actions.toggleLayer(e.currentTarget)}
 					>
 						Alignment
 					</button>
 					<button
 						class="btn"
 						data-layer="focal"
-						onclick={(e) => {
-							actions.toggleLayer(e.currentTarget);
-						}}
+						onclick={(e) => actions.toggleLayer(e.currentTarget)}
 					>
 						Focal Point
 					</button>
 					<button
 						class="btn"
 						data-layer="spacing"
-						onclick={(e) => {
-							actions.toggleLayer(e.currentTarget);
-						}}>Spacing</button
+						onclick={(e) => actions.toggleLayer(e.currentTarget)}>Spacing</button
 					>
 				</div>
 
@@ -848,7 +849,7 @@
 						height="315"
 						style="max-width: 100%"
 						aria-label="Sr Canvas Demonstration"
-						role="img"
+						role="region"
 						tabindex="0"
 					></canvas>
 				</div>
@@ -990,21 +991,11 @@
 				</p>
 
 				<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem">
-					<button
-						class="btn"
-						id="show-issues-btn"
-						onclick={(e) => {
-							actions.toggleIssues();
-						}}
-					>
+					<button class="btn" id="show-issues-btn" onclick={(e) => actions.toggleIssues()}>
 						Show Analysis
 					</button>
-					<button
-						class="btn violet"
-						id="reset-btn"
-						onclick={(e) => {
-							actions.resetComparison();
-						}}>Reset</button
+					<button class="btn violet" id="reset-btn" onclick={(e) => actions.resetComparison()}
+						>Reset</button
 					>
 				</div>
 
@@ -1016,7 +1007,7 @@
 							width="320"
 							height="180"
 							aria-label="Cv Template Demonstration"
-							role="img"
+							role="region"
 							tabindex="0"
 						></canvas>
 						<ul class="issue-list" id="template-issues" style="display: none"></ul>
@@ -1028,7 +1019,7 @@
 							width="320"
 							height="180"
 							aria-label="Cv Custom Demonstration"
-							role="img"
+							role="region"
 							tabindex="0"
 						></canvas>
 						<ul class="issue-list" id="custom-strengths" style="display: none"></ul>
@@ -1104,36 +1095,32 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. What colors look good together for this topic?
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. How can I make this look similar to channels I admire?
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. What does this thumbnail need to communicate at 168px wide to earn a click?
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. How many elements can I fit without it looking too empty?
 				</button>
@@ -1150,36 +1137,32 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. Making the most important elements the most colourful
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. Arranging elements so the eye encounters them in a deliberate order
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. Ensuring all elements are the same visual weight
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. Placing text at the top of every composition
 				</button>
@@ -1197,36 +1180,32 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. They lack both taste and skill and should reconsider this path
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. They have skill but their taste hasn't developed yet
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. Their taste is already working — their skill just needs to catch up
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. They should stop critiquing their work and focus on output volume
 				</button>
@@ -1243,34 +1222,31 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}>A. They use too many colors</button
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
+					>A. They use too many colors</button
 				>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. They are designed by people with low skill
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. They are hard to edit without professional tools
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. They are optimized for general acceptability, not a specific creator's identity
 				</button>
@@ -1287,9 +1263,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. The underlying structural decisions (hierarchy, alignment, spacing) are invisible in
 					the final work, even though they drive its quality
@@ -1297,27 +1272,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. Designers should not show their work-in-progress to clients
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. The best designs use hidden layers that can only be seen in editing software
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. Simple designs are always better than complex ones
 				</button>
@@ -1354,12 +1326,7 @@
 		></textarea>
 		<div class="reflect-footer">
 			<span class="char-count" id="char-count">0 / 200+ characters</span>
-			<button
-				class="btn amber"
-				onclick={(e) => {
-					actions.submitReflection();
-				}}>Mark Complete</button
-			>
+			<button class="btn amber" onclick={(e) => actions.submitReflection()}>Mark Complete</button>
 		</div>
 		<div
 			id="reflect-feedback"
@@ -1695,7 +1662,7 @@
 		color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 10%, transparent);
 	}
-	.btn.amber:hover {
+	:global(.btn.amber:hover) {
 		border-color: var(--amber);
 		color: var(--amber);
 	}
@@ -2083,5 +2050,11 @@
 	}
 	:global(.ts-output.mix-mode .ts-heading) {
 		color: var(--amber);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
 	}
 </style>

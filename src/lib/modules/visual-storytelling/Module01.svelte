@@ -1,9 +1,18 @@
-<script>
+<script lang="ts">
 	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
-	let actions = {};
-	let currentMode = 'faceless-info';
+	let actions: Record<string, unknown> = new Proxy(
+		{},
+		{
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
+		}
+	);
 
 	onMount(() => {
 		const _listeners = [];
@@ -50,8 +59,17 @@
 			}
 		};
 
+		let currentMode = 'faceless-info';
+
 		function setEngagementMode(mode) {
 			currentMode = mode;
+			['fi', 'th', 'fs'].forEach((id) =>
+				document.getElementById('btn-' + id).classList.remove('active', 'mint')
+			);
+			const map = { 'faceless-info': 'fi', 'talking-head': 'th', 'faceless-story': 'fs' };
+			const btn = document.getElementById('btn-' + map[mode]);
+			btn.classList.add('active');
+			if (mode === 'faceless-story') btn.classList.add('mint');
 			drawEngagementCurve();
 		}
 
@@ -251,7 +269,7 @@
 				el.classList.add('wrong');
 				fb.className = 'feedback bad';
 				opts.forEach((o) => {
-					if (o.getAttribute('data-correct') === 'true') o.classList.add('correct');
+					if (o.onclick.toString().includes('true')) o.classList.add('correct');
 				});
 				fb.textContent = '✗ Not quite — the correct answer is highlighted above.';
 			}
@@ -435,32 +453,22 @@
 				</p>
 				<div class="btn-row">
 					<button
-						class="btn"
-						class:active={currentMode === 'faceless-info'}
-						onclick={(e) => {
-							actions.setEngagementMode('faceless-info');
-						}}
+						class="btn active"
+						onclick={(e) => actions.setEngagementMode('faceless-info')}
 						id="btn-fi"
 					>
 						Faceless / Info Dump
 					</button>
 					<button
 						class="btn"
-						class:active={currentMode === 'talking-head'}
-						onclick={(e) => {
-							actions.setEngagementMode('talking-head');
-						}}
+						onclick={(e) => actions.setEngagementMode('talking-head')}
 						id="btn-th"
 					>
 						Talking Head
 					</button>
 					<button
-						class="btn"
-						class:active={currentMode === 'faceless-story'}
-						class:mint={currentMode === 'faceless-story'}
-						onclick={(e) => {
-							actions.setEngagementMode('faceless-story');
-						}}
+						class="btn mint"
+						onclick={(e) => actions.setEngagementMode('faceless-story')}
 						id="btn-fs"
 					>
 						Faceless / Story-Driven
@@ -528,9 +536,7 @@
 				<div class="structure-row" id="structure-blocks">
 					<div
 						class="structure-block active-block"
-						onclick={(e) => {
-							actions.selectBlock(0);
-						}}
+						onclick={(e) => actions.selectBlock(0)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -544,9 +550,7 @@
 					</div>
 					<div
 						class="structure-block"
-						onclick={(e) => {
-							actions.selectBlock(1);
-						}}
+						onclick={(e) => actions.selectBlock(1)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -560,9 +564,7 @@
 					</div>
 					<div
 						class="structure-block"
-						onclick={(e) => {
-							actions.selectBlock(2);
-						}}
+						onclick={(e) => actions.selectBlock(2)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -576,9 +578,7 @@
 					</div>
 					<div
 						class="structure-block"
-						onclick={(e) => {
-							actions.selectBlock(3);
-						}}
+						onclick={(e) => actions.selectBlock(3)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -592,9 +592,7 @@
 					</div>
 					<div
 						class="structure-block"
-						onclick={(e) => {
-							actions.selectBlock(4);
-						}}
+						onclick={(e) => actions.selectBlock(4)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -608,9 +606,7 @@
 					</div>
 					<div
 						class="structure-block"
-						onclick={(e) => {
-							actions.selectBlock(5);
-						}}
+						onclick={(e) => actions.selectBlock(5)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -624,9 +620,7 @@
 					</div>
 					<div
 						class="structure-block"
-						onclick={(e) => {
-							actions.selectBlock(6);
-						}}
+						onclick={(e) => actions.selectBlock(6)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -825,9 +819,7 @@
 				<div class="cog-meter-wrap" id="cog-meters">
 					<div
 						class="cog-meter selected"
-						onclick={(e) => {
-							actions.selectCogMode(0);
-						}}
+						onclick={(e) => actions.selectCogMode(0)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -845,9 +837,7 @@
 					</div>
 					<div
 						class="cog-meter"
-						onclick={(e) => {
-							actions.selectCogMode(1);
-						}}
+						onclick={(e) => actions.selectCogMode(1)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -865,9 +855,7 @@
 					</div>
 					<div
 						class="cog-meter"
-						onclick={(e) => {
-							actions.selectCogMode(2);
-						}}
+						onclick={(e) => actions.selectCogMode(2)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1080,9 +1068,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					Viewers find faceless videos more aesthetically appealing and watch longer as a result
 				</button>
@@ -1090,9 +1076,7 @@
 					type="button"
 					class="option"
 					data-correct="true"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, true);
-					}}
+					onclick={(e) => actions.answer('q1', e.currentTarget, true)}
 				>
 					Without a face to read, the viewer's full cognitive attention routes to the content rather
 					than being split between face and information
@@ -1101,9 +1085,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					Faceless videos are shorter on average, which reduces viewer fatigue
 				</button>
@@ -1111,9 +1093,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					Algorithms favor faceless content and surface it to more engaged audiences
 				</button>
@@ -1133,9 +1113,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					The topic is too complex for a single video
 				</button>
@@ -1143,9 +1121,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					The mention of three causes creates too much cognitive load upfront
 				</button>
@@ -1153,9 +1129,7 @@
 					type="button"
 					class="option"
 					data-correct="true"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, true);
-					}}
+					onclick={(e) => actions.answer('q2', e.currentTarget, true)}
 				>
 					It signals information delivery rather than establishing stakes or creating a reason to
 					care before the viewer has committed
@@ -1164,9 +1138,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					It does not include a call to action at the beginning
 				</button>
@@ -1185,9 +1157,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					All channels — narration, text, visuals, audio — should reinforce the same point
 					simultaneously for maximum retention
@@ -1196,9 +1166,7 @@
 					type="button"
 					class="option"
 					data-correct="true"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, true);
-					}}
+					onclick={(e) => actions.answer('q3', e.currentTarget, true)}
 				>
 					Each channel should contribute a distinct layer that the other channels do not provide,
 					avoiding redundancy
@@ -1207,9 +1175,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					Limit each video to no more than two active channels at any moment
 				</button>
@@ -1217,9 +1183,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					Audio should always be the primary channel, with visuals and text as optional supplements
 				</button>
@@ -1239,9 +1203,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					Successful communication — repetition is the first stage of learning
 				</button>
@@ -1249,9 +1211,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					Poor audio quality preventing proper comprehension
 				</button>
@@ -1259,9 +1219,7 @@
 					type="button"
 					class="option"
 					data-correct="false"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					Excessive cognitive load from too many visual channels
 				</button>
@@ -1269,9 +1227,7 @@
 					type="button"
 					class="option"
 					data-correct="true"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, true);
-					}}
+					onclick={(e) => actions.answer('q4', e.currentTarget, true)}
 				>
 					Information was presented without communicating meaning — the content did not anchor to
 					the viewer's existing understanding
@@ -1657,6 +1613,11 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid var(--vs-amber);
+		outline-offset: 3px;
+	}
 	:global(.btn:hover) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
@@ -1814,6 +1775,11 @@
 		transition: all 0.15s;
 		user-select: none;
 		font-family: 'IBM Plex Mono', monospace;
+		background: transparent;
+		color: inherit;
+		text-align: left;
+		width: 100%;
+		appearance: none;
 	}
 	:global(.option:hover) {
 		border-color: var(--vs-border2);

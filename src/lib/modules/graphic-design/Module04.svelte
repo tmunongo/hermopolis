@@ -1,11 +1,16 @@
-<script>
+<script lang="ts">
 	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
-	let actions = new Proxy(
+	let actions: Record<string, unknown> = new Proxy(
 		{},
 		{
-			get: (target, prop) => (prop in target ? target[prop] : () => {})
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
 		}
 	);
 
@@ -24,11 +29,12 @@
 ════════════════════════════════════════ */
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
-			const bar = document.getElementById('reading-progress');
-			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-			bar.style.width = pct + '%';
-			bar.setAttribute('aria-valuenow', String(pct));
+			const _rp = document.getElementById('reading-progress');
+			if (_rp) {
+				_rp.style.width =
+					(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
+				_rp.setAttribute('aria-valuenow', String(Math.round(parseFloat(_rp.style.width) || 0)));
+			}
 		});
 
 		/* ════════════════════════════════════════
@@ -311,21 +317,6 @@
 				let angle = Math.atan2(my, mx) + Math.PI / 2;
 				if (angle < 0) angle += Math.PI * 2;
 				baseHue = Math.round((angle / (Math.PI * 2)) * 360) % 360;
-				drawWheel();
-			}
-		});
-		wheelCanvas.addEventListener('keydown', (e) => {
-			let delta = 0;
-			if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') delta = -2;
-			if (e.key === 'ArrowRight' || e.key === 'ArrowUp') delta = 2;
-			if (delta) {
-				e.preventDefault();
-				baseHue = (baseHue + delta + 360) % 360;
-				drawWheel();
-				return;
-			}
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
 				drawWheel();
 			}
 		});
@@ -762,7 +753,7 @@
 
 					<div>
 						<div class="slider-row">
-							<label>Hue</label>
+							<label for="hsl-h">Hue</label>
 							<input
 								type="range"
 								id="hsl-h"
@@ -776,7 +767,7 @@
 							<span class="slider-val" id="hsl-h-val">198°</span>
 						</div>
 						<div class="slider-row">
-							<label>Saturation</label>
+							<label for="hsl-s">Saturation</label>
 							<input
 								type="range"
 								id="hsl-s"
@@ -790,7 +781,7 @@
 							<span class="slider-val" id="hsl-s-val">78%</span>
 						</div>
 						<div class="slider-row">
-							<label>Lightness</label>
+							<label for="hsl-l">Lightness</label>
 							<input
 								type="range"
 								id="hsl-l"
@@ -809,49 +800,18 @@
 						</div>
 
 						<div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.4rem">
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setHSLPreset(198, 78, 57);
-								}}>Sky Blue</button
+							<button class="btn" onclick={(e) => actions.setHSLPreset(198, 78, 57)}
+								>Sky Blue</button
 							>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setHSLPreset(345, 72, 55);
-								}}>Rose</button
-							>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setHSLPreset(38, 91, 55);
-								}}>Amber</button
-							>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setHSLPreset(152, 55, 58);
-								}}>Sage</button
-							>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setHSLPreset(260, 80, 60);
-								}}>Violet</button
-							>
-							<button
-								class="btn rose"
-								onclick={(e) => {
-									actions.setHSLPreset(198, 95, 50);
-								}}
-							>
+							<button class="btn" onclick={(e) => actions.setHSLPreset(345, 72, 55)}>Rose</button>
+							<button class="btn" onclick={(e) => actions.setHSLPreset(38, 91, 55)}>Amber</button>
+							<button class="btn" onclick={(e) => actions.setHSLPreset(152, 55, 58)}>Sage</button>
+							<button class="btn" onclick={(e) => actions.setHSLPreset(260, 80, 60)}>Violet</button>
+							<button class="btn rose" onclick={(e) => actions.setHSLPreset(198, 95, 50)}>
 								Over-Saturated
 							</button>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setHSLPreset(198, 0, 50);
-								}}>Desaturated</button
+							<button class="btn" onclick={(e) => actions.setHSLPreset(198, 0, 50)}
+								>Desaturated</button
 							>
 						</div>
 					</div>
@@ -950,45 +910,35 @@
 					<button
 						class="btn active"
 						data-h="complementary"
-						onclick={(e) => {
-							actions.setHarmony('complementary', e.currentTarget);
-						}}
+						onclick={(e) => actions.setHarmony('complementary', e.currentTarget)}
 					>
 						Complementary
 					</button>
 					<button
 						class="btn"
 						data-h="analogous"
-						onclick={(e) => {
-							actions.setHarmony('analogous', e.currentTarget);
-						}}
+						onclick={(e) => actions.setHarmony('analogous', e.currentTarget)}
 					>
 						Analogous
 					</button>
 					<button
 						class="btn"
 						data-h="triadic"
-						onclick={(e) => {
-							actions.setHarmony('triadic', e.currentTarget);
-						}}
+						onclick={(e) => actions.setHarmony('triadic', e.currentTarget)}
 					>
 						Triadic
 					</button>
 					<button
 						class="btn"
 						data-h="split"
-						onclick={(e) => {
-							actions.setHarmony('split', e.currentTarget);
-						}}
+						onclick={(e) => actions.setHarmony('split', e.currentTarget)}
 					>
 						Split-Complementary
 					</button>
 					<button
 						class="btn"
 						data-h="monochromatic"
-						onclick={(e) => {
-							actions.setHarmony('monochromatic', e.currentTarget);
-						}}
+						onclick={(e) => actions.setHarmony('monochromatic', e.currentTarget)}
 					>
 						Monochromatic
 					</button>
@@ -1002,7 +952,7 @@
 								width="240"
 								height="240"
 								aria-label="Wheel Canvas Demonstration"
-								role="img"
+								role="region"
 								tabindex="0"
 							></canvas>
 						</div>
@@ -1105,35 +1055,19 @@
 				</p>
 
 				<div class="mood-btns" id="mood-btns">
-					<button
-						class="btn active"
-						onclick={(e) => {
-							actions.setMood('energetic', e.currentTarget);
-						}}>Energetic</button
+					<button class="btn active" onclick={(e) => actions.setMood('energetic', e.currentTarget)}
+						>Energetic</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setMood('calm', e.currentTarget);
-						}}>Calm</button
+					<button class="btn" onclick={(e) => actions.setMood('calm', e.currentTarget)}>Calm</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setMood('dark', e.currentTarget);
-						}}>Dark / Technical</button
+					<button class="btn" onclick={(e) => actions.setMood('dark', e.currentTarget)}
+						>Dark / Technical</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setMood('warm', e.currentTarget);
-						}}>Warm / Organic</button
+					<button class="btn" onclick={(e) => actions.setMood('warm', e.currentTarget)}
+						>Warm / Organic</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setMood('editorial', e.currentTarget);
-						}}>Editorial</button
+					<button class="btn" onclick={(e) => actions.setMood('editorial', e.currentTarget)}
+						>Editorial</button
 					>
 				</div>
 
@@ -1431,38 +1365,19 @@
 							>
 								Presets
 							</div>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setCCPreset('our-dark');
-								}}>This Course (Dark)</button
+							<button class="btn" onclick={(e) => actions.setCCPreset('our-dark')}
+								>This Course (Dark)</button
 							>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setCCPreset('white-on-white');
-								}}
-							>
+							<button class="btn" onclick={(e) => actions.setCCPreset('white-on-white')}>
 								Light on Light ⚠
 							</button>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setCCPreset('grey-fail');
-								}}>Grey on White ⚠</button
+							<button class="btn" onclick={(e) => actions.setCCPreset('grey-fail')}
+								>Grey on White ⚠</button
 							>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setCCPreset('black-white');
-								}}>Black on White</button
+							<button class="btn" onclick={(e) => actions.setCCPreset('black-white')}
+								>Black on White</button
 							>
-							<button
-								class="btn rose"
-								onclick={(e) => {
-									actions.setCCPreset('red-fail');
-								}}
-							>
+							<button class="btn rose" onclick={(e) => actions.setCCPreset('red-fail')}>
 								Red on Red Fail ⚠
 							</button>
 						</div>
@@ -1528,18 +1443,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. 45° is a poor hue choice — yellow-orange does not suit professional brands
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. The saturation is at 95% — very high saturation on large areas is physically fatiguing
 					and reads as cheap or aggressive unless used only as a small accent
@@ -1547,18 +1460,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. The lightness at 55% is too dark for an accent color
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. The hue is too close to other warm colors and creates visual conflict
 				</button>
@@ -1575,27 +1486,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. The hue has changed; the saturation and lightness stayed the same
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. The lightness changed; the hue and saturation stayed the same
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. The saturation dropped to zero — the color became a neutral grey — while the hue and
 					lightness value stayed the same (though hue is now invisible)
@@ -1603,9 +1511,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. The hue rotated 80° and the color became a blue-grey
 				</button>
@@ -1622,36 +1529,32 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. Split-complementary palettes use lower saturation than complementary pairs
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. Three colors are always more harmonious than two
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. The split hues are less saturated because they are further from the color wheel center
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. Instead of pairing with the exact opposite hue, the base pairs with two hues on either
 					side of the complement — which softens the maximum contrast while retaining visual
@@ -1670,9 +1573,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. Reduce the lightness of the text color — moving from 55% to 30% dramatically increases
 					contrast because luminance is driven primarily by lightness
@@ -1680,27 +1582,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. Add a hue to the text color — saturated colors are more visible
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. Increase the font size so the large text threshold applies
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. Change the background to a complementary color to increase visual distinction
 				</button>
@@ -1717,27 +1616,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 0);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
 				>
 					A. Hue — the wavelength difference between colors
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 1);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
 				>
 					B. Saturation — more saturated colors appear brighter
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 2);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
 				>
 					C. Lightness / value — the amount of light a color appears to emit is what WCAG luminance
 					primarily measures
@@ -1745,9 +1641,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.handleQuiz(e.currentTarget, 3);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
 				>
 					D. All three properties contribute equally to contrast ratio
 				</button>
@@ -1803,9 +1698,7 @@
 				<div class="palette-opts">
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 0, 2);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 0, 2)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1819,9 +1712,7 @@
 					</div>
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 1, 2);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 1, 2)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1835,9 +1726,7 @@
 					</div>
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 2, 2);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 2, 2)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1853,9 +1742,7 @@
 					</div>
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 3, 2);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 3, 2)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1918,9 +1805,7 @@
 				<div class="palette-opts">
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 0, 0);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 0, 0)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1935,9 +1820,7 @@
 					</div>
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 1, 0);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 1, 0)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1951,9 +1834,7 @@
 					</div>
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 2, 0);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 2, 0)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1967,9 +1848,7 @@
 					</div>
 					<div
 						class="palette-opt"
-						onclick={(e) => {
-							actions.handlePQ(e.currentTarget, 3, 0);
-						}}
+						onclick={(e) => actions.handlePQ(e.currentTarget, 3, 0)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -2295,7 +2174,7 @@
 		color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
 	}
-	.btn.amber:hover {
+	:global(.btn.amber:hover) {
 		border-color: var(--amber);
 		color: var(--amber);
 	}
@@ -2333,25 +2212,25 @@
 	}
 
 	/* ── SLIDERS ── */
-	.slider-row {
+	:global(.slider-row) {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
 		margin: 0.6rem 0;
 	}
-	.slider-row label {
+	:global(.slider-row) label {
 		font-size: 12px;
 		min-width: 110px;
 		color: var(--text);
 	}
-	.slider-row :global(input[type='range']) {
+	:global(.slider-row) :global(input[type='range']) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 3px;
 		background: var(--border2);
 		outline: none;
 	}
-	.slider-row :global(input[type='range']::-webkit-slider-thumb) {
+	:global(.slider-row) :global(input[type='range']::-webkit-slider-thumb) {
 		-webkit-appearance: none;
 		width: 12px;
 		height: 12px;
@@ -2359,7 +2238,7 @@
 		background: var(--sage);
 		cursor: pointer;
 	}
-	.slider-val {
+	:global(.slider-val) {
 		font-size: 12px;
 		color: var(--sage);
 		min-width: 52px;
@@ -2547,7 +2426,7 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-	.prev-link {
+	:global(.prev-link) {
 		font-size: 12px;
 		color: var(--muted);
 		text-decoration: none;
@@ -2558,7 +2437,7 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
-	.prev-link:hover {
+	:global(.prev-link:hover) {
 		border-color: var(--sage);
 		color: var(--sage);
 	}
@@ -2934,5 +2813,11 @@
 	}
 	.palette-feedback.bad {
 		color: var(--rose);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
 	}
 </style>

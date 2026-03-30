@@ -22,6 +22,15 @@ def convert_module(input_path, output_path):
     css = re.sub(r"html\s*\{[^}]+\}", "", css)
     css = re.sub(r"(?<![a-zA-Z0-9_\-])body\s*\{", ".page-wrapper {", css)
     css = re.sub(r"::-webkit-scrollbar[^{]*\{[^}]+\}", "", css)
+    # Ensure keyboard users can see focus on interactive buttons
+    if ".btn" in css and not re.search(r"\.btn\s*:(?:focus|focus-visible)\b", css):
+        css += (
+            "\n\n.btn:focus,\n"
+            ".btn:focus-visible {\n"
+            "\toutline: 3px solid currentColor;\n"
+            "\toutline-offset: 3px;\n"
+            "}\n"
+        )
 
     selectors_to_wrap = [
         ".frame-strip",
@@ -364,18 +373,32 @@ def convert_module(input_path, output_path):
     html_content = re.sub(r"<canvas([^>]*)>", fix_canvas_aria, html_content)
 
     # Convert .option divs into semantic buttons for keyboard accessibility
+    # Do this in a single pass so we don't accidentally rewrite parent </div> closings.
     html_content = re.sub(
-        r'<div class="option"([^>]*)>',
-        r'<button type="button" class="option"\1>',
-        html_content,
-    )
-    # The closing </button> for options requires careful regex or assuming all options close purely as </div>
-    # A safer approach for options since they're leaf nodes in quizzes:
-    html_content = re.sub(
-        r'(<button type="button" class="option"[^>]*>.*?)</div\s*>',
-        r"\1</button>",
+        r'<div class="option"([^>]*)>(.*?)</div\s*>',
+        r'<button type="button" class="option"\1>\2</button>',
         html_content,
         flags=re.DOTALL | re.IGNORECASE,
+    )
+
+    # Mark quiz option correctness explicitly for robust highlighting
+    def add_data_correct(match):
+        tag = match.group(0)
+        if "data-correct=" in tag:
+            return tag
+        attrs = match.group(1) or ""
+        is_true = bool(re.search(r",\s*true\s*\)", attrs))
+        return tag.replace(
+            'class="option"',
+            f'class="option" data-correct="{"true" if is_true else "false"}"',
+            1,
+        )
+
+    html_content = re.sub(
+        r'<button([^>]*\bclass="option"[^>]*)>',
+        add_data_correct,
+        html_content,
+        flags=re.IGNORECASE,
     )
 
     # Convert loose labels next to inputs into associated labels for a11y
@@ -394,6 +417,22 @@ def convert_module(input_path, output_path):
     # Replace bare placeholder anchors with a valid relative path so Svelte doesn't flag invalid hrefs
     html_content = html_content.replace('href="#"', 'href="."')
     html_content = html_content.replace('href="javascript:void(0)"', 'href="."')
+
+    # Visual Storytelling Module01: default mode is faceless-info, so btn-fs should not start mint
+    if (
+        "visual-storytelling" in output_path
+        and os.path.basename(output_path) == "Module01.svelte"
+    ):
+        html_content = re.sub(
+            r'(<button[^>]*\bid=["\']btn-fs["\'][^>]*\bclass=["\'])([^"\']*)(["\'])',
+            lambda m: (
+                m.group(1)
+                + " ".join([c for c in m.group(2).split() if c != "mint"])
+                + m.group(3)
+            ),
+            html_content,
+            flags=re.IGNORECASE,
+        )
 
     # Fix label for= association: match <label> followed by a sibling input with id
     def fix_label_for(match):
@@ -550,6 +589,18 @@ def convert_module(input_path, output_path):
         "\t\t\t\tel.style.width = pct + '%';\n"
         "\t\t\t\tel.setAttribute('aria-valuenow', String(pct));",
     )
+    # Keep aria-valuenow in sync for the common direct style.width assignment pattern
+    script_js = re.sub(
+        r"document\.getElementById\(['\"]reading-progress['\"]\)\.style\.width\s*=\s*(?P<expr>[^;]+);",
+        (
+            "const _rp = document.getElementById('reading-progress');\n"
+            "\t\t\tif (_rp) {\n"
+            "\t\t\t\t_rp.style.width = \\g<expr>;\n"
+            "\t\t\t\t_rp.setAttribute('aria-valuenow', String(Math.round(parseFloat(_rp.style.width) || 0)));\n"
+            "\t\t\t}"
+        ),
+        script_js,
+    )
 
     # 4. Detect and bind memory leaks
     raf_vars = set(re.findall(r"(\w+)\s*=\s*requestAnimationFrame\(", script_js))
@@ -629,7 +680,17 @@ def convert_module(input_path, output_path):
         '<script lang="ts">\n'
         f"\t/* eslint-disable {eslint_disable_str} */\n"
         "\timport { onMount } from 'svelte';\n\n"
-        "\tlet actions: Record<string, any> = {};\n\n"
+        "\tlet actions: Record<string, unknown> = new Proxy(\n"
+        "\t\t{},\n"
+        "\t\t{\n"
+        "\t\t\tget: (target: Record<string, unknown>, prop: string | symbol) => {\n"
+        "\t\t\t\tif (prop === 'then') return undefined;\n"
+        "\t\t\t\tif (typeof prop !== 'string') return (..._args: unknown[]) => {};\n"
+        "\t\t\t\tif (prop in target) return target[prop];\n"
+        "\t\t\t\treturn (..._args: unknown[]) => {};\n"
+        "\t\t\t}\n"
+        "\t\t}\n"
+        "\t);\n\n"
         "\tonMount(() => {\n" + script_js + "\n\n"
         "\t\t" + actions_bindings + "\n\n"
         "\t\treturn () => {\n"

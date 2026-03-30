@@ -1,8 +1,18 @@
-<script>
+<script lang="ts">
 	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions, no-undef, no-useless-assignment */
 	import { onMount } from 'svelte';
 
-	let actions = {};
+	let actions: Record<string, unknown> = new Proxy(
+		{},
+		{
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
+		}
+	);
 
 	onMount(() => {
 		const _listeners = [];
@@ -668,7 +678,7 @@
 
 		return () => {
 			if (typeof easingAnimId !== 'undefined' && easingAnimId) cancelAnimationFrame(easingAnimId);
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -695,6 +705,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>
@@ -779,46 +790,20 @@
 					doing. Notice how each layer has a distinct visual weight and position.
 				</p>
 				<div class="btn-row">
-					<button
-						class="btn active"
-						id="tl-hl"
-						onclick={(e) => {
-							actions.toggleLayer('headline');
-						}}
-					>
+					<button class="btn active" id="tl-hl" onclick={(e) => actions.toggleLayer('headline')}>
 						Headline
 					</button>
-					<button
-						class="btn"
-						id="tl-sp"
-						onclick={(e) => {
-							actions.toggleLayer('support');
-						}}
-					>
+					<button class="btn" id="tl-sp" onclick={(e) => actions.toggleLayer('support')}>
 						Supporting Point
 					</button>
-					<button
-						class="btn"
-						id="tl-an"
-						onclick={(e) => {
-							actions.toggleLayer('annotation');
-						}}>Annotation</button
+					<button class="btn" id="tl-an" onclick={(e) => actions.toggleLayer('annotation')}
+						>Annotation</button
 					>
-					<button
-						class="btn blue"
-						id="tl-lt"
-						onclick={(e) => {
-							actions.toggleLayer('lower');
-						}}
-					>
+					<button class="btn blue" id="tl-lt" onclick={(e) => actions.toggleLayer('lower')}>
 						Lower Third
 					</button>
-					<button
-						class="btn red"
-						id="tl-cl"
-						onclick={(e) => {
-							actions.toggleLayer('clutter');
-						}}>+ Clutter</button
+					<button class="btn red" id="tl-cl" onclick={(e) => actions.toggleLayer('clutter')}
+						>+ Clutter</button
 					>
 				</div>
 
@@ -1299,9 +1284,7 @@
 				<div class="treatment-tabs" id="treatment-tabs">
 					<div
 						class="treatment-tab active"
-						onclick={(e) => {
-							actions.selectTreatment('headline');
-						}}
+						onclick={(e) => actions.selectTreatment('headline')}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1315,9 +1298,7 @@
 					</div>
 					<div
 						class="treatment-tab"
-						onclick={(e) => {
-							actions.selectTreatment('support');
-						}}
+						onclick={(e) => actions.selectTreatment('support')}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1331,9 +1312,7 @@
 					</div>
 					<div
 						class="treatment-tab"
-						onclick={(e) => {
-							actions.selectTreatment('annotation');
-						}}
+						onclick={(e) => actions.selectTreatment('annotation')}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
@@ -1418,9 +1397,7 @@
 										<div
 											class="btn active"
 											id="hlc-white"
-											onclick={(e) => {
-												actions.setHlColor('#ffffff');
-											}}
+											onclick={(e) => actions.setHlColor('#ffffff')}
 											role="button"
 											tabindex="0"
 											onkeydown={(e) => {
@@ -1436,9 +1413,7 @@
 										<div
 											class="btn"
 											id="hlc-mint"
-											onclick={(e) => {
-												actions.setHlColor('#3dd9a4');
-											}}
+											onclick={(e) => actions.setHlColor('#3dd9a4')}
 											role="button"
 											tabindex="0"
 											onkeydown={(e) => {
@@ -1454,9 +1429,7 @@
 										<div
 											class="btn amber"
 											id="hlc-amber"
-											onclick={(e) => {
-												actions.setHlColor('#f5b94a');
-											}}
+											onclick={(e) => actions.setHlColor('#f5b94a')}
 											role="button"
 											tabindex="0"
 											onkeydown={(e) => {
@@ -1988,12 +1961,8 @@
 					Answer each question about your text element to get a recommendation. Reset to start over.
 				</p>
 				<div id="dtree-container"></div>
-				<button
-					class="btn"
-					onclick={(e) => {
-						actions.resetDTree();
-					}}
-					style="margin-top: 1rem">Reset</button
+				<button class="btn" onclick={(e) => actions.resetDTree()} style="margin-top: 1rem"
+					>Reset</button
 				>
 			</div>
 		</div>
@@ -2042,42 +2011,16 @@
 					experience of that motion applied to a text element.
 				</p>
 				<div class="btn-row" id="easing-btns">
-					<button
-						class="btn active"
-						onclick={(e) => {
-							actions.selectEasing('linear');
-						}}>Linear</button
+					<button class="btn active" onclick={(e) => actions.selectEasing('linear')}>Linear</button>
+					<button class="btn" onclick={(e) => actions.selectEasing('ease-out')}>Ease Out</button>
+					<button class="btn" onclick={(e) => actions.selectEasing('ease-in')}>Ease In</button>
+					<button class="btn" onclick={(e) => actions.selectEasing('ease-in-out')}
+						>Ease In-Out</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.selectEasing('ease-out');
-						}}>Ease Out</button
+					<button class="btn amber" onclick={(e) => actions.selectEasing('bounce')}
+						>Overshoot</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.selectEasing('ease-in');
-						}}>Ease In</button
-					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.selectEasing('ease-in-out');
-						}}>Ease In-Out</button
-					>
-					<button
-						class="btn amber"
-						onclick={(e) => {
-							actions.selectEasing('bounce');
-						}}>Overshoot</button
-					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.selectEasing('spring');
-						}}>Spring</button
-					>
+					<button class="btn" onclick={(e) => actions.selectEasing('spring')}>Spring</button>
 				</div>
 				<div class="two-col" style="align-items: start; gap: 1.5rem">
 					<div>
@@ -2118,13 +2061,7 @@
 						</div>
 						<div style="margin-top: 1rem">
 							<div class="btn-row" style="margin-bottom: 0">
-								<button
-									class="btn mint"
-									onclick={(e) => {
-										actions.playEasing();
-									}}
-									id="ease-play-btn"
-								>
+								<button class="btn mint" onclick={(e) => actions.playEasing()} id="ease-play-btn">
 									▶ Play
 								</button>
 							</div>
@@ -2327,18 +2264,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					The text moves too quickly for most viewers to read in sync
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q1', e.currentTarget, true)}
 				>
 					Both channels — narration and on-screen text — are carrying exactly the same message,
 					making one entirely redundant and wasting a channel that could add a distinct layer
@@ -2346,18 +2281,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					Full sentences create clutter that obscures the background visual
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					Viewers prefer bullet points to full sentences on screen
 				</button>
@@ -2374,18 +2307,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					Redundancy — the viewer sees the same information twice
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q2', e.currentTarget, true)}
 				>
 					Competing primaries — the viewer's eye stalls because both elements signal equal
 					importance, so neither receives full attention
@@ -2393,18 +2324,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					Overcrowding — the frame does not have enough physical space for two large elements
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					Contrast failure — same-color elements cannot be distinguished from each other
 				</button>
@@ -2421,27 +2350,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					When the video needs more visual interest to maintain viewer attention
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					When the creator's editing software supports smooth animation
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q3', e.currentTarget, true)}
 				>
 					When the motion itself reinforces what the text is communicating — e.g. timing with
 					narration rhythm, revealing information progressively, or directing attention to a
@@ -2450,9 +2376,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					When the text is a headline, since primary elements always benefit from animation
 				</button>
@@ -2469,27 +2394,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					Ease-in — the element builds speed as it arrives, signalling momentum
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					Overshoot/bounce — the energetic motion amplifies the impact of the number
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q4', e.currentTarget, true)}
 				>
 					Ease-out — the element arrives fast and settles decisively, communicating authority and
 					finality
@@ -2497,9 +2419,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					Linear — the mechanical consistency is appropriate for data-driven content
 				</button>
@@ -3444,5 +3365,11 @@
 		border: 1px solid var(--vs-border);
 		letter-spacing: 0.05em;
 		transition: all 0.2s;
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
 	}
 </style>

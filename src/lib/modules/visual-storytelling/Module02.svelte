@@ -1,8 +1,18 @@
-<script>
+<script lang="ts">
 	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
 	import { onMount } from 'svelte';
 
-	let actions = {};
+	let actions: Record<string, unknown> = new Proxy(
+		{},
+		{
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
+		}
+	);
 
 	onMount(() => {
 		const _listeners = [];
@@ -836,7 +846,7 @@
 
 		return () => {
 			if (typeof paceAnim !== 'undefined' && paceAnim) cancelAnimationFrame(paceAnim);
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -863,6 +873,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>
@@ -957,29 +968,19 @@
 						<div class="btn-row">
 							<button
 								class="btn active"
-								onclick={(e) => {
-									actions.setCadenceLevel('micro');
-								}}
+								onclick={(e) => actions.setCadenceLevel('micro')}
 								id="cad-micro"
 							>
 								Micro
 							</button>
 							<button
 								class="btn"
-								onclick={(e) => {
-									actions.setCadenceLevel('section');
-								}}
+								onclick={(e) => actions.setCadenceLevel('section')}
 								id="cad-section"
 							>
 								Section
 							</button>
-							<button
-								class="btn"
-								onclick={(e) => {
-									actions.setCadenceLevel('macro');
-								}}
-								id="cad-macro"
-							>
+							<button class="btn" onclick={(e) => actions.setCadenceLevel('macro')} id="cad-macro">
 								Macro
 							</button>
 						</div>
@@ -1050,59 +1051,25 @@
 					add. The analyzer will diagnose your pattern.
 				</p>
 				<div class="btn-row">
-					<button
-						class="btn active"
-						onclick={(e) => {
-							actions.setBeatType('cut');
-						}}
-						id="bbt-cut"
-					>
+					<button class="btn active" onclick={(e) => actions.setBeatType('cut')} id="bbt-cut">
 						✂ Cut / Edit
 					</button>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setBeatType('text');
-						}}
-						id="bbt-text">T Text Event</button
+					<button class="btn" onclick={(e) => actions.setBeatType('text')} id="bbt-text"
+						>T Text Event</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setBeatType('audio');
-						}}
-						id="bbt-audio"
-					>
+					<button class="btn" onclick={(e) => actions.setBeatType('audio')} id="bbt-audio">
 						♪ Audio Peak
 					</button>
-					<button
-						class="btn red"
-						onclick={(e) => {
-							actions.setBeatType('peak');
-						}}
-						id="bbt-peak"
-					>
+					<button class="btn red" onclick={(e) => actions.setBeatType('peak')} id="bbt-peak">
 						● Tension Peak
 					</button>
-					<button
-						class="btn"
-						style="margin-left: auto"
-						onclick={(e) => {
-							actions.clearBeats();
-						}}>Clear</button
+					<button class="btn" style="margin-left: auto" onclick={(e) => actions.clearBeats()}
+						>Clear</button
 					>
-					<button
-						class="btn mint"
-						onclick={(e) => {
-							actions.loadPreset('good');
-						}}>Load: Balanced</button
+					<button class="btn mint" onclick={(e) => actions.loadPreset('good')}
+						>Load: Balanced</button
 					>
-					<button
-						class="btn red"
-						onclick={(e) => {
-							actions.loadPreset('bad');
-						}}>Load: Uneven</button
-					>
+					<button class="btn red" onclick={(e) => actions.loadPreset('bad')}>Load: Uneven</button>
 				</div>
 
 				<canvas
@@ -1227,40 +1194,18 @@
 				</p>
 
 				<div class="btn-row">
-					<button
-						class="btn active"
-						onclick={(e) => {
-							actions.setPaceMode('slow');
-						}}
-						id="pm-slow">Slow</button
+					<button class="btn active" onclick={(e) => actions.setPaceMode('slow')} id="pm-slow"
+						>Slow</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setPaceMode('medium');
-						}}
-						id="pm-medium">Medium</button
+					<button class="btn" onclick={(e) => actions.setPaceMode('medium')} id="pm-medium"
+						>Medium</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.setPaceMode('fast');
-						}}
-						id="pm-fast">Fast</button
+					<button class="btn" onclick={(e) => actions.setPaceMode('fast')} id="pm-fast">Fast</button
 					>
-					<button
-						class="btn mint"
-						onclick={(e) => {
-							actions.playAllPaces();
-						}}
-						id="pm-play">▶ Simulate</button
+					<button class="btn mint" onclick={(e) => actions.playAllPaces()} id="pm-play"
+						>▶ Simulate</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.stopAllPaces();
-						}}>■ Stop</button
-					>
+					<button class="btn" onclick={(e) => actions.stopAllPaces()}>■ Stop</button>
 				</div>
 
 				<!-- Track: Narration -->
@@ -1421,50 +1366,29 @@
 						Add an information unit:
 					</div>
 					<div class="btn-row">
-						<button
-							class="btn"
-							onclick={(e) => {
-								actions.addChunk('term', 'New Term / Concept', 2);
-							}}
-						>
+						<button class="btn" onclick={(e) => actions.addChunk('term', 'New Term / Concept', 2)}>
 							+ New Term
 						</button>
-						<button
-							class="btn"
-							onclick={(e) => {
-								actions.addChunk('stat', 'Statistic / Data', 1.5);
-							}}
-						>
+						<button class="btn" onclick={(e) => actions.addChunk('stat', 'Statistic / Data', 1.5)}>
 							+ Statistic
 						</button>
 						<button
 							class="btn"
-							onclick={(e) => {
-								actions.addChunk('example', 'Example / Story', 0.5);
-							}}
+							onclick={(e) => actions.addChunk('example', 'Example / Story', 0.5)}
 						>
 							+ Example
 						</button>
-						<button
-							class="btn"
-							onclick={(e) => {
-								actions.addChunk('step', 'Procedural Step', 1);
-							}}>+ Step</button
+						<button class="btn" onclick={(e) => actions.addChunk('step', 'Procedural Step', 1)}
+							>+ Step</button
 						>
 						<button
 							class="btn mint"
-							onclick={(e) => {
-								actions.addChunk('break', '〈 Chunk Break 〉', -99);
-							}}
+							onclick={(e) => actions.addChunk('break', '〈 Chunk Break 〉', -99)}
 						>
 							+ Break
 						</button>
-						<button
-							class="btn"
-							onclick={(e) => {
-								actions.clearChunks();
-							}}
-							style="margin-left: auto">Clear</button
+						<button class="btn" onclick={(e) => actions.clearChunks()} style="margin-left: auto"
+							>Clear</button
 						>
 					</div>
 				</div>
@@ -1538,30 +1462,12 @@
 					Peak (high tension) → empty. Load a preset to see common patterns.
 				</p>
 				<div class="btn-row">
-					<button
-						class="btn active"
-						onclick={(e) => {
-							actions.loadRhythmPreset('explain');
-						}}>Explainer</button
+					<button class="btn active" onclick={(e) => actions.loadRhythmPreset('explain')}
+						>Explainer</button
 					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.loadRhythmPreset('essay');
-						}}>Essay</button
-					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.loadRhythmPreset('list');
-						}}>Rapid List</button
-					>
-					<button
-						class="btn"
-						onclick={(e) => {
-							actions.loadRhythmPreset('empty');
-						}}>Clear</button
-					>
+					<button class="btn" onclick={(e) => actions.loadRhythmPreset('essay')}>Essay</button>
+					<button class="btn" onclick={(e) => actions.loadRhythmPreset('list')}>Rapid List</button>
+					<button class="btn" onclick={(e) => actions.loadRhythmPreset('empty')}>Clear</button>
 				</div>
 				<div class="rhythm-grid" id="rhythm-grid"></div>
 				<div
@@ -1711,18 +1617,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					The cuts are too infrequent — they should cut every 1–2 seconds instead
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q1', e.currentTarget, true)}
 				>
 					The pacing is uniform and there is no contrast — cuts are consistent but every moment is
 					doing the same work, so there is no felt variation in energy
@@ -1730,18 +1634,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					The narration speed is too slow regardless of cut frequency
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q1', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
 				>
 					The video lacks music, which is the primary source of felt pace
 				</button>
@@ -1759,18 +1661,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					An intentional breath — it is always correct to allow long pauses after dense content
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q2', e.currentTarget, true)}
 				>
 					A potential abandonment zone — unless the visual during that gap carries full cognitive
 					load independently, 22 seconds without an event will lose viewers
@@ -1778,18 +1678,16 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					A cognitive overload zone — the viewer needs more events to stay engaged
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q2', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
 				>
 					A correct pacing choice if the narration continues uninterrupted throughout
 				</button>
@@ -1807,27 +1705,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					Fast — energy signals importance and keeps the viewer alert
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					Medium — a compromise between clarity and engagement is always the safest choice
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q3', e.currentTarget, true)}
 				>
 					Slow — the cognitive requirement is high; the viewer needs time to process each idea
 					before the next arrives
@@ -1835,9 +1730,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q3', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
 				>
 					Variable — the pacing should change every few seconds to maintain novelty
 				</button>
@@ -1855,27 +1749,24 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					It marks the end of the video so the viewer knows when to stop watching
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					It provides a visual rest that replaces narration at regular intervals
 				</button>
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, true);
-					}}
+					data-correct="true"
+					onclick={(e) => actions.answer('q4', e.currentTarget, true)}
 				>
 					It tells the viewer that one complete unit of information has ended, giving them
 					permission to file what they have processed before the next unit begins
@@ -1883,9 +1774,8 @@
 				<button
 					type="button"
 					class="option"
-					onclick={(e) => {
-						actions.answer('q4', e.currentTarget, false);
-					}}
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
 				>
 					It resets the viewer's working memory by repeating the previous section's key points
 				</button>
@@ -2773,5 +2663,11 @@
 		background: color-mix(in srgb, var(--vs-red) 20%, transparent);
 		border-color: var(--vs-red);
 		color: var(--vs-red);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
 	}
 </style>
