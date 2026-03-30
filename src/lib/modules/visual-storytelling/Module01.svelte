@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 
 	let actions = {};
+	let currentMode = 'faceless-info';
 
 	onMount(() => {
 		const _listeners = [];
@@ -19,7 +20,15 @@
 			const el = document.getElementById('reading-progress');
 			if (!el) return;
 			const docH = document.documentElement.scrollHeight - window.innerHeight;
-			el.style.width = (window.scrollY / docH) * 100 + '%';
+			if (!docH || docH <= 0) {
+				el.style.width = '0%';
+				el.setAttribute('aria-valuenow', '0');
+				return;
+			}
+			const progress = Math.max(0, Math.min(1, window.scrollY / docH));
+			const pct = Math.round(progress * 100);
+			el.style.width = pct + '%';
+			el.setAttribute('aria-valuenow', String(pct));
 		});
 
 		/* ─── ENGAGEMENT CURVE ─── */
@@ -41,17 +50,8 @@
 			}
 		};
 
-		let currentMode = 'faceless-info';
-
 		function setEngagementMode(mode) {
 			currentMode = mode;
-			['fi', 'th', 'fs'].forEach((id) =>
-				document.getElementById('btn-' + id).classList.remove('active', 'mint')
-			);
-			const map = { 'faceless-info': 'fi', 'talking-head': 'th', 'faceless-story': 'fs' };
-			const btn = document.getElementById('btn-' + map[mode]);
-			btn.classList.add('active');
-			if (mode === 'faceless-story') btn.classList.add('mint');
 			drawEngagementCurve();
 		}
 
@@ -251,7 +251,7 @@
 				el.classList.add('wrong');
 				fb.className = 'feedback bad';
 				opts.forEach((o) => {
-					if (o.onclick.toString().includes('true')) o.classList.add('correct');
+					if (o.getAttribute('data-correct') === 'true') o.classList.add('correct');
 				});
 				fb.textContent = '✗ Not quite — the correct answer is highlighted above.';
 			}
@@ -274,7 +274,7 @@
 		if (typeof answer === 'function') actions.answer = answer;
 
 		return () => {
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -301,6 +301,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>
@@ -434,7 +435,8 @@
 				</p>
 				<div class="btn-row">
 					<button
-						class="btn active"
+						class="btn"
+						class:active={currentMode === 'faceless-info'}
 						onclick={(e) => {
 							actions.setEngagementMode('faceless-info');
 						}}
@@ -444,6 +446,7 @@
 					</button>
 					<button
 						class="btn"
+						class:active={currentMode === 'talking-head'}
 						onclick={(e) => {
 							actions.setEngagementMode('talking-head');
 						}}
@@ -452,7 +455,9 @@
 						Talking Head
 					</button>
 					<button
-						class="btn mint"
+						class="btn"
+						class:active={currentMode === 'faceless-story'}
+						class:mint={currentMode === 'faceless-story'}
 						onclick={(e) => {
 							actions.setEngagementMode('faceless-story');
 						}}
@@ -464,7 +469,7 @@
 				<canvas
 					id="engagement-canvas"
 					aria-label="Engagement Canvas Demonstration"
-					role="img"
+					role="region"
 					tabindex="0"
 				></canvas>
 				<div
@@ -1074,6 +1079,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q1', e.currentTarget, false);
 					}}
@@ -1083,6 +1089,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="true"
 					onclick={(e) => {
 						actions.answer('q1', e.currentTarget, true);
 					}}
@@ -1093,6 +1100,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q1', e.currentTarget, false);
 					}}
@@ -1102,6 +1110,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q1', e.currentTarget, false);
 					}}
@@ -1123,6 +1132,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q2', e.currentTarget, false);
 					}}
@@ -1132,6 +1142,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q2', e.currentTarget, false);
 					}}
@@ -1141,6 +1152,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="true"
 					onclick={(e) => {
 						actions.answer('q2', e.currentTarget, true);
 					}}
@@ -1151,6 +1163,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q2', e.currentTarget, false);
 					}}
@@ -1171,6 +1184,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q3', e.currentTarget, false);
 					}}
@@ -1181,6 +1195,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="true"
 					onclick={(e) => {
 						actions.answer('q3', e.currentTarget, true);
 					}}
@@ -1191,6 +1206,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q3', e.currentTarget, false);
 					}}
@@ -1200,6 +1216,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q3', e.currentTarget, false);
 					}}
@@ -1221,6 +1238,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q4', e.currentTarget, false);
 					}}
@@ -1230,6 +1248,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q4', e.currentTarget, false);
 					}}
@@ -1239,6 +1258,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="false"
 					onclick={(e) => {
 						actions.answer('q4', e.currentTarget, false);
 					}}
@@ -1248,6 +1268,7 @@
 				<button
 					type="button"
 					class="option"
+					data-correct="true"
 					onclick={(e) => {
 						actions.answer('q4', e.currentTarget, true);
 					}}
@@ -1507,7 +1528,7 @@
 	}
 
 	/* ── CODE ── */
-	pre {
+	:global(pre) {
 		background: #040710;
 		border: 1px solid var(--vs-border);
 		padding: 1.5rem;
@@ -1517,7 +1538,7 @@
 		line-height: 1.6;
 		position: relative;
 	}
-	pre :global(.lang-tag) {
+	:global(pre) :global(.lang-tag) {
 		position: absolute;
 		top: 8px;
 		right: 12px;
@@ -1533,19 +1554,19 @@
 		color: var(--vs-mint);
 		font-family: 'IBM Plex Mono', monospace;
 	}
-	.kw {
+	:global(.kw) {
 		color: #ff79c6;
 	}
-	.fn {
+	:global(.fn) {
 		color: #8be9fd;
 	}
-	.str {
+	:global(.str) {
 		color: #f1fa8c;
 	}
-	.cm {
+	:global(.cm) {
 		color: #6272a4;
 	}
-	.num {
+	:global(.num) {
 		color: #bd93f9;
 	}
 
@@ -1561,7 +1582,7 @@
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
 	}
-	.callout.red {
+	:global(.callout.red) {
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 	}
@@ -1580,7 +1601,7 @@
 	.callout.warn .callout-label {
 		color: var(--vs-amber);
 	}
-	.callout.red .callout-label {
+	:global(.callout.red) .callout-label {
 		color: var(--vs-red);
 	}
 	.callout.green .callout-label {
@@ -1645,7 +1666,7 @@
 		color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
 	}
-	.btn.amber:hover {
+	:global(.btn.amber:hover) {
 		border-color: var(--vs-amber);
 		color: var(--vs-amber);
 	}
@@ -1654,11 +1675,11 @@
 		color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
 	}
-	.btn.red:hover {
+	:global(.btn.red:hover) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 	}
-	.btn.red.active {
+	:global(.btn.red.active) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
@@ -1851,7 +1872,7 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-	.prev-link {
+	:global(.prev-link) {
 		font-size: 12px;
 		color: var(--vs-muted);
 		text-decoration: none;
@@ -1862,7 +1883,7 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
-	.prev-link:hover {
+	:global(.prev-link:hover) {
 		border-color: var(--vs-amber);
 		color: var(--vs-amber);
 	}
@@ -2058,7 +2079,7 @@
 		margin-bottom: 0.5rem;
 		justify-content: center;
 	}
-	.cog-bar {
+	:global(.cog-bar) {
 		width: 8px;
 		border-radius: 1px 1px 0 0;
 		transition: height 0.4s ease;

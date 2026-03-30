@@ -58,15 +58,18 @@
 			<div></div>
 		{/if}
 		{#if next}
-			<a
-				href="/courses/visual-storytelling/{next.id}"
-				class="fnav-card next"
-				class:disabled={next.status !== 'available'}
-			>
-				<div class="fnav-label">Next →</div>
-				<div class="fnav-title">{next.id} · {next.title}</div>
-				{#if next.status === 'coming-soon'}<div class="fnav-soon">Coming Soon</div>{/if}
-			</a>
+			{#if next.status === 'available'}
+				<a href="/courses/visual-storytelling/{next.id}" class="fnav-card next">
+					<div class="fnav-label">Next →</div>
+					<div class="fnav-title">{next.id} · {next.title}</div>
+				</a>
+			{:else}
+				<div class="fnav-card next disabled" aria-disabled="true">
+					<div class="fnav-label">Next →</div>
+					<div class="fnav-title">{next.id} · {next.title}</div>
+					{#if next.status === 'coming-soon'}<div class="fnav-soon">Coming Soon</div>{/if}
+				</div>
+			{/if}
 		{:else}
 			<div></div>
 		{/if}

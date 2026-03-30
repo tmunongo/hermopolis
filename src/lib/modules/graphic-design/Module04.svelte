@@ -2,7 +2,12 @@
 	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
-	let actions = {};
+	let actions = new Proxy(
+		{},
+		{
+			get: (target, prop) => (prop in target ? target[prop] : () => {})
+		}
+	);
 
 	onMount(() => {
 		const _listeners = [];
@@ -19,8 +24,11 @@
 ════════════════════════════════════════ */
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			document.getElementById('reading-progress').style.width =
-				(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
+			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+			const bar = document.getElementById('reading-progress');
+			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+			bar.style.width = pct + '%';
+			bar.setAttribute('aria-valuenow', String(pct));
 		});
 
 		/* ════════════════════════════════════════
@@ -303,6 +311,21 @@
 				let angle = Math.atan2(my, mx) + Math.PI / 2;
 				if (angle < 0) angle += Math.PI * 2;
 				baseHue = Math.round((angle / (Math.PI * 2)) * 360) % 360;
+				drawWheel();
+			}
+		});
+		wheelCanvas.addEventListener('keydown', (e) => {
+			let delta = 0;
+			if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') delta = -2;
+			if (e.key === 'ArrowRight' || e.key === 'ArrowUp') delta = 2;
+			if (delta) {
+				e.preventDefault();
+				baseHue = (baseHue + delta + 360) % 360;
+				drawWheel();
+				return;
+			}
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
 				drawWheel();
 			}
 		});
@@ -594,7 +617,7 @@
 		if (typeof handlePQ === 'function') actions.handlePQ = handlePQ;
 
 		return () => {
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -621,6 +644,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>

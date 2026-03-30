@@ -29,7 +29,7 @@
 			<span class="tag" style="border-color: var(--vs-blue); color: var(--vs-blue)">Narrative</span>
 			<span class="tag">Pacing</span>
 			<span class="tag">Visual Communication</span>
-			<span class="tag">10 Modules</span>
+			<span class="tag">{course.totalModules} Modules</span>
 			<span class="tag free">Free</span>
 		</div>
 	</div>
@@ -42,7 +42,7 @@
 				{#if mod.status === 'available'}
 					<a href="/courses/visual-storytelling/{mod.id}" class="module-card available">
 						<div class="card-num" style="color: var({mod.accentVar})">
-							{mod.id.padStart(2, '0')}
+							{String(mod.id).padStart(2, '0')}
 						</div>
 						<div
 							class="card-tag"
@@ -56,7 +56,7 @@
 					</a>
 				{:else}
 					<div class="module-card coming-soon">
-						<div class="card-num">{mod.id.padStart(2, '0')}</div>
+						<div class="card-num">{String(mod.id).padStart(2, '0')}</div>
 						<div class="card-badge">Coming Soon</div>
 						<div class="card-title">{mod.title}</div>
 						<div class="card-desc">{mod.description}</div>

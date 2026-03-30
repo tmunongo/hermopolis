@@ -1,8 +1,13 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	import { onMount } from 'svelte';
 
-	let actions = {};
+	let actions = new Proxy(
+		{},
+		{
+			get: (target, prop) => (prop in target ? target[prop] : () => {})
+		}
+	);
 
 	onMount(() => {
 		const _listeners = [];
@@ -19,8 +24,11 @@
 ═══════════════════════════════════════ */
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			const pct = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
-			document.getElementById('reading-progress').style.width = pct * 100 + '%';
+			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+			const bar = document.getElementById('reading-progress');
+			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+			bar.style.width = pct + '%';
+			bar.setAttribute('aria-valuenow', String(pct));
 		});
 
 		/* ═══════════════════════════════════════
@@ -1060,42 +1068,36 @@
 			}
 		}
 
-		if (typeof drawBaseField === 'function') actions.drawBaseField = drawBaseField;
-		if (typeof drawStrongComposition === 'function')
-			actions.drawStrongComposition = drawStrongComposition;
-		if (typeof drawConflictComposition === 'function')
-			actions.drawConflictComposition = drawConflictComposition;
-		if (typeof drawFlatComposition === 'function')
-			actions.drawFlatComposition = drawFlatComposition;
-		if (typeof drawEpFrame === 'function') actions.drawEpFrame = drawEpFrame;
-		if (typeof ctx_ep_drawSegment === 'function') actions.ctx_ep_drawSegment = ctx_ep_drawSegment;
-		if (typeof ctx_ep_drawWaypoint === 'function')
-			actions.ctx_ep_drawWaypoint = ctx_ep_drawWaypoint;
-		if (typeof setEpMode === 'function') actions.setEpMode = setEpMode;
-		if (typeof playEyePath === 'function') actions.playEyePath = playEyePath;
-		if (typeof tick === 'function') actions.tick = tick;
-		if (typeof resetEyePath === 'function') actions.resetEyePath = resetEyePath;
-		if (typeof getRotPowerPoints === 'function') actions.getRotPowerPoints = getRotPowerPoints;
-		if (typeof calcRotScore === 'function') actions.calcRotScore = calcRotScore;
-		if (typeof drawRotFrame === 'function') actions.drawRotFrame = drawRotFrame;
-		if (typeof toggleRotGrid === 'function') actions.toggleRotGrid = toggleRotGrid;
-		if (typeof resetRotSubject === 'function') actions.resetRotSubject = resetRotSubject;
-		if (typeof getRotPos === 'function') actions.getRotPos = getRotPos;
-		if (typeof getCtValues === 'function') actions.getCtValues = getCtValues;
-		if (typeof drawContrast === 'function') actions.drawContrast = drawContrast;
-		if (typeof updateContrast === 'function') actions.updateContrast = updateContrast;
-		if (typeof setCtPreset === 'function') actions.setCtPreset = setCtPreset;
-		if (typeof drawCluttered === 'function') actions.drawCluttered = drawCluttered;
-		if (typeof drawClean === 'function') actions.drawClean = drawClean;
-		if (typeof setCcMode === 'function') actions.setCcMode = setCcMode;
-		if (typeof drawDiagComposition === 'function')
-			actions.drawDiagComposition = drawDiagComposition;
-		if (typeof handleDiag === 'function') actions.handleDiag = handleDiag;
-		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
+		actions.drawBaseField = drawBaseField;
+		actions.drawStrongComposition = drawStrongComposition;
+		actions.drawConflictComposition = drawConflictComposition;
+		actions.drawFlatComposition = drawFlatComposition;
+		actions.drawEpFrame = drawEpFrame;
+		actions.ctx_ep_drawSegment = ctx_ep_drawSegment;
+		actions.ctx_ep_drawWaypoint = ctx_ep_drawWaypoint;
+		actions.setEpMode = setEpMode;
+		actions.playEyePath = playEyePath;
+		actions.resetEyePath = resetEyePath;
+		actions.getRotPowerPoints = getRotPowerPoints;
+		actions.calcRotScore = calcRotScore;
+		actions.drawRotFrame = drawRotFrame;
+		actions.toggleRotGrid = toggleRotGrid;
+		actions.resetRotSubject = resetRotSubject;
+		actions.getRotPos = getRotPos;
+		actions.getCtValues = getCtValues;
+		actions.drawContrast = drawContrast;
+		actions.updateContrast = updateContrast;
+		actions.setCtPreset = setCtPreset;
+		actions.drawCluttered = drawCluttered;
+		actions.drawClean = drawClean;
+		actions.setCcMode = setCcMode;
+		actions.drawDiagComposition = drawDiagComposition;
+		actions.handleDiag = handleDiag;
+		actions.handleQuiz = handleQuiz;
 
 		return () => {
 			if (typeof epAnimId !== 'undefined' && epAnimId) cancelAnimationFrame(epAnimId);
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -1122,6 +1124,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>

@@ -950,7 +950,7 @@
 						width="200"
 						height="200"
 						aria-label="Cadence Canvas Demonstration"
-						role="img"
+						role="region"
 						tabindex="0"
 					></canvas>
 					<div style="flex: 1; min-width: 200px">
@@ -1108,7 +1108,7 @@
 				<canvas
 					id="beatmap-canvas"
 					aria-label="Beatmap Canvas Demonstration"
-					role="img"
+					role="region"
 					tabindex="0"
 				></canvas>
 				<div class="bm-playhead"><div class="bm-playhead-fill" id="bm-fill"></div></div>
@@ -2137,7 +2137,7 @@
 	}
 
 	/* ── CODE ── */
-	pre {
+	:global(pre) {
 		background: #040710;
 		border: 1px solid var(--vs-border);
 		padding: 1.5rem;
@@ -2147,7 +2147,7 @@
 		line-height: 1.6;
 		position: relative;
 	}
-	pre :global(.lang-tag) {
+	:global(pre) :global(.lang-tag) {
 		position: absolute;
 		top: 8px;
 		right: 12px;
@@ -2176,7 +2176,7 @@
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 	}
-	.callout.red {
+	:global(.callout.red) {
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 	}
@@ -2195,7 +2195,7 @@
 	.callout.blue .callout-label {
 		color: var(--vs-blue);
 	}
-	.callout.red .callout-label {
+	:global(.callout.red) .callout-label {
 		color: var(--vs-red);
 	}
 	.callout.mint .callout-label {
@@ -2260,11 +2260,11 @@
 		color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
 	}
-	.btn.blue:hover {
+	:global(.btn.blue:hover) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 	}
-	.btn.blue.active {
+	:global(.btn.blue.active) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
@@ -2278,11 +2278,11 @@
 		color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
 	}
-	.btn.red:hover {
+	:global(.btn.red:hover) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 	}
-	.btn.red.active {
+	:global(.btn.red.active) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
@@ -2294,25 +2294,25 @@
 		margin-bottom: 1.25rem;
 	}
 
-	.slider-row {
+	:global(.slider-row) {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
 		margin: 0.6rem 0;
 	}
-	.slider-row label {
+	:global(.slider-row) label {
 		font-size: 12px;
 		min-width: 100px;
 		color: var(--vs-text);
 	}
-	.slider-row :global(input[type='range']) {
+	:global(.slider-row) :global(input[type='range']) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 3px;
 		background: var(--vs-border2);
 		outline: none;
 	}
-	.slider-row :global(input[type='range']::-webkit-slider-thumb) {
+	:global(.slider-row) :global(input[type='range']::-webkit-slider-thumb) {
 		-webkit-appearance: none;
 		width: 12px;
 		height: 12px;
@@ -2320,7 +2320,7 @@
 		background: var(--vs-amber);
 		cursor: pointer;
 	}
-	.slider-val {
+	:global(.slider-val) {
 		font-size: 12px;
 		color: var(--vs-amber);
 		min-width: 40px;
@@ -2500,7 +2500,7 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-	.prev-link {
+	:global(.prev-link) {
 		font-size: 12px;
 		color: var(--vs-muted);
 		text-decoration: none;
@@ -2511,7 +2511,7 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
-	.prev-link:hover {
+	:global(.prev-link:hover) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 	}
@@ -2635,7 +2635,7 @@
 		display: flex;
 		gap: 2px;
 	}
-	.pace-clip {
+	:global(.pace-clip) {
 		border-radius: 2px;
 		display: flex;
 		align-items: center;
@@ -2648,7 +2648,7 @@
 		transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 		flex-shrink: 0;
 	}
-	.pace-separator {
+	:global(.pace-separator) {
 		width: 1px;
 		background: var(--vs-border2);
 		align-self: stretch;
@@ -2675,7 +2675,7 @@
 		font-size: 12px;
 		min-height: 60px;
 	}
-	.pace-info strong {
+	:global(.pace-info strong) {
 		color: var(--vs-amber);
 	}
 
@@ -2686,14 +2686,14 @@
 	}
 
 	/* ── CHUNK BUILDER ── */
-	.chunk-row {
+	:global(.chunk-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		margin: 0.5rem 0;
 		flex-wrap: wrap;
 	}
-	.chunk-block {
+	:global(.chunk-block) {
 		padding: 0.35rem 0.75rem;
 		border: 1px solid;
 		font-size: 11px;
@@ -2701,16 +2701,16 @@
 		cursor: default;
 		transition: all 0.2s;
 	}
-	.chunk-divider {
+	:global(.chunk-divider) {
 		width: 20px;
 		height: 2px;
 		background: var(--vs-border2);
 		flex-shrink: 0;
 	}
-	.chunk-divider.strong {
+	:global(.chunk-divider.strong) {
 		background: var(--vs-amber);
 	}
-	.chunk-label {
+	:global(.chunk-label) {
 		font-size: 10px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -2744,7 +2744,7 @@
 		flex-wrap: wrap;
 		margin: 1rem 0;
 	}
-	.rhythm-beat {
+	:global(.rhythm-beat) {
 		width: 28px;
 		height: 28px;
 		border: 1px solid var(--vs-border);
@@ -2756,20 +2756,20 @@
 		transition: all 0.15s;
 		user-select: none;
 	}
-	.rhythm-beat:hover {
+	:global(.rhythm-beat:hover) {
 		border-color: var(--vs-border2);
 	}
-	.rhythm-beat.cut {
+	:global(.rhythm-beat.cut) {
 		background: color-mix(in srgb, var(--vs-amber) 20%, transparent);
 		border-color: var(--vs-amber);
 		color: var(--vs-amber);
 	}
-	.rhythm-beat.hold {
+	:global(.rhythm-beat.hold) {
 		background: color-mix(in srgb, var(--vs-blue) 12%, transparent);
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 	}
-	.rhythm-beat.peak {
+	:global(.rhythm-beat.peak) {
 		background: color-mix(in srgb, var(--vs-red) 20%, transparent);
 		border-color: var(--vs-red);
 		color: var(--vs-red);

@@ -222,6 +222,66 @@ def convert_module(input_path, output_path):
         ".onion-shell",
         ".onion-panel",
         ".onion-panel-label",
+        # Mod 01-03 Selectors
+        "pre",
+        ".kw",
+        ".fn",
+        ".str",
+        ".cm",
+        ".num",
+        ".callout.red",
+        ".callout.red .callout-label",
+        ".btn.amber:hover",
+        ".btn.red:hover",
+        ".btn.red.active",
+        ".btn.blue:hover",
+        ".btn.blue.active",
+        ".prev-link",
+        ".prev-link:hover",
+        ".cog-bar",
+        ".slider-row",
+        ".slider-row label",
+        ".slider-val",
+        ".pace-clip",
+        ".pace-separator",
+        ".pace-info strong",
+        ".chunk-row",
+        ".chunk-block",
+        ".chunk-divider",
+        ".chunk-divider.strong",
+        ".chunk-label",
+        ".rhythm-beat",
+        ".rhythm-beat:hover",
+        ".rhythm-beat.cut",
+        ".rhythm-beat.hold",
+        ".rhythm-beat.peak",
+        ".hier-row",
+        ".hier-row:last-child",
+        ".hier-rank",
+        ".hier-label",
+        ".hier-bar-wrap",
+        ".hier-bar-fill",
+        ".hier-props",
+        ".dtree",
+        ".dnode",
+        ".dnode:hover",
+        ".dnode.active",
+        ".dnode.result-animate",
+        ".dnode.result-static",
+        ".dnode.result-either",
+        ".dnode-q",
+        ".dnode-opts",
+        ".dnode-opt",
+        ".dnode-opt:hover",
+        ".dnode-opt.chosen",
+        ".dtree-connector",
+        ".dtree-result",
+        ".dtree-result.animate",
+        ".dtree-result.static",
+        ".dtree-result.either",
+        ".dtree-verdict",
+        ".dtree-reason",
+        ".contrast-swatch",
     ]
     for sel in selectors_to_wrap:
         escaped_sel = re.escape(sel)
@@ -289,7 +349,7 @@ def convert_module(input_path, output_path):
     # ── Auto-patch accessibility (ARIA, Buttons, Labels) ──
     # Auto-add aria-attributes to canvases
     def fix_canvas_aria(match):
-        attrs = match.group(1)
+        attrs = match.group(1) or ""
         if "aria-label" not in attrs:
             # Try to grab the id for the label
             id_match = re.search(r'id=["\']([^"\']+)["\']', attrs)
@@ -298,10 +358,10 @@ def convert_module(input_path, output_path):
                 if id_match
                 else "Canvas Demonstration"
             )
-            return f'<canvas{attrs} aria-label="{label}" role="img" tabindex="0">'
+            return f'<canvas{attrs} aria-label="{label}" role="region" tabindex="0">'
         return match.group(0)
 
-    html_content = re.sub(r"<canvas([^>]+)>", fix_canvas_aria, html_content)
+    html_content = re.sub(r"<canvas([^>]*)>", fix_canvas_aria, html_content)
 
     # Convert .option divs into semantic buttons for keyboard accessibility
     html_content = re.sub(
@@ -318,10 +378,17 @@ def convert_module(input_path, output_path):
         flags=re.DOTALL | re.IGNORECASE,
     )
 
+    # Convert loose labels next to inputs into associated labels for a11y
+    html_content = re.sub(
+        r'<label>([^<]+)</label>(?=\s*<input[^>]+id=["\']([^"\']+)["\'])',
+        r'<label for="\2">\1</label>',
+        html_content,
+    )
+
     # Convert #reading-progress to valid progressbar
     html_content = html_content.replace(
         '<div class="progress-bar-fill" id="reading-progress">',
-        '<div class="progress-bar-fill" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">',
+        '<div class="progress-bar-fill" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">',
     )
 
     # Replace bare placeholder anchors with a valid relative path so Svelte doesn't flag invalid hrefs
@@ -350,10 +417,17 @@ def convert_module(input_path, output_path):
         fix_label_for,
         html_content,
     )
+
     # Fallback: any remaining <label> without for=
+    def ensure_dummy_for(match):
+        attrs = match.group(1) or ""
+        if "for=" in attrs:
+            return match.group(0)
+        return f'<label{attrs} for="dummy">'
+
     html_content = re.sub(
-        r'<label([^>]*)(?<!for="[^"]")>(?![^<]*</label>)',
-        r'<label\g<1> for="dummy">',
+        r"<label([^>]*)>(?![^<]*</label>)",
+        ensure_dummy_for,
         html_content,
     )
 
@@ -373,8 +447,23 @@ def convert_module(input_path, output_path):
 
         tag = prefix.strip("< ").split()[0].lower()
         full_tag = prefix + suffix
+        simple_call = re.match(
+            r"^\s*([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*;?\s*$",
+            code,
+        )
+        if simple_call:
+            fn = simple_call.group(1)
+            args = simple_call.group(2).strip()
+            call_expr = f"actions.{fn}({args})" if args else f"actions.{fn}()"
+        else:
+            fn = None
+            args = None
+            call_expr = None
+
         if tag in ["button", "a"]:
-            return f"{prefix}onclick={{(e) => {{ actions.{code} }}}}{suffix}"
+            if call_expr:
+                return f"{prefix}onclick={{(e) => {call_expr}}}{suffix}"
+            return f"{prefix}onclick={{(e) => {{ {code} }}}}{suffix}"
         else:
             extras = ""
             if "role=" not in full_tag:
@@ -382,8 +471,13 @@ def convert_module(input_path, output_path):
             if "tabindex=" not in full_tag:
                 extras += ' tabindex="0"'
             if "onkeydown=" not in full_tag:
-                extras += f' onkeydown={{(e) => {{ if (e.key === "Enter" || e.key === " ") {{ e.preventDefault(); actions.{code} }} }}}}'
-            return f"{prefix}onclick={{(e) => {{ actions.{code} }}}}{extras}{suffix}"
+                if call_expr:
+                    extras += f' onkeydown={{(e) => {{ if (e.key === "Enter" || e.key === " ") {{ e.preventDefault(); {call_expr}; }} }}}}'
+                else:
+                    extras += f' onkeydown={{(e) => {{ if (e.key === "Enter" || e.key === " ") {{ e.preventDefault(); {code}; }} }}}}'
+            if call_expr:
+                return f"{prefix}onclick={{(e) => {call_expr}}}{extras}{suffix}"
+            return f"{prefix}onclick={{(e) => {{ {code} }}}}{extras}{suffix}"
 
     html_content = re.sub(r'\s+onkeydown="[^"]*"', "", html_content)
     html_content = re.sub(
@@ -426,6 +520,14 @@ def convert_module(input_path, output_path):
 
     # Then deduplicate declarations
     script_js = re.sub(r"function\s+([a-zA-Z0-9_]+)\s*\(", dedup_function, script_js)
+    # Remove orphaned duplicate function bodies introduced by the header rewrite above
+    for name in function_names:
+        script_js = re.sub(
+            rf"/\*\s*duplicate\s+{re.escape(name)}\s+removed\s*\*/\s*var\s+_dup_{re.escape(name)}\s*=\s*function\s*\([^)]*\)\s*\{{.*?\}}\s*;?",
+            "",
+            script_js,
+            flags=re.DOTALL,
+        )
 
     # 2. Build actions bindings for template onclick handlers
     actions_bindings = "\n\t\t".join(
@@ -439,6 +541,14 @@ def convert_module(input_path, output_path):
     script_js = script_js.replace(
         "el.scrollHeight - el.clientHeight",
         "Math.max(1, el.scrollHeight - el.clientHeight)",
+    )
+    script_js = script_js.replace(
+        "el.style.width = (window.scrollY / docH) * 100 + '%';",
+        "if (!docH || docH <= 0) { el.style.width = '0%'; el.setAttribute('aria-valuenow', '0'); return; }\n"
+        "\t\t\t\tconst progress = Math.max(0, Math.min(1, window.scrollY / docH));\n"
+        "\t\t\t\tconst pct = Math.round(progress * 100);\n"
+        "\t\t\t\tel.style.width = pct + '%';\n"
+        "\t\t\t\tel.setAttribute('aria-valuenow', String(pct));",
     )
 
     # 4. Detect and bind memory leaks
@@ -499,7 +609,7 @@ def convert_module(input_path, output_path):
         )
         script_js = listener_shim + script_js
         cleanup_logic.append(
-            "_listeners.forEach(l => l.target.removeEventListener(...l.args.filter(Boolean)));"
+            "_listeners.forEach(l => l.target.removeEventListener(...l.args));"
         )
 
     cleanup_str = "\n\t\t\t".join(cleanup_logic)
@@ -516,10 +626,10 @@ def convert_module(input_path, output_path):
     eslint_disable_str = ", ".join(eslint_disables)
 
     svelte_content = (
-        "<script>\n"
+        '<script lang="ts">\n'
         f"\t/* eslint-disable {eslint_disable_str} */\n"
         "\timport { onMount } from 'svelte';\n\n"
-        "\tlet actions = {};\n\n"
+        "\tlet actions: Record<string, any> = {};\n\n"
         "\tonMount(() => {\n" + script_js + "\n\n"
         "\t\t" + actions_bindings + "\n\n"
         "\t\treturn () => {\n"

@@ -1,5 +1,5 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef, no-useless-assignment */
+	/* eslint-disable @typescript-eslint/no-unused-vars, no-useless-assignment */
 	import { onMount } from 'svelte';
 
 	let actions = {};
@@ -19,8 +19,11 @@
 ═══════════════════════════════════ */
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			document.getElementById('reading-progress').style.width =
-				(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
+			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+			const bar = document.getElementById('reading-progress');
+			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+			bar.style.width = pct + '%';
+			bar.setAttribute('aria-valuenow', String(pct));
 		});
 
 		/* ═══════════════════════════════════
@@ -574,24 +577,23 @@
 			}
 		}
 
-		if (typeof setTfCat === 'function') actions.setTfCat = setTfCat;
-		if (typeof setSerifVariant === 'function') actions.setSerifVariant = setSerifVariant;
-		if (typeof setSansVariant === 'function') actions.setSansVariant = setSansVariant;
-		if (typeof setDisplayVariant === 'function') actions.setDisplayVariant = setDisplayVariant;
-		if (typeof setMonoVariant === 'function') actions.setMonoVariant = setMonoVariant;
-		if (typeof updateSpacing === 'function') actions.updateSpacing = updateSpacing;
-		if (typeof setSpacingPreset === 'function') actions.setSpacingPreset = setSpacingPreset;
-		if (typeof scorePairing === 'function') actions.scorePairing = scorePairing;
-		if (typeof updatePairing === 'function') actions.updatePairing = updatePairing;
-		if (typeof setBar === 'function') actions.setBar = setBar;
-		if (typeof drawThumb === 'function') actions.drawThumb = drawThumb;
-		if (typeof toggleThumbScale === 'function') actions.toggleThumbScale = toggleThumbScale;
-		if (typeof randomiseThumb === 'function') actions.randomiseThumb = randomiseThumb;
-		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
-		if (typeof handleAudit === 'function') actions.handleAudit = handleAudit;
+		actions.setTfCat = setTfCat;
+		actions.setSerifVariant = setSerifVariant;
+		actions.setSansVariant = setSansVariant;
+		actions.setDisplayVariant = setDisplayVariant;
+		actions.setMonoVariant = setMonoVariant;
+		actions.updateSpacing = updateSpacing;
+		actions.setSpacingPreset = setSpacingPreset;
+		actions.scorePairing = scorePairing;
+		actions.updatePairing = updatePairing;
+		actions.drawThumb = drawThumb;
+		actions.toggleThumbScale = toggleThumbScale;
+		actions.randomiseThumb = randomiseThumb;
+		actions.handleQuiz = handleQuiz;
+		actions.handleAudit = handleAudit;
 
 		return () => {
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -618,6 +620,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>

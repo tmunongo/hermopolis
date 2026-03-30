@@ -20,7 +20,10 @@
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
 			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
-			document.getElementById('reading-progress').style.width = progress * 100 + '%';
+			const bar = document.getElementById('reading-progress');
+			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+			bar.style.width = pct + '%';
+			bar.setAttribute('aria-valuenow', String(pct));
 		});
 
 		/* ══════════════════════════════════
@@ -605,7 +608,7 @@
 		if (typeof submitReflection === 'function') actions.submitReflection = submitReflection;
 
 		return () => {
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -632,6 +635,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>

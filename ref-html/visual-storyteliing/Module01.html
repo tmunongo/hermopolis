@@ -414,6 +414,11 @@
 				cursor: pointer;
 				transition: all 0.15s;
 			}
+			.btn:focus,
+			.btn:focus-visible {
+				outline: 3px solid var(--vs-amber);
+				outline-offset: 3px;
+			}
 			.btn:hover {
 				border-color: var(--vs-blue);
 				color: var(--vs-blue);
@@ -571,6 +576,11 @@
 				transition: all 0.15s;
 				user-select: none;
 				font-family: 'IBM Plex Mono', monospace;
+				background: transparent;
+				color: inherit;
+				text-align: left;
+				width: 100%;
+				appearance: none;
 			}
 			.option:hover {
 				border-color: var(--vs-border2);
@@ -1488,19 +1498,19 @@
 						talking-head formats in terms of viewer attention?
 					</div>
 					<div class="options">
-						<div class="option" onclick="answer('q1', this, false)">
+						<button type="button" class="option" onclick="answer('q1', this, false)">
 							Viewers find faceless videos more aesthetically appealing and watch longer as a result
-						</div>
-						<div class="option" onclick="answer('q1', this, true)">
+						</button>
+						<button type="button" class="option" onclick="answer('q1', this, true)">
 							Without a face to read, the viewer's full cognitive attention routes to the content
 							rather than being split between face and information
-						</div>
-						<div class="option" onclick="answer('q1', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q1', this, false)">
 							Faceless videos are shorter on average, which reduces viewer fatigue
-						</div>
-						<div class="option" onclick="answer('q1', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q1', this, false)">
 							Algorithms favor faceless content and surface it to more engaged audiences
-						</div>
+						</button>
 					</div>
 					<div class="feedback" id="fb-q1"></div>
 				</div>
@@ -1513,19 +1523,19 @@
 						What is the primary structural problem with this opening?
 					</div>
 					<div class="options">
-						<div class="option" onclick="answer('q2', this, false)">
+						<button type="button" class="option" onclick="answer('q2', this, false)">
 							The topic is too complex for a single video
-						</div>
-						<div class="option" onclick="answer('q2', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q2', this, false)">
 							The mention of three causes creates too much cognitive load upfront
-						</div>
-						<div class="option" onclick="answer('q2', this, true)">
+						</button>
+						<button type="button" class="option" onclick="answer('q2', this, true)">
 							It signals information delivery rather than establishing stakes or creating a reason
 							to care before the viewer has committed
-						</div>
-						<div class="option" onclick="answer('q2', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q2', this, false)">
 							It does not include a call to action at the beginning
-						</div>
+						</button>
 					</div>
 					<div class="feedback" id="fb-q2"></div>
 				</div>
@@ -1537,21 +1547,21 @@
 						for managing cognitive load?
 					</div>
 					<div class="options">
-						<div class="option" onclick="answer('q3', this, false)">
+						<button type="button" class="option" onclick="answer('q3', this, false)">
 							All channels — narration, text, visuals, audio — should reinforce the same point
 							simultaneously for maximum retention
-						</div>
-						<div class="option" onclick="answer('q3', this, true)">
+						</button>
+						<button type="button" class="option" onclick="answer('q3', this, true)">
 							Each channel should contribute a distinct layer that the other channels do not
 							provide, avoiding redundancy
-						</div>
-						<div class="option" onclick="answer('q3', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q3', this, false)">
 							Limit each video to no more than two active channels at any moment
-						</div>
-						<div class="option" onclick="answer('q3', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q3', this, false)">
 							Audio should always be the primary channel, with visuals and text as optional
 							supplements
-						</div>
+						</button>
 					</div>
 					<div class="feedback" id="fb-q3"></div>
 				</div>
@@ -1564,19 +1574,19 @@
 						This is a symptom of:
 					</div>
 					<div class="options">
-						<div class="option" onclick="answer('q4', this, false)">
+						<button type="button" class="option" onclick="answer('q4', this, false)">
 							Successful communication — repetition is the first stage of learning
-						</div>
-						<div class="option" onclick="answer('q4', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q4', this, false)">
 							Poor audio quality preventing proper comprehension
-						</div>
-						<div class="option" onclick="answer('q4', this, false)">
+						</button>
+						<button type="button" class="option" onclick="answer('q4', this, false)">
 							Excessive cognitive load from too many visual channels
-						</div>
-						<div class="option" onclick="answer('q4', this, true)">
+						</button>
+						<button type="button" class="option" onclick="answer('q4', this, true)">
 							Information was presented without communicating meaning — the content did not anchor
 							to the viewer's existing understanding
-						</div>
+						</button>
 					</div>
 					<div class="feedback" id="fb-q4"></div>
 				</div>
@@ -1608,7 +1618,15 @@
 				const el = document.getElementById('reading-progress');
 				if (!el) return;
 				const docH = document.documentElement.scrollHeight - window.innerHeight;
-				el.style.width = (window.scrollY / docH) * 100 + '%';
+				if (!docH || docH <= 0) {
+					el.style.width = '0%';
+					el.setAttribute('aria-valuenow', '0');
+					return;
+				}
+				const progress = Math.max(0, Math.min(1, window.scrollY / docH));
+				const pct = Math.round(progress * 100);
+				el.style.width = pct + '%';
+				el.setAttribute('aria-valuenow', String(pct));
 			});
 
 			/* ─── ENGAGEMENT CURVE ─── */

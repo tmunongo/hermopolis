@@ -1243,7 +1243,7 @@
 					performs across different background brightness levels.
 				</p>
 				<div class="slider-row" style="margin-bottom: 1rem">
-					<label>Background brightness</label>
+					<label for="bg-bright">Background brightness</label>
 					<input
 						type="range"
 						id="bg-bright"
@@ -2097,7 +2097,7 @@
 							width="280"
 							height="180"
 							aria-label="Easing Canvas Demonstration"
-							role="img"
+							role="region"
 							tabindex="0"
 						></canvas>
 					</div>
@@ -2767,7 +2767,7 @@
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 	}
-	.callout.red {
+	:global(.callout.red) {
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 	}
@@ -2785,7 +2785,7 @@
 	.callout.blue .callout-label {
 		color: var(--vs-blue);
 	}
-	.callout.red .callout-label {
+	:global(.callout.red) .callout-label {
 		color: var(--vs-red);
 	}
 
@@ -2847,7 +2847,7 @@
 		color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
 	}
-	.btn.amber:hover {
+	:global(.btn.amber:hover) {
 		border-color: var(--vs-amber);
 		color: var(--vs-amber);
 	}
@@ -2856,20 +2856,20 @@
 		color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
 	}
-	.btn.blue:hover {
+	:global(.btn.blue:hover) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 	}
-	.btn.blue.active {
+	:global(.btn.blue.active) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
 	}
-	.btn.red:hover {
+	:global(.btn.red:hover) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 	}
-	.btn.red.active {
+	:global(.btn.red.active) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
@@ -2881,25 +2881,25 @@
 		margin-bottom: 1.25rem;
 	}
 
-	.slider-row {
+	:global(.slider-row) {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
 		margin: 0.5rem 0;
 	}
-	.slider-row label {
+	:global(.slider-row) label {
 		font-size: 12px;
 		min-width: 110px;
 		color: var(--vs-text);
 	}
-	.slider-row :global(input[type='range']) {
+	:global(.slider-row) :global(input[type='range']) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 3px;
 		background: var(--vs-border2);
 		outline: none;
 	}
-	.slider-row :global(input[type='range']::-webkit-slider-thumb) {
+	:global(.slider-row) :global(input[type='range']::-webkit-slider-thumb) {
 		-webkit-appearance: none;
 		width: 12px;
 		height: 12px;
@@ -2907,7 +2907,7 @@
 		background: var(--vs-mint);
 		cursor: pointer;
 	}
-	.slider-val {
+	:global(.slider-val) {
 		font-size: 12px;
 		color: var(--vs-mint);
 		min-width: 40px;
@@ -3084,7 +3084,7 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-	.prev-link {
+	:global(.prev-link) {
 		font-size: 12px;
 		color: var(--vs-muted);
 		text-decoration: none;
@@ -3095,7 +3095,7 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
-	.prev-link:hover {
+	:global(.prev-link:hover) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 	}
@@ -3228,17 +3228,17 @@
 	}
 
 	/* ── HIERARCHY RULER ── */
-	.hier-row {
+	:global(.hier-row) {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
 		padding: 0.6rem 0;
 		border-bottom: 1px solid var(--vs-border);
 	}
-	.hier-row:last-child {
+	:global(.hier-row:last-child) {
 		border-bottom: none;
 	}
-	.hier-rank {
+	:global(.hier-rank) {
 		width: 24px;
 		height: 24px;
 		border-radius: 2px;
@@ -3249,12 +3249,12 @@
 		font-weight: 700;
 		flex-shrink: 0;
 	}
-	.hier-label {
+	:global(.hier-label) {
 		flex: 1;
 		font-size: 12px;
 		color: var(--vs-text);
 	}
-	.hier-bar-wrap {
+	:global(.hier-bar-wrap) {
 		width: 120px;
 		height: 6px;
 		background: var(--vs-border);
@@ -3262,11 +3262,11 @@
 		overflow: hidden;
 		flex-shrink: 0;
 	}
-	.hier-bar-fill {
+	:global(.hier-bar-fill) {
 		height: 100%;
 		border-radius: 3px;
 	}
-	.hier-props {
+	:global(.hier-props) {
 		font-size: 10px;
 		color: var(--vs-muted);
 		min-width: 160px;
@@ -3274,10 +3274,10 @@
 	}
 
 	/* ── ANIMATION DECISION TREE ── */
-	.dtree {
+	:global(.dtree) {
 		position: relative;
 	}
-	.dnode {
+	:global(.dnode) {
 		border: 1px solid var(--vs-border);
 		padding: 0.75rem 1rem;
 		background: var(--vs-raised);
@@ -3286,36 +3286,36 @@
 		transition: all 0.2s;
 		position: relative;
 	}
-	.dnode:hover {
+	:global(.dnode:hover) {
 		border-color: var(--vs-mint);
 	}
-	.dnode.active {
+	:global(.dnode.active) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 8%, var(--vs-raised));
 	}
-	.dnode.result-animate {
+	:global(.dnode.result-animate) {
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 8%, var(--vs-raised));
 	}
-	.dnode.result-static {
+	:global(.dnode.result-static) {
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 8%, var(--vs-raised));
 	}
-	.dnode.result-either {
+	:global(.dnode.result-either) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 8%, var(--vs-raised));
 	}
-	.dnode-q {
+	:global(.dnode-q) {
 		color: #fff;
 		font-weight: 500;
 		margin-bottom: 0.6rem;
 	}
-	.dnode-opts {
+	:global(.dnode-opts) {
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
 	}
-	.dnode-opt {
+	:global(.dnode-opt) {
 		padding: 4px 12px;
 		border: 1px solid var(--vs-border2);
 		font-size: 11px;
@@ -3324,50 +3324,50 @@
 		font-family: 'IBM Plex Mono', monospace;
 		color: var(--vs-muted);
 	}
-	.dnode-opt:hover {
+	:global(.dnode-opt:hover) {
 		border-color: var(--vs-mint);
 		color: var(--vs-mint);
 	}
-	.dnode-opt.chosen {
+	:global(.dnode-opt.chosen) {
 		border-color: var(--vs-mint);
 		color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
 	}
-	.dtree-connector {
+	:global(.dtree-connector) {
 		width: 2px;
 		height: 20px;
 		background: var(--vs-border2);
 		margin: 0 auto;
 	}
-	.dtree-result {
+	:global(.dtree-result) {
 		padding: 1rem 1.25rem;
 		border: 1px solid;
 		font-size: 12px;
 		text-align: center;
 		display: none;
 	}
-	.dtree-result.animate {
+	:global(.dtree-result.animate) {
 		border-color: var(--vs-blue);
 		color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 6%, var(--vs-surface));
 	}
-	.dtree-result.static {
+	:global(.dtree-result.static) {
 		border-color: var(--vs-amber);
 		color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 6%, var(--vs-surface));
 	}
-	.dtree-result.either {
+	:global(.dtree-result.either) {
 		border-color: var(--vs-mint);
 		color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 6%, var(--vs-surface));
 	}
-	.dtree-verdict {
+	:global(.dtree-verdict) {
 		font-family: 'Syne', sans-serif;
 		font-size: 18px;
 		font-weight: 700;
 		margin-bottom: 0.4rem;
 	}
-	.dtree-reason {
+	:global(.dtree-reason) {
 		font-size: 12px;
 	}
 
@@ -3433,7 +3433,7 @@
 	}
 
 	/* ── CONTRAST METER ── */
-	.contrast-swatch {
+	:global(.contrast-swatch) {
 		height: 56px;
 		display: flex;
 		align-items: center;

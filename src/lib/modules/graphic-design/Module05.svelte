@@ -19,8 +19,11 @@
 ═══════════════════════════════════ */
 		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			document.getElementById('reading-progress').style.width =
-				(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
+			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+			const bar = document.getElementById('reading-progress');
+			const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+			bar.style.width = pct + '%';
+			bar.setAttribute('aria-valuenow', String(pct));
 		});
 
 		/* ═══════════════════════════════════
@@ -497,21 +500,6 @@
 			ctx.fillRect(0, 0, w, h);
 			drawFn(ctx, w, h);
 		}
-
-		/* duplicate roundRect removed */ var _dup_roundRect = function (ctx, x, y, w, h, r) {
-			r = Math.min(r, w / 2, h / 2);
-			ctx.beginPath();
-			ctx.moveTo(x + r, y);
-			ctx.lineTo(x + w - r, y);
-			ctx.arcTo(x + w, y, x + w, y + r, r);
-			ctx.lineTo(x + w, y + h - r);
-			ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-			ctx.lineTo(x + r, y + h);
-			ctx.arcTo(x, y + h, x, y + h - r, r);
-			ctx.lineTo(x, y + r);
-			ctx.arcTo(x, y, x + r, y, r);
-			ctx.closePath();
-		};
 
 		const rulesGrid = document.getElementById('icon-rules-grid');
 		ICON_RULES.forEach((rule, i) => {
@@ -1262,7 +1250,7 @@
 		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
 
 		return () => {
-			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
 		};
 	});
 </script>
@@ -1287,6 +1275,7 @@
 				role="progressbar"
 				aria-valuemin="0"
 				aria-valuemax="100"
+				aria-valuenow="0"
 			></div>
 		</div>
 	</div>
