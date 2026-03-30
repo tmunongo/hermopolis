@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Module01 from '$lib/modules/visual-storytelling/Module01.svelte';
+	import Module02 from '$lib/modules/visual-storytelling/Module02.svelte';
+	import Module03 from '$lib/modules/visual-storytelling/Module03.svelte';
 	import ScrollProgress from '$lib/components/ScrollProgress.svelte';
 	import type { PageData } from './$types';
 
@@ -32,6 +34,10 @@
 	<!-- MODULE CONTENT (switch by id) -->
 	{#if mod.id === '01'}
 		<Module01 />
+	{:else if mod.id === '02'}
+		<Module02 />
+	{:else if mod.id === '03'}
+		<Module03 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--vs-muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

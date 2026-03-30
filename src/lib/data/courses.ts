@@ -408,7 +408,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 2,
 		title: 'Sequencing, Pacing & Viewer Retention',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-amber',
 		description:
 			'Use pacing strategically to maintain attention. Combine narration, visuals, and beats into deliberate rhythms that prevent cognitive drift.'
@@ -418,7 +418,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 3,
 		title: 'Structuring Text for Video',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-mint',
 		description:
 			'Use text as a visual element, not a transcript. Emphasis, contrast, hierarchy, and when to animate vs keep static.'
