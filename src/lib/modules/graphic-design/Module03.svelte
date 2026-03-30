@@ -1,15 +1,26 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars, no-useless-assignment */
+	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef, no-useless-assignment */
 	import { onMount } from 'svelte';
 
+	let actions = {};
+
 	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
 		/* ═══════════════════════════════════
    READING PROGRESS
 ═══════════════════════════════════ */
-		window.addEventListener('scroll', () => {
+		_addWinListener('scroll', () => {
 			const el = document.documentElement;
 			document.getElementById('reading-progress').style.width =
-				(el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100 + '%';
+				(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
 		});
 
 		/* ═══════════════════════════════════
@@ -563,27 +574,24 @@
 			}
 		}
 
-		/* eslint-disable no-undef */
-		if (typeof setBar === 'function') window.setBar = setBar;
-		if (typeof randomiseThumb === 'function') window.randomiseThumb = randomiseThumb;
-		if (typeof scorePairing === 'function') window.scorePairing = scorePairing;
-		if (typeof handleAudit === 'function') window.handleAudit = handleAudit;
-		if (typeof toggleThumbScale === 'function') window.toggleThumbScale = toggleThumbScale;
-		if (typeof setDisplayVariant === 'function') window.setDisplayVariant = setDisplayVariant;
-		if (typeof setSansVariant === 'function') window.setSansVariant = setSansVariant;
-		if (typeof updatePairing === 'function') window.updatePairing = updatePairing;
-		if (typeof drawThumb === 'function') window.drawThumb = drawThumb;
-		if (typeof updateSpacing === 'function') window.updateSpacing = updateSpacing;
-		if (typeof handleQuiz === 'function') window.handleQuiz = handleQuiz;
-		if (typeof setTfCat === 'function') window.setTfCat = setTfCat;
-		if (typeof setMonoVariant === 'function') window.setMonoVariant = setMonoVariant;
-		if (typeof setSerifVariant === 'function') window.setSerifVariant = setSerifVariant;
-		if (typeof setSpacingPreset === 'function') window.setSpacingPreset = setSpacingPreset;
-		/* eslint-enable no-undef */
+		if (typeof setTfCat === 'function') actions.setTfCat = setTfCat;
+		if (typeof setSerifVariant === 'function') actions.setSerifVariant = setSerifVariant;
+		if (typeof setSansVariant === 'function') actions.setSansVariant = setSansVariant;
+		if (typeof setDisplayVariant === 'function') actions.setDisplayVariant = setDisplayVariant;
+		if (typeof setMonoVariant === 'function') actions.setMonoVariant = setMonoVariant;
+		if (typeof updateSpacing === 'function') actions.updateSpacing = updateSpacing;
+		if (typeof setSpacingPreset === 'function') actions.setSpacingPreset = setSpacingPreset;
+		if (typeof scorePairing === 'function') actions.scorePairing = scorePairing;
+		if (typeof updatePairing === 'function') actions.updatePairing = updatePairing;
+		if (typeof setBar === 'function') actions.setBar = setBar;
+		if (typeof drawThumb === 'function') actions.drawThumb = drawThumb;
+		if (typeof toggleThumbScale === 'function') actions.toggleThumbScale = toggleThumbScale;
+		if (typeof randomiseThumb === 'function') actions.randomiseThumb = randomiseThumb;
+		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
+		if (typeof handleAudit === 'function') actions.handleAudit = handleAudit;
 
 		return () => {
-			// Note: window event listeners use anonymous functions and cannot be auto-removed.
-			// Consider refactoring to named handlers for proper cleanup.
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
 		};
 	});
 </script>
@@ -604,7 +612,13 @@
 		<div class="module-tag">Module 03 · Type + Voice</div>
 		<h1 class="module-title">Typography<br /><span>Essentials</span></h1>
 		<div class="progress-bar-wrap">
-			<div class="progress-bar-fill" id="reading-progress"></div>
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+			></div>
 		</div>
 	</div>
 
@@ -669,14 +683,14 @@
 					class="tf-tab active"
 					data-cat="serif"
 					onclick={(e) => {
-						window.setTfCat('serif');
+						actions.setTfCat('serif');
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.setTfCat('serif');
+							actions.setTfCat('serif');
 						}
 					}}
 				>
@@ -686,14 +700,14 @@
 					class="tf-tab"
 					data-cat="sans"
 					onclick={(e) => {
-						window.setTfCat('sans');
+						actions.setTfCat('sans');
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.setTfCat('sans');
+							actions.setTfCat('sans');
 						}
 					}}
 				>
@@ -703,14 +717,14 @@
 					class="tf-tab"
 					data-cat="display"
 					onclick={(e) => {
-						window.setTfCat('display');
+						actions.setTfCat('display');
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.setTfCat('display');
+							actions.setTfCat('display');
 						}
 					}}
 				>
@@ -720,14 +734,14 @@
 					class="tf-tab"
 					data-cat="mono"
 					onclick={(e) => {
-						window.setTfCat('mono');
+						actions.setTfCat('mono');
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.setTfCat('mono');
+							actions.setTfCat('mono');
 						}
 					}}
 				>
@@ -780,7 +794,7 @@
 					<button
 						class="tf-variant-btn active"
 						onclick={(e) => {
-							window.setSerifVariant('display', e.currentTarget);
+							actions.setSerifVariant('display', e.currentTarget);
 						}}
 					>
 						Display (Playfair)
@@ -788,7 +802,7 @@
 					<button
 						class="tf-variant-btn"
 						onclick={(e) => {
-							window.setSerifVariant('text', e.currentTarget);
+							actions.setSerifVariant('text', e.currentTarget);
 						}}
 					>
 						Text (Crimson Pro)
@@ -796,7 +810,7 @@
 					<button
 						class="tf-variant-btn"
 						onclick={(e) => {
-							window.setSerifVariant('optical', e.currentTarget);
+							actions.setSerifVariant('optical', e.currentTarget);
 						}}
 					>
 						Optical (Fraunces)
@@ -844,7 +858,7 @@
 					<button
 						class="tf-variant-btn active"
 						onclick={(e) => {
-							window.setSansVariant('geometric', e.currentTarget);
+							actions.setSansVariant('geometric', e.currentTarget);
 						}}
 					>
 						Geometric (DM Sans)
@@ -852,7 +866,7 @@
 					<button
 						class="tf-variant-btn"
 						onclick={(e) => {
-							window.setSansVariant('grotesk', e.currentTarget);
+							actions.setSansVariant('grotesk', e.currentTarget);
 						}}
 					>
 						Grotesk (Space Grotesk)
@@ -903,7 +917,7 @@
 					<button
 						class="tf-variant-btn active"
 						onclick={(e) => {
-							window.setDisplayVariant('condensed', e.currentTarget);
+							actions.setDisplayVariant('condensed', e.currentTarget);
 						}}
 					>
 						Condensed (Bebas Neue)
@@ -911,7 +925,7 @@
 					<button
 						class="tf-variant-btn"
 						onclick={(e) => {
-							window.setDisplayVariant('editorial', e.currentTarget);
+							actions.setDisplayVariant('editorial', e.currentTarget);
 						}}
 					>
 						Editorial (Fraunces Black)
@@ -919,7 +933,7 @@
 					<button
 						class="tf-variant-btn"
 						onclick={(e) => {
-							window.setDisplayVariant('syne', e.currentTarget);
+							actions.setDisplayVariant('syne', e.currentTarget);
 						}}
 					>
 						Geometric Bold (Syne)
@@ -976,7 +990,7 @@
 					<button
 						class="tf-variant-btn active"
 						onclick={(e) => {
-							window.setMonoVariant('ibm', e.currentTarget);
+							actions.setMonoVariant('ibm', e.currentTarget);
 						}}
 					>
 						IBM Plex Mono
@@ -984,7 +998,7 @@
 					<button
 						class="tf-variant-btn"
 						onclick={(e) => {
-							window.setMonoVariant('space', e.currentTarget);
+							actions.setMonoVariant('space', e.currentTarget);
 						}}
 					>
 						Space Mono
@@ -1120,7 +1134,7 @@
 							step="100"
 							value="700"
 							oninput={() => {
-								window.updateSpacing();
+								actions.updateSpacing();
 							}}
 						/>
 						<span class="slider-val" id="sp-weight-val">700</span>
@@ -1135,7 +1149,7 @@
 							step="0.01"
 							value="0"
 							oninput={() => {
-								window.updateSpacing();
+								actions.updateSpacing();
 							}}
 						/>
 						<span class="slider-val" id="sp-tracking-val">0em</span>
@@ -1150,7 +1164,7 @@
 							step="0.05"
 							value="1.15"
 							oninput={() => {
-								window.updateSpacing();
+								actions.updateSpacing();
 							}}
 						/>
 						<span class="slider-val" id="sp-leading-val">1.15</span>
@@ -1165,7 +1179,7 @@
 							step="0.05"
 							value="1.7"
 							oninput={() => {
-								window.updateSpacing();
+								actions.updateSpacing();
 							}}
 						/>
 						<span class="slider-val" id="sp-body-lead-val">1.70</span>
@@ -1176,31 +1190,31 @@
 					<button
 						class="btn"
 						onclick={(e) => {
-							window.setSpacingPreset('editorial');
+							actions.setSpacingPreset('editorial');
 						}}>Editorial</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
-							window.setSpacingPreset('thumbnail');
+							actions.setSpacingPreset('thumbnail');
 						}}>Thumbnail Title</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
-							window.setSpacingPreset('label');
+							actions.setSpacingPreset('label');
 						}}>Uppercase Label</button
 					>
 					<button
 						class="btn rose"
 						onclick={(e) => {
-							window.setSpacingPreset('broken');
+							actions.setSpacingPreset('broken');
 						}}>Broken</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
-							window.setSpacingPreset('reset');
+							actions.setSpacingPreset('reset');
 						}}>Reset</button
 					>
 				</div>
@@ -1318,7 +1332,7 @@
 						<select
 							id="pair-heading"
 							onchange={() => {
-								window.updatePairing();
+								actions.updatePairing();
 							}}
 						>
 							<option value="playfair">Playfair Display (Serif)</option>
@@ -1344,7 +1358,7 @@
 						<select
 							id="pair-body"
 							onchange={() => {
-								window.updatePairing();
+								actions.updatePairing();
 							}}
 						>
 							<option value="dmsans" selected>DM Sans (Geometric Sans)</option>
@@ -1460,7 +1474,14 @@
 				</p>
 
 				<div class="thumb-outer">
-					<canvas id="thumb-canvas" width="560" height="315"></canvas>
+					<canvas
+						id="thumb-canvas"
+						width="560"
+						height="315"
+						aria-label="Thumb Canvas Demonstration"
+						role="img"
+						tabindex="0"
+					></canvas>
 				</div>
 
 				<div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap">
@@ -1468,7 +1489,7 @@
 						class="btn"
 						id="thumb-scale-btn"
 						onclick={(e) => {
-							window.toggleThumbScale();
+							actions.toggleThumbScale();
 						}}
 					>
 						Preview at Thumb Size
@@ -1476,7 +1497,7 @@
 					<button
 						class="btn sage"
 						onclick={(e) => {
-							window.randomiseThumb();
+							actions.randomiseThumb();
 						}}>Randomise Background</button
 					>
 				</div>
@@ -1487,7 +1508,7 @@
 						<select
 							id="thumb-font"
 							onchange={() => {
-								window.drawThumb();
+								actions.drawThumb();
 							}}
 						>
 							<option value="Bebas Neue">Bebas Neue (Condensed)</option>
@@ -1506,7 +1527,7 @@
 								max="80"
 								value="56"
 								oninput={() => {
-									window.drawThumb();
+									actions.drawThumb();
 								}}
 							/>
 							<span class="slider-val" id="thumb-size-val">56</span>
@@ -1521,7 +1542,7 @@
 								step="100"
 								value="800"
 								oninput={() => {
-									window.drawThumb();
+									actions.drawThumb();
 								}}
 							/>
 							<span class="slider-val" id="thumb-weight-val">800</span>
@@ -1546,7 +1567,7 @@
 										margin-bottom: 0.4rem;
 									"
 							oninput={() => {
-								window.drawThumb();
+								actions.drawThumb();
 							}}
 						/>
 						<input
@@ -1565,7 +1586,7 @@
 										outline: none;
 									"
 							oninput={() => {
-								window.drawThumb();
+								actions.drawThumb();
 							}}
 						/>
 						<div class="slider-row" style="margin-top: 0.5rem">
@@ -1578,7 +1599,7 @@
 								step="0.01"
 								value="0.02"
 								oninput={() => {
-									window.drawThumb();
+									actions.drawThumb();
 								}}
 							/>
 							<span class="slider-val" id="thumb-tracking-val">0.02</span>
@@ -1638,70 +1659,40 @@
 				systematic thinking. Which typeface category is most aligned with this personality?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Display — high-impact and distinctive
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Serif — tradition and authority
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Monospace — mechanical precision and systematic structure
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
-					}}
+						actions.handleQuiz(e.currentTarget, 3);
+					}}>D. Sans-serif — clean and modern</button
 				>
-					D. Sans-serif — clean and modern
-				</div>
 			</div>
 			<div class="feedback" id="fb-0"></div>
 		</div>
@@ -1712,70 +1703,42 @@
 				What is the correct typographic response?
 			</div>
 			<div class="options" data-correct="1">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Increase the font weight to compensate for the optical crowding
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Increase tracking — add letter-spacing to loosen the text and improve legibility
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Switch to a display typeface which is designed for all sizes
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Increase the font size until the crowding resolves itself
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-1"></div>
 		</div>
@@ -1786,72 +1749,44 @@
 				reliably effective?
 			</div>
 			<div class="options" data-correct="0">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. It creates category contrast — the two fonts are clearly distinct types of letter,
 					making hierarchy immediately readable without relying purely on size or weight
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Serifs are always better at large sizes, and sans-serifs are always better at small
 					sizes
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. The pairing has existed the longest, so viewers are trained to expect it
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Serifs and sans-serifs have opposite personalities that create visual tension
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-2"></div>
 		</div>
@@ -1862,71 +1797,43 @@
 				tracking. Why is this likely to fail?
 			</div>
 			<div class="options" data-correct="3">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Serif fonts are not permitted in thumbnails — only sans-serifs and display faces work
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Generous tracking is always wrong — it should always be tightened
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Light-weight fonts are the correct weight for thumbnails to avoid visual congestion
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. At thumbnail size, light-weight serifs lose legibility — thin strokes disappear and
 					generous tracking spreads letters too far apart to read as words at a glance
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-3"></div>
 		</div>
@@ -1936,71 +1843,43 @@
 				<span class="q-num">05.</span> What is the difference between kerning and tracking?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Tracking adjusts vertical spacing; kerning adjusts horizontal spacing
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Kerning applies to paragraphs; tracking applies to individual letters
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Tracking adjusts spacing uniformly across all characters; kerning adjusts the space
 					between specific pairs of letters where optical gaps appear
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. They are synonyms — different software uses different terminology for the same property
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-4"></div>
 		</div>
@@ -2044,14 +1923,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 0, 1);
+							actions.handleAudit(e.currentTarget, 0, 1);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 0, 1);
+								actions.handleAudit(e.currentTarget, 0, 1);
 							}
 						}}
 					>
@@ -2060,14 +1939,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 1, 1);
+							actions.handleAudit(e.currentTarget, 1, 1);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 1, 1);
+								actions.handleAudit(e.currentTarget, 1, 1);
 							}
 						}}
 					>
@@ -2077,14 +1956,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 2, 1);
+							actions.handleAudit(e.currentTarget, 2, 1);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 2, 1);
+								actions.handleAudit(e.currentTarget, 2, 1);
 							}
 						}}
 					>
@@ -2093,14 +1972,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 3, 1);
+							actions.handleAudit(e.currentTarget, 3, 1);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 3, 1);
+								actions.handleAudit(e.currentTarget, 3, 1);
 							}
 						}}
 					>
@@ -2136,14 +2015,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 0, 0);
+							actions.handleAudit(e.currentTarget, 0, 0);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 0, 0);
+								actions.handleAudit(e.currentTarget, 0, 0);
 							}
 						}}
 					>
@@ -2153,14 +2032,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 1, 0);
+							actions.handleAudit(e.currentTarget, 1, 0);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 1, 0);
+								actions.handleAudit(e.currentTarget, 1, 0);
 							}
 						}}
 					>
@@ -2169,14 +2048,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 2, 0);
+							actions.handleAudit(e.currentTarget, 2, 0);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 2, 0);
+								actions.handleAudit(e.currentTarget, 2, 0);
 							}
 						}}
 					>
@@ -2186,14 +2065,14 @@
 					<div
 						class="audit-opt"
 						onclick={(e) => {
-							window.handleAudit(e.currentTarget, 3, 0);
+							actions.handleAudit(e.currentTarget, 3, 0);
 						}}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
 								e.preventDefault();
-								window.handleAudit(e.currentTarget, 3, 0);
+								actions.handleAudit(e.currentTarget, 3, 0);
 							}
 						}}
 					>
@@ -2431,7 +2310,7 @@
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
-	.callout.sky {
+	:global(.callout.sky) {
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
 	}
@@ -2453,7 +2332,7 @@
 	.callout.warn .callout-label {
 		color: var(--rose);
 	}
-	.callout.sky .callout-label {
+	:global(.callout.sky) .callout-label {
 		color: var(--sky);
 	}
 	.callout.violet .callout-label {
@@ -2527,16 +2406,16 @@
 		color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
 	}
-	.btn.sky:hover {
+	:global(.btn.sky:hover) {
 		border-color: var(--sky);
 		color: var(--sky);
 	}
-	.btn.sky.active {
+	:global(.btn.sky.active) {
 		border-color: var(--sky);
 		color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 10%, transparent);
 	}
-	.btn.violet:hover {
+	:global(.btn.violet:hover) {
 		border-color: var(--violet);
 		color: var(--violet);
 	}
@@ -2545,11 +2424,11 @@
 		color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 10%, transparent);
 	}
-	.btn.sage:hover {
+	:global(.btn.sage:hover) {
 		border-color: var(--sage);
 		color: var(--sage);
 	}
-	.btn.sage.active {
+	:global(.btn.sage.active) {
 		border-color: var(--sage);
 		color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
@@ -2609,14 +2488,14 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
-	.three-col {
+	:global(.three-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
 		.two-col,
-		.three-col {
+		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
 	}

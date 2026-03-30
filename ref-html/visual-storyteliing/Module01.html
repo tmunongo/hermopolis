@@ -1,0 +1,1858 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 1 — The Foundations of Visual Storytelling</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			/* ═══════════════════════════════════════════════════════
+     VISUAL STORYTELLING COURSE — DESIGN TOKENS
+  ═══════════════════════════════════════════════════════ */
+			:root {
+				/* Global tokens (inherited from platform) */
+				--bg: #07070d;
+				--surface: #0e0e1a;
+				--raised: #13131f;
+				--border: #1c1c2e;
+				--border2: #2a2a40;
+				--accent: #00e5c8;
+				--accent2: #ff5f3a;
+				--accent3: #a78bfa;
+				--accent4: #ffd166;
+				--text: #d8d8f0;
+				--muted: #5a5a80;
+				--code-bg: #0a0a16;
+
+				/* Visual Storytelling Course Tokens */
+				--vs-bg: #050810;
+				--vs-surface: #080d18;
+				--vs-raised: #0d1322;
+				--vs-border: #14202e; /* slightly warm blue-grey */
+				--vs-border2: #1e2d40;
+				--vs-blue: #4aafff; /* primary — screen glow */
+				--vs-amber: #f5b94a; /* secondary — film warmth */
+				--vs-red: #ff4f68; /* tertiary — emphasis/record */
+				--vs-mint: #3dd9a4; /* quaternary — positive/cue */
+				--vs-text: #b8c8de;
+				--vs-muted: #405068;
+				--vs-dim: #182033;
+			}
+
+			/* ── RESET ── */
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+
+			body {
+				background: var(--vs-bg);
+				color: var(--vs-text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--vs-bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--vs-border2);
+				border-radius: 3px;
+			}
+
+			/* ── LAYOUT ── */
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			.three-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 1rem;
+			}
+			@media (max-width: 640px) {
+				.two-col,
+				.three-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			/* ── HEADER ── */
+			.course-header {
+				border-bottom: 1px solid var(--vs-border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--vs-muted);
+				font-weight: 400;
+			}
+
+			/* ── HERO ── */
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--vs-border);
+				position: relative;
+				overflow: hidden;
+			}
+			/* Scanline texture on hero */
+			.module-hero::before {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: repeating-linear-gradient(
+					0deg,
+					transparent,
+					transparent 2px,
+					rgba(74, 175, 255, 0.015) 2px,
+					rgba(74, 175, 255, 0.015) 4px
+				);
+				pointer-events: none;
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--vs-border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--vs-blue);
+				border: 1px solid var(--vs-blue);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 600px;
+			}
+			.module-title span {
+				color: var(--vs-blue);
+			}
+
+			/* ── TOC ── */
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--vs-border);
+				background: var(--vs-surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--vs-muted);
+				text-decoration: none;
+				border: 1px solid var(--vs-border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--vs-blue);
+				border-color: var(--vs-blue);
+			}
+
+			/* ── OBJECTIVES ── */
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--vs-blue);
+				background: var(--vs-surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-blue);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--vs-amber);
+			}
+
+			/* ── SECTIONS ── */
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--vs-amber);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			/* ── TYPOGRAPHY ── */
+			p {
+				margin-bottom: 1.2rem;
+				color: var(--vs-text);
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--vs-blue);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+
+			/* ── CODE ── */
+			pre {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1.5rem;
+				overflow-x: auto;
+				margin: 1.5rem 0;
+				font-size: 13px;
+				line-height: 1.6;
+				position: relative;
+			}
+			pre .lang-tag {
+				position: absolute;
+				top: 8px;
+				right: 12px;
+				font-size: 10px;
+				color: var(--vs-muted);
+				letter-spacing: 0.1em;
+			}
+			code {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--vs-mint);
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.kw {
+				color: #ff79c6;
+			}
+			.fn {
+				color: #8be9fd;
+			}
+			.str {
+				color: #f1fa8c;
+			}
+			.cm {
+				color: #6272a4;
+			}
+			.num {
+				color: #bd93f9;
+			}
+
+			/* ── CALLOUTS ── */
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+				font-size: 13px;
+			}
+			.callout.warn {
+				border-color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
+			}
+			.callout.red {
+				border-color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
+			}
+			.callout.green {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--vs-blue);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.warn .callout-label {
+				color: var(--vs-amber);
+			}
+			.callout.red .callout-label {
+				color: var(--vs-red);
+			}
+			.callout.green .callout-label {
+				color: var(--vs-mint);
+			}
+
+			/* ── DEMO BOXES ── */
+			.demo-box {
+				background: var(--vs-surface);
+				border: 1px solid var(--vs-border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--vs-border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header > span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.interactive {
+				color: var(--vs-blue);
+				border-color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+			}
+			.demo-badge.animated {
+				color: var(--vs-amber);
+				border-color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			/* ── CONTROLS ── */
+			.btn {
+				background: transparent;
+				border: 1px solid var(--vs-border2);
+				color: var(--vs-text);
+				padding: 6px 16px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+			}
+			.btn.active {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+			}
+			.btn.amber:hover {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+			}
+			.btn.amber.active {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.btn.red:hover {
+				border-color: var(--vs-red);
+				color: var(--vs-red);
+			}
+			.btn.red.active {
+				border-color: var(--vs-red);
+				color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+			}
+			.btn.mint:hover {
+				border-color: var(--vs-mint);
+				color: var(--vs-mint);
+			}
+			.btn.mint.active {
+				border-color: var(--vs-mint);
+				color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+			}
+			.btn-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-bottom: 1.25rem;
+			}
+
+			/* ── TABLE ── */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--vs-raised);
+				color: var(--vs-blue);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--vs-border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--vs-border);
+				color: var(--vs-text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--vs-raised) 50%, transparent);
+			}
+
+			/* ── DIVIDER ── */
+			.divider {
+				border: none;
+				border-top: 1px solid var(--vs-border);
+				margin: 3rem 0;
+			}
+
+			/* ── STATS PANEL ── */
+			.stats-panel {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1rem;
+				font-size: 12px;
+			}
+			.stat-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.2rem 0;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.stat-row:last-child {
+				border-bottom: none;
+			}
+			.stat-label {
+				color: var(--vs-muted);
+			}
+			.stat-val {
+				color: var(--vs-blue);
+				font-weight: 600;
+			}
+
+			/* ── PROGRESS BAR ── */
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--vs-border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--vs-blue);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			/* ── QUIZ ── */
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--vs-border);
+				background: var(--vs-surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.5rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--vs-muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--vs-amber);
+				margin-right: 0.5rem;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--vs-border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--vs-border2);
+				background: var(--vs-raised);
+			}
+			.option.correct {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+				color: var(--vs-mint);
+			}
+			.option.wrong {
+				border-color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+				color: var(--vs-red);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--vs-muted);
+			}
+			.feedback.ok {
+				color: var(--vs-mint);
+			}
+			.feedback.bad {
+				color: var(--vs-red);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--vs-border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--vs-blue);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--vs-muted);
+				margin-top: 0.25rem;
+			}
+
+			/* ── NEXT MODULE NAV ── */
+			.nav-links {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 4rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+			.prev-link {
+				font-size: 12px;
+				color: var(--vs-muted);
+				text-decoration: none;
+				border: 1px solid var(--vs-border);
+				padding: 0.75rem 1.25rem;
+				transition: all 0.2s;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			.prev-link:hover {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+			}
+			.next-module {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--vs-border);
+				text-decoration: none;
+				transition: all 0.2s;
+				background: var(--vs-surface);
+				flex: 1;
+			}
+			.next-module:hover {
+				border-color: var(--vs-amber);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--vs-amber);
+			}
+
+			/* ── MODULE-SPECIFIC: ENGAGEMENT CURVE CANVAS ── */
+			#engagement-canvas {
+				width: 100%;
+				height: 200px;
+				border: 1px solid var(--vs-border);
+				display: block;
+				cursor: default;
+			}
+
+			/* ── MODULE-SPECIFIC: COMPARATOR ── */
+			.compare-panels {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1px;
+				background: var(--vs-border);
+				margin: 1rem 0;
+			}
+			@media (max-width: 640px) {
+				.compare-panels {
+					grid-template-columns: 1fr;
+				}
+			}
+			.compare-panel {
+				background: var(--vs-raised);
+				padding: 1.25rem;
+			}
+			.compare-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				margin-bottom: 1rem;
+				font-weight: 600;
+				padding-bottom: 0.5rem;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.compare-label.bad {
+				color: var(--vs-red);
+				border-color: color-mix(in srgb, var(--vs-red) 30%, transparent);
+			}
+			.compare-label.good {
+				color: var(--vs-mint);
+				border-color: color-mix(in srgb, var(--vs-mint) 30%, transparent);
+			}
+			.compare-item {
+				font-size: 12px;
+				padding: 0.4rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+				color: var(--vs-text);
+				border-bottom: 1px solid var(--vs-border);
+				line-height: 1.6;
+			}
+			.compare-item:last-child {
+				border-bottom: none;
+			}
+			.compare-item::before {
+				position: absolute;
+				left: 0;
+				font-size: 10px;
+			}
+			.compare-item.bad::before {
+				content: '✕';
+				color: var(--vs-red);
+			}
+			.compare-item.good::before {
+				content: '✓';
+				color: var(--vs-mint);
+			}
+
+			/* ── MODULE-SPECIFIC: STRUCTURE BLOCKS ── */
+			.structure-row {
+				display: flex;
+				align-items: stretch;
+				gap: 0;
+				margin: 1.5rem 0;
+				overflow-x: auto;
+			}
+			.structure-block {
+				flex: 1;
+				min-width: 80px;
+				padding: 0.75rem 0.5rem;
+				border: 1px solid var(--vs-border);
+				border-right: none;
+				text-align: center;
+				font-size: 10px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				cursor: pointer;
+				transition: all 0.2s;
+				position: relative;
+			}
+			.structure-block:last-child {
+				border-right: 1px solid var(--vs-border);
+			}
+			.structure-block.active-block {
+				background: color-mix(in srgb, var(--vs-blue) 10%, var(--vs-surface));
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+				z-index: 1;
+			}
+			.structure-block.active-block + .structure-block {
+				border-left-color: var(--vs-blue);
+			}
+			.structure-block .block-icon {
+				font-size: 20px;
+				display: block;
+				margin-bottom: 0.3rem;
+			}
+			.structure-detail {
+				padding: 1rem 1.25rem;
+				border: 1px solid var(--vs-border2);
+				border-top: none;
+				background: color-mix(in srgb, var(--vs-blue) 4%, var(--vs-surface));
+				font-size: 12px;
+				color: var(--vs-text);
+				min-height: 56px;
+			}
+			.structure-detail strong {
+				color: var(--vs-blue);
+			}
+
+			/* ── MODULE-SPECIFIC: COGNITIVE METER ── */
+			.cog-meter-wrap {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 1rem;
+				margin: 1rem 0;
+			}
+			@media (max-width: 600px) {
+				.cog-meter-wrap {
+					grid-template-columns: 1fr;
+				}
+			}
+			.cog-meter {
+				border: 1px solid var(--vs-border);
+				padding: 1rem;
+				text-align: center;
+				background: var(--vs-raised);
+				cursor: pointer;
+				transition: border-color 0.2s;
+			}
+			.cog-meter.selected {
+				border-color: var(--vs-blue);
+			}
+			.cog-meter-label {
+				font-size: 10px;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				margin-bottom: 0.75rem;
+			}
+			.cog-bar-wrap {
+				height: 80px;
+				display: flex;
+				align-items: flex-end;
+				gap: 3px;
+				margin-bottom: 0.5rem;
+				justify-content: center;
+			}
+			.cog-bar {
+				width: 8px;
+				border-radius: 1px 1px 0 0;
+				transition: height 0.4s ease;
+			}
+			.cog-score {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+			}
+			.cog-desc {
+				font-size: 11px;
+				color: var(--vs-muted);
+				margin-top: 0.3rem;
+				line-height: 1.5;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<!-- COURSE HEADER -->
+			<header class="course-header">
+				<div>
+					<div class="course-label">Visual Storytelling for Faceless Video</div>
+					<div class="course-title">Narrative, Pacing & Visual Communication</div>
+				</div>
+				<div style="font-size: 11px; color: var(--vs-muted); text-align: right">
+					Module 01 of 10
+				</div>
+			</header>
+
+			<!-- HERO -->
+			<div class="module-hero">
+				<div class="module-number">01</div>
+				<div class="module-tag">Module 01 · Theory + Practice</div>
+				<h1 class="module-title">The Foundations of<br /><span>Visual Storytelling</span></h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<!-- TOC -->
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#why-faceless">Why Faceless Works</a></li>
+					<li><a href="#engagement">The Engagement Problem</a></li>
+					<li><a href="#story-structure">Story Structure</a></li>
+					<li><a href="#information-vs-meaning">Information vs Meaning</a></li>
+					<li><a href="#cognitive">Cognitive Load</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+				</ul>
+			</nav>
+
+			<!-- OBJECTIVES -->
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Understand what makes faceless content engaging without on-camera presence</li>
+					<li>Identify structural weaknesses in static or low-engagement videos</li>
+					<li>Learn how the viewer's cognitive process shapes every production decision</li>
+					<li>Distinguish between presenting information and communicating meaning</li>
+				</ul>
+			</section>
+
+			<!-- SECTION 1: WHY FACELESS WORKS -->
+			<section id="why-faceless" class="section">
+				<div class="section-header">
+					<span class="section-num">01.01</span>
+					<h2 class="section-title">Why Faceless Content Works</h2>
+				</div>
+
+				<p>
+					Most people assume video requires a face. The assumption has historical weight —
+					television normalized the talking head, news anchors became trustworthy through eye
+					contact, and presenters learned to use body language as a communication layer. But
+					presence is not the same as engagement.
+				</p>
+
+				<p>
+					When a face is present, a significant portion of viewer attention is devoted to reading
+					that face: interpreting micro-expressions, tracking eye movement, assessing confidence and
+					credibility. This is involuntary — it is how humans are wired. The consequence is that
+					<strong>a presenter competes with their own content</strong> for the viewer's cognitive
+					attention.
+				</p>
+
+				<p>
+					Faceless video removes that competition entirely. When there is no face to read, the
+					viewer's full attention routes to the content itself: the visuals, the words, the
+					structure, the pacing. This is a significant advantage — provided you have learned to
+					engineer those elements deliberately.
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">Core Premise</div>
+					Faceless content does not lack a presence. It has replaced a physical presence with a
+					<em>structural presence</em> — the intentional arrangement of text, image, pacing, and
+					rhythm to communicate meaning without relying on personality.
+				</div>
+
+				<p>
+					The channels that consistently outperform expectations with faceless formats share one
+					trait: they treat every visual choice as a communication decision, not a decorative one.
+					Text appears to emphasize, not to fill space. B-roll reinforces the narration's claim, not
+					merely illustrates it. Pacing changes in response to the information's density.
+				</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Video Type</th>
+							<th>Viewer Attention Directed At</th>
+							<th>Primary Risk</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Talking Head</td>
+							<td>Face + Content (split)</td>
+							<td>Personality mismatch / camera anxiety</td>
+						</tr>
+						<tr>
+							<td>Faceless / Unstructured</td>
+							<td>Content (unfocused)</td>
+							<td>Cognitive drift, no engagement anchor</td>
+						</tr>
+						<tr>
+							<td>Faceless / Structured</td>
+							<td>Content (fully directed)</td>
+							<td>Requires deliberate craft at every layer</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- SECTION 2: THE ENGAGEMENT PROBLEM -->
+			<section id="engagement" class="section">
+				<div class="section-header">
+					<span class="section-num">01.02</span>
+					<h2 class="section-title">The Engagement Problem</h2>
+				</div>
+
+				<p>
+					Viewer attention is not a constant. It rises and falls in response to specific triggers:
+					novelty, unresolved tension, pattern breaks, emotional stakes, and forward momentum. When
+					none of these triggers are present, attention drifts — often permanently. The viewer does
+					not consciously decide to stop watching; they simply stop.
+				</p>
+
+				<p>
+					The challenge for faceless video is that the default state is <em>passive</em>. A face
+					creates micro-engagements involuntarily. Static text and generic stock footage do not.
+					Without deliberate intervention, viewer attention follows a predictable decay curve.
+				</p>
+
+				<!-- DEMO: Engagement Curve Visualizer -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Engagement Curve Visualizer</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1rem">
+							Select a video approach to see how viewer attention typically evolves over a 4-minute
+							video. The curves are generalized models based on common patterns in analytics data.
+						</p>
+						<div class="btn-row">
+							<button class="btn active" onclick="setEngagementMode('faceless-info')" id="btn-fi">
+								Faceless / Info Dump
+							</button>
+							<button class="btn" onclick="setEngagementMode('talking-head')" id="btn-th">
+								Talking Head
+							</button>
+							<button class="btn mint" onclick="setEngagementMode('faceless-story')" id="btn-fs">
+								Faceless / Story-Driven
+							</button>
+						</div>
+						<canvas id="engagement-canvas"></canvas>
+						<div
+							id="engagement-desc"
+							style="font-size: 12px; color: var(--vs-muted); margin-top: 1rem; min-height: 2.4em"
+						></div>
+					</div>
+				</div>
+
+				<p>
+					Understanding the engagement curve shapes every production decision. The question is never
+					"what information should I include?" — it is "at what point in the viewer's attention
+					curve am I delivering this, and what mechanism am I using to sustain their attention
+					through it?"
+				</p>
+
+				<div class="callout warn">
+					<div class="callout-label">Common Mistake</div>
+					Front-loading information. Most new creators deliver the most complex or dense content at
+					the beginning — when they feel the viewer needs it — without first establishing stakes or
+					creating a reason to care. The viewer has not yet committed.
+				</div>
+			</section>
+
+			<!-- SECTION 3: STORY STRUCTURE -->
+			<section id="story-structure" class="section">
+				<div class="section-header">
+					<span class="section-num">01.03</span>
+					<h2 class="section-title">Story Structure for Informational Content</h2>
+				</div>
+
+				<p>
+					Story structure is not exclusive to fiction. Any sequence of information that has a
+					beginning, a middle, and an end — any content that creates tension and then resolves it —
+					is applying story structure. The mechanics are the same whether you are scripting a
+					thriller or explaining how compound interest works.
+				</p>
+
+				<p>
+					The simplest framework for faceless informational content is:
+					<strong>establish a problem → build stakes → resolve with clarity</strong>. This creates a
+					forward-moving logic that the viewer can follow without conscious effort. They are not
+					tracking bullet points — they are following a narrative.
+				</p>
+
+				<!-- DEMO: Structure Block Explorer -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Narrative Structure Explorer</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Click each stage to understand its function in a story-driven informational video.
+						</p>
+
+						<div class="structure-row" id="structure-blocks">
+							<div class="structure-block active-block" onclick="selectBlock(0)">
+								<span class="block-icon">🎯</span>Hook
+							</div>
+							<div class="structure-block" onclick="selectBlock(1)">
+								<span class="block-icon">❓</span>Problem
+							</div>
+							<div class="structure-block" onclick="selectBlock(2)">
+								<span class="block-icon">📈</span>Stakes
+							</div>
+							<div class="structure-block" onclick="selectBlock(3)">
+								<span class="block-icon">🔑</span>Core Idea
+							</div>
+							<div class="structure-block" onclick="selectBlock(4)">
+								<span class="block-icon">🔧</span>Evidence
+							</div>
+							<div class="structure-block" onclick="selectBlock(5)">
+								<span class="block-icon">✅</span>Resolution
+							</div>
+							<div class="structure-block" onclick="selectBlock(6)">
+								<span class="block-icon">💡</span>Insight
+							</div>
+						</div>
+						<div class="structure-detail" id="structure-detail">
+							<strong>Hook</strong> — The first 5–15 seconds. Your only goal here is to establish
+							that something worthwhile is coming. Use a surprising claim, an unresolved question,
+							or a striking visual. Do not introduce yourself. Do not explain what the video is
+							about.
+						</div>
+
+						<div
+							style="
+								margin-top: 1.5rem;
+								display: grid;
+								grid-template-columns: 1fr 1fr 1fr;
+								gap: 1rem;
+								font-size: 11px;
+							"
+						>
+							<div
+								style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+							>
+								<div
+									style="
+										color: var(--vs-amber);
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										font-size: 9px;
+										margin-bottom: 0.5rem;
+									"
+								>
+									Framework A
+								</div>
+								<div style="color: var(--vs-text)">Problem → Solution</div>
+								<div style="color: var(--vs-muted); margin-top: 0.25rem; font-size: 10px">
+									Best for: how-to, explainers, tutorials
+								</div>
+							</div>
+							<div
+								style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+							>
+								<div
+									style="
+										color: var(--vs-blue);
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										font-size: 9px;
+										margin-bottom: 0.5rem;
+									"
+								>
+									Framework B
+								</div>
+								<div style="color: var(--vs-text)">Journey / Before→After</div>
+								<div style="color: var(--vs-muted); margin-top: 0.25rem; font-size: 10px">
+									Best for: case studies, personal growth
+								</div>
+							</div>
+							<div
+								style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+							>
+								<div
+									style="
+										color: var(--vs-mint);
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										font-size: 9px;
+										margin-bottom: 0.5rem;
+									"
+								>
+									Framework C
+								</div>
+								<div style="color: var(--vs-text)">Layered Reveal</div>
+								<div style="color: var(--vs-muted); margin-top: 0.25rem; font-size: 10px">
+									Best for: analysis, deep dives, essays
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<p>
+					Notice that none of these frameworks begin with "In this video I will show you." That
+					phrase signals to the viewer that you are about to deliver information at them.
+					Story-driven content begins in the middle of something — a problem already in motion, a
+					question already alive.
+				</p>
+			</section>
+
+			<!-- SECTION 4: INFORMATION VS MEANING -->
+			<section id="information-vs-meaning" class="section">
+				<div class="section-header">
+					<span class="section-num">01.04</span>
+					<h2 class="section-title">Information vs. Communicating Meaning</h2>
+				</div>
+
+				<p>
+					This is the central distinction of this course. <em>Information</em> is raw data — facts,
+					statistics, steps, definitions. <em>Meaning</em> is what a viewer understands about why
+					that information matters, and how it connects to something they already care about.
+				</p>
+
+				<p>
+					A video can be entirely accurate and still fail to communicate. If the viewer cannot
+					connect what they are watching to a prior understanding or a felt need, the information
+					passes through without anchoring. They finish the video knowing they watched something,
+					but unable to retrieve or apply what they saw.
+				</p>
+
+				<div class="compare-panels">
+					<div class="compare-panel">
+						<div class="compare-label bad">✕ Showing Information</div>
+						<div class="compare-item bad">Opens with definition of the topic</div>
+						<div class="compare-item bad">Lists features or steps in sequence</div>
+						<div class="compare-item bad">Uses generic b-roll that illustrates literally</div>
+						<div class="compare-item bad">Narration and visuals say the same thing</div>
+						<div class="compare-item bad">Ends when the list runs out</div>
+						<div class="compare-item bad">Viewer can recall the format, not the insight</div>
+					</div>
+					<div class="compare-panel">
+						<div class="compare-label good">✓ Communicating Meaning</div>
+						<div class="compare-item good">Opens with a consequence or an unresolved question</div>
+						<div class="compare-item good">
+							Each point earns its place by raising or resolving tension
+						</div>
+						<div class="compare-item good">Visuals add a layer the narration does not repeat</div>
+						<div class="compare-item good">Narration and visuals complement, not duplicate</div>
+						<div class="compare-item good">
+							Ends when the insight lands, not when the script ends
+						</div>
+						<div class="compare-item good">Viewer can explain why it matters</div>
+					</div>
+				</div>
+
+				<p>
+					The key test for any segment of your video: can a viewer who just watched this section
+					explain it to someone else? Not repeat it — explain it. If they can only repeat the words
+					you used, you have presented information. If they can translate it into their own language
+					and connect it to their own context, you have communicated meaning.
+				</p>
+
+				<div class="callout green">
+					<div class="callout-label">The Meaning Test</div>
+					After each section of your script, ask: <em>So what?</em> If you cannot answer that
+					question clearly and quickly, the section has not earned its place in the video yet.
+				</div>
+			</section>
+
+			<!-- SECTION 5: COGNITIVE LOAD -->
+			<section id="cognitive" class="section">
+				<div class="section-header">
+					<span class="section-num">01.05</span>
+					<h2 class="section-title">The Viewer's Cognitive Process</h2>
+				</div>
+
+				<p>
+					Every viewer arrives with a finite cognitive budget. Working memory is limited — the
+					research consensus places the number of distinct items a viewer can hold simultaneously at
+					around four. Go above that threshold, and information starts dropping out before it has
+					been processed.
+				</p>
+
+				<p>
+					Cognitive load comes from multiple sources at once: the narration, the on-screen text, the
+					visual complexity, the pacing, any music or sound design. In a poorly constructed video,
+					all of these sources compete. In a well-constructed one, they reinforce a single signal —
+					each channel adds a layer to the same message rather than introducing a new one.
+				</p>
+
+				<!-- DEMO: Cognitive Load Comparator -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Cognitive Load Comparator</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Click a presentation style to see how cognitive load is distributed across channels.
+							Lower total load = more capacity for the viewer to actually process meaning.
+						</p>
+						<div class="cog-meter-wrap" id="cog-meters">
+							<div class="cog-meter selected" onclick="selectCogMode(0)" id="cog-0">
+								<div class="cog-meter-label">Information Dump</div>
+								<div class="cog-bar-wrap" id="cog-bars-0"></div>
+								<div class="cog-score" id="cog-score-0" style="color: var(--vs-red)">—</div>
+								<div class="cog-desc" id="cog-desc-0"></div>
+							</div>
+							<div class="cog-meter" onclick="selectCogMode(1)" id="cog-1">
+								<div class="cog-meter-label">Mixed / Unplanned</div>
+								<div class="cog-bar-wrap" id="cog-bars-1"></div>
+								<div class="cog-score" id="cog-score-1" style="color: var(--vs-amber)">—</div>
+								<div class="cog-desc" id="cog-desc-1"></div>
+							</div>
+							<div class="cog-meter" onclick="selectCogMode(2)" id="cog-2">
+								<div class="cog-meter-label">Story-Driven</div>
+								<div class="cog-bar-wrap" id="cog-bars-2"></div>
+								<div class="cog-score" id="cog-score-2" style="color: var(--vs-mint)">—</div>
+								<div class="cog-desc" id="cog-desc-2"></div>
+							</div>
+						</div>
+						<div style="display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap">
+							<div
+								style="
+									display: flex;
+									align-items: center;
+									gap: 0.5rem;
+									font-size: 11px;
+									color: var(--vs-muted);
+								"
+							>
+								<div
+									style="width: 10px; height: 10px; background: var(--vs-blue); border-radius: 1px"
+								></div>
+								Narration
+							</div>
+							<div
+								style="
+									display: flex;
+									align-items: center;
+									gap: 0.5rem;
+									font-size: 11px;
+									color: var(--vs-muted);
+								"
+							>
+								<div
+									style="width: 10px; height: 10px; background: var(--vs-amber); border-radius: 1px"
+								></div>
+								On-screen Text
+							</div>
+							<div
+								style="
+									display: flex;
+									align-items: center;
+									gap: 0.5rem;
+									font-size: 11px;
+									color: var(--vs-muted);
+								"
+							>
+								<div
+									style="width: 10px; height: 10px; background: var(--vs-red); border-radius: 1px"
+								></div>
+								Visuals
+							</div>
+							<div
+								style="
+									display: flex;
+									align-items: center;
+									gap: 0.5rem;
+									font-size: 11px;
+									color: var(--vs-muted);
+								"
+							>
+								<div
+									style="width: 10px; height: 10px; background: var(--vs-mint); border-radius: 1px"
+								></div>
+								Audio Design
+							</div>
+						</div>
+						<div
+							id="cog-detail"
+							style="
+								font-size: 12px;
+								color: var(--vs-text);
+								margin-top: 1.25rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-blue);
+								background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+							"
+						></div>
+					</div>
+				</div>
+
+				<p>
+					The production implication: every channel in your video — narration, text, visuals, audio
+					— should be doing a distinct job, and no two channels should be doing the exact same job
+					simultaneously. If your narration says "the graph shows an increase," and your visual
+					shows a graph increasing, and your on-screen text reads "revenue up 30%," you have used
+					three channels to say one thing. The redundancy feels like clarity but generates
+					unnecessary load.
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">The Channel Rule</div>
+					Each channel should add a layer the other channels do not provide. Narration can carry the
+					logic. Visuals can carry the emotion or the scale. Text can carry the key term or data
+					point. Audio can carry the pace. None of them should carry all of it.
+				</div>
+			</section>
+
+			<!-- SECTION 6: PRACTICAL WORK -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">01.06</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<p>
+					These exercises build the analytical and structural habits you will use throughout the
+					rest of the course. Neither requires video production software.
+				</p>
+
+				<div class="callout warn">
+					<div class="callout-label">Exercise A · Cognitive Drift Analysis</div>
+					Find a faceless video between 4 and 8 minutes long on any topic. Watch it and mark — on a
+					timeline or a piece of paper — the exact moments where your attention drifts or you feel
+					the urge to skip ahead. After watching, categorize each drift: Was it caused by pacing?
+					Redundancy? No stakes? No forward momentum? List at least three specific moments with your
+					diagnosis.
+				</div>
+
+				<div class="callout">
+					<div class="callout-label">Exercise B · Information vs. Meaning Rewrite</div>
+					Take any factual topic you know well and write two versions of the opening 60 seconds of a
+					script. The first version should present information — define the topic, list what you
+					will cover. The second version should open in the middle of a problem or consequence and
+					establish stakes before introducing any information. Read both aloud and note where one
+					version loses you and where the other keeps you committed.
+				</div>
+
+				<div style="margin-top: 2rem">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.15em;
+							text-transform: uppercase;
+							color: var(--vs-muted);
+							margin-bottom: 1rem;
+						"
+					>
+						Key terms from this module
+					</div>
+					<div class="two-col">
+						<div class="stats-panel">
+							<div class="stat-row">
+								<span class="stat-label">Cognitive drift</span
+								><span class="stat-val">attention loss event</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Engagement anchor</span
+								><span class="stat-val">retention mechanism</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Channel redundancy</span
+								><span class="stat-val">load without gain</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Narrative momentum</span
+								><span class="stat-val">forward-pull structure</span>
+							</div>
+						</div>
+						<div class="stats-panel">
+							<div class="stat-row">
+								<span class="stat-label">Structural presence</span
+								><span class="stat-val">replaces physical self</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Working memory limit</span
+								><span class="stat-val">~4 concurrent items</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">The Meaning Test</span
+								><span class="stat-val">"So what?" check</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Layered reveal</span
+								><span class="stat-val">progressive disclosure</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<!-- QUIZ -->
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module 01 — Check Your Understanding</div>
+				<div class="quiz-sub">4 questions · No time limit · Select the best answer for each</div>
+
+				<!-- Q1 -->
+				<div class="question" id="q1">
+					<div class="q-text">
+						<span class="q-num">01.</span>Why does faceless video have a structural advantage over
+						talking-head formats in terms of viewer attention?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q1', this, false)">
+							Viewers find faceless videos more aesthetically appealing and watch longer as a result
+						</div>
+						<div class="option" onclick="answer('q1', this, true)">
+							Without a face to read, the viewer's full cognitive attention routes to the content
+							rather than being split between face and information
+						</div>
+						<div class="option" onclick="answer('q1', this, false)">
+							Faceless videos are shorter on average, which reduces viewer fatigue
+						</div>
+						<div class="option" onclick="answer('q1', this, false)">
+							Algorithms favor faceless content and surface it to more engaged audiences
+						</div>
+					</div>
+					<div class="feedback" id="fb-q1"></div>
+				</div>
+
+				<!-- Q2 -->
+				<div class="question" id="q2">
+					<div class="q-text">
+						<span class="q-num">02.</span>A creator opens their explainer video with: "In this
+						video, I'll explain the three main causes of inflation and how they affect your wallet."
+						What is the primary structural problem with this opening?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q2', this, false)">
+							The topic is too complex for a single video
+						</div>
+						<div class="option" onclick="answer('q2', this, false)">
+							The mention of three causes creates too much cognitive load upfront
+						</div>
+						<div class="option" onclick="answer('q2', this, true)">
+							It signals information delivery rather than establishing stakes or creating a reason
+							to care before the viewer has committed
+						</div>
+						<div class="option" onclick="answer('q2', this, false)">
+							It does not include a call to action at the beginning
+						</div>
+					</div>
+					<div class="feedback" id="fb-q2"></div>
+				</div>
+
+				<!-- Q3 -->
+				<div class="question" id="q3">
+					<div class="q-text">
+						<span class="q-num">03.</span>Which of the following best describes the "channel rule"
+						for managing cognitive load?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q3', this, false)">
+							All channels — narration, text, visuals, audio — should reinforce the same point
+							simultaneously for maximum retention
+						</div>
+						<div class="option" onclick="answer('q3', this, true)">
+							Each channel should contribute a distinct layer that the other channels do not
+							provide, avoiding redundancy
+						</div>
+						<div class="option" onclick="answer('q3', this, false)">
+							Limit each video to no more than two active channels at any moment
+						</div>
+						<div class="option" onclick="answer('q3', this, false)">
+							Audio should always be the primary channel, with visuals and text as optional
+							supplements
+						</div>
+					</div>
+					<div class="feedback" id="fb-q3"></div>
+				</div>
+
+				<!-- Q4 -->
+				<div class="question" id="q4">
+					<div class="q-text">
+						<span class="q-num">04.</span>After watching a section of a video, a viewer can repeat
+						the exact words the narrator used but cannot explain the concept in their own words.
+						This is a symptom of:
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q4', this, false)">
+							Successful communication — repetition is the first stage of learning
+						</div>
+						<div class="option" onclick="answer('q4', this, false)">
+							Poor audio quality preventing proper comprehension
+						</div>
+						<div class="option" onclick="answer('q4', this, false)">
+							Excessive cognitive load from too many visual channels
+						</div>
+						<div class="option" onclick="answer('q4', this, true)">
+							Information was presented without communicating meaning — the content did not anchor
+							to the viewer's existing understanding
+						</div>
+					</div>
+					<div class="feedback" id="fb-q4"></div>
+				</div>
+
+				<!-- SCORE -->
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-display">—</div>
+					<div class="score-label">questions correct out of 4</div>
+				</div>
+			</section>
+
+			<!-- NAV -->
+			<div class="nav-links">
+				<span></span>
+				<a href="./02" class="next-module">
+					<div>
+						<div class="next-label">Next Module</div>
+						<div class="next-title">Sequencing, Pacing & Viewer Retention</div>
+					</div>
+					<div class="next-arrow">→</div>
+				</a>
+			</div>
+		</div>
+		<!-- /page-wrapper -->
+
+		<script>
+			/* ─── READING PROGRESS ─── */
+			window.addEventListener('scroll', () => {
+				const el = document.getElementById('reading-progress');
+				if (!el) return;
+				const docH = document.documentElement.scrollHeight - window.innerHeight;
+				el.style.width = (window.scrollY / docH) * 100 + '%';
+			});
+
+			/* ─── ENGAGEMENT CURVE ─── */
+			const engagementData = {
+				'faceless-info': {
+					points: [95, 88, 76, 64, 52, 44, 38, 30, 26, 22, 20, 18],
+					color: '#ff4f68',
+					desc: 'Information Dump: High initial curiosity collapses quickly as no narrative tension is established. Without stakes or forward momentum, viewers begin dropping at the first sign of density. Retention at the midpoint averages under 40%.'
+				},
+				'talking-head': {
+					points: [92, 85, 80, 74, 68, 62, 55, 50, 46, 42, 40, 38],
+					color: '#f5b94a',
+					desc: 'Talking Head: The face creates passive engagement and personalizes the experience, producing a more gradual decay. However, the ceiling is lower because viewer attention is split between face-reading and content. Strong personality compensates; weak personality accelerates drop-off.'
+				},
+				'faceless-story': {
+					points: [88, 84, 82, 86, 82, 80, 78, 76, 74, 72, 70, 68],
+					color: '#3dd9a4',
+					desc: 'Faceless / Story-Driven: An initial dip is normal as the viewer establishes trust without a face. Once narrative momentum is established — typically by the 15–30% mark — attention stabilizes. Each structural beat re-engages. Sustained retention well above 60% is consistently achievable.'
+				}
+			};
+
+			let currentMode = 'faceless-info';
+
+			function setEngagementMode(mode) {
+				currentMode = mode;
+				['fi', 'th', 'fs'].forEach((id) =>
+					document.getElementById('btn-' + id).classList.remove('active', 'mint')
+				);
+				const map = { 'faceless-info': 'fi', 'talking-head': 'th', 'faceless-story': 'fs' };
+				const btn = document.getElementById('btn-' + map[mode]);
+				btn.classList.add('active');
+				if (mode === 'faceless-story') btn.classList.add('mint');
+				drawEngagementCurve();
+			}
+
+			function drawEngagementCurve() {
+				const canvas = document.getElementById('engagement-canvas');
+				const data = engagementData[currentMode];
+				const dpr = window.devicePixelRatio || 1;
+				const w = canvas.offsetWidth;
+				const h = canvas.offsetHeight;
+				canvas.width = w * dpr;
+				canvas.height = h * dpr;
+				const ctx = canvas.getContext('2d');
+				ctx.scale(dpr, dpr);
+
+				const pad = { left: 48, right: 20, top: 16, bottom: 32 };
+				const chartW = w - pad.left - pad.right;
+				const chartH = h - pad.top - pad.bottom;
+
+				ctx.clearRect(0, 0, w, h);
+
+				// Grid
+				ctx.strokeStyle = '#14202e';
+				ctx.lineWidth = 1;
+				for (let i = 0; i <= 4; i++) {
+					const y = pad.top + (chartH / 4) * i;
+					ctx.beginPath();
+					ctx.moveTo(pad.left, y);
+					ctx.lineTo(w - pad.right, y);
+					ctx.stroke();
+					ctx.fillStyle = '#405068';
+					ctx.font = '9px IBM Plex Mono';
+					ctx.textAlign = 'right';
+					ctx.fillText(100 - i * 25 + '%', pad.left - 6, y + 3);
+				}
+
+				// X labels
+				ctx.fillStyle = '#405068';
+				ctx.font = '9px IBM Plex Mono';
+				ctx.textAlign = 'center';
+				const labels = ['0:00', '0:30', '1:00', '1:30', '2:00', '2:30', '3:00', '3:30', '4:00'];
+				labels.forEach((lbl, i) => {
+					const x = pad.left + (chartW / (labels.length - 1)) * i;
+					ctx.fillText(lbl, x, h - pad.bottom + 14);
+				});
+
+				const pts = data.points;
+				const xStep = chartW / (pts.length - 1);
+
+				// Fill
+				ctx.beginPath();
+				ctx.moveTo(pad.left, pad.top + chartH * (1 - pts[0] / 100));
+				pts.forEach((v, i) => {
+					if (i === 0) return;
+					const x0 = pad.left + xStep * (i - 1);
+					const x1 = pad.left + xStep * i;
+					const y0 = pad.top + chartH * (1 - pts[i - 1] / 100);
+					const y1 = pad.top + chartH * (1 - v / 100);
+					const cpx = (x0 + x1) / 2;
+					ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+				});
+				ctx.lineTo(w - pad.right, h - pad.bottom);
+				ctx.lineTo(pad.left, h - pad.bottom);
+				ctx.closePath();
+				const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+				grad.addColorStop(0, data.color + '30');
+				grad.addColorStop(1, data.color + '00');
+				ctx.fillStyle = grad;
+				ctx.fill();
+
+				// Line
+				ctx.beginPath();
+				ctx.moveTo(pad.left, pad.top + chartH * (1 - pts[0] / 100));
+				pts.forEach((v, i) => {
+					if (i === 0) return;
+					const x0 = pad.left + xStep * (i - 1);
+					const x1 = pad.left + xStep * i;
+					const y0 = pad.top + chartH * (1 - pts[i - 1] / 100);
+					const y1 = pad.top + chartH * (1 - v / 100);
+					const cpx = (x0 + x1) / 2;
+					ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+				});
+				ctx.strokeStyle = data.color;
+				ctx.lineWidth = 2;
+				ctx.stroke();
+
+				// Dots
+				pts.forEach((v, i) => {
+					const x = pad.left + xStep * i;
+					const y = pad.top + chartH * (1 - v / 100);
+					ctx.beginPath();
+					ctx.arc(x, y, 3, 0, Math.PI * 2);
+					ctx.fillStyle = data.color;
+					ctx.fill();
+				});
+
+				document.getElementById('engagement-desc').textContent = data.desc;
+			}
+
+			window.addEventListener('resize', drawEngagementCurve);
+			drawEngagementCurve();
+			// Set initial desc
+			document.getElementById('engagement-desc').textContent = engagementData['faceless-info'].desc;
+
+			/* ─── STRUCTURE BLOCKS ─── */
+			const blockDetails = [
+				'<strong>Hook</strong> — The first 5–15 seconds. Your only goal here is to establish that something worthwhile is coming. Use a surprising claim, an unresolved question, or a striking visual. Do not introduce yourself. Do not explain what the video is about.',
+				'<strong>Problem</strong> — Introduce the central tension or gap. What does the viewer not know, or not have, that this video will address? Make the problem feel real and proximate — not theoretical.',
+				'<strong>Stakes</strong> — Why does solving this problem matter? What is lost or gained? Stakes create investment. Without them, the information that follows has no weight.',
+				'<strong>Core Idea</strong> — The single insight or principle the entire video builds toward. Introduce it early enough to orient the viewer, late enough that they have earned it through the problem and stakes.',
+				'<strong>Evidence</strong> — The data, examples, case studies, or demonstrations that prove the core idea. This is where density lives — and where pacing must be managed most carefully.',
+				'<strong>Resolution</strong> — Close the loop opened by the problem. The viewer should feel the original tension release. This is not a summary — it is a payoff.',
+				'<strong>Insight</strong> — The takeaway that lives beyond the video. What can the viewer do, think, or see differently? This is the layer that makes a video shareable.'
+			];
+
+			function selectBlock(idx) {
+				document.querySelectorAll('.structure-block').forEach((b, i) => {
+					b.classList.toggle('active-block', i === idx);
+				});
+				document.getElementById('structure-detail').innerHTML = blockDetails[idx];
+			}
+
+			/* ─── COGNITIVE LOAD ─── */
+			const cogData = [
+				{
+					bars: [82, 85, 88, 70],
+					colors: ['#4aafff', '#f5b94a', '#ff4f68', '#3dd9a4'],
+					score: 'HIGH',
+					scoreColor: '#ff4f68',
+					desc: 'Overloaded',
+					detail:
+						'All channels fire simultaneously without coordination. The narration explains, the text repeats the narration, the visuals illustrate literally, and music fills every gap. The viewer processes volume, not meaning.'
+				},
+				{
+					bars: [65, 55, 70, 40],
+					colors: ['#4aafff', '#f5b94a', '#ff4f68', '#3dd9a4'],
+					score: 'MED',
+					scoreColor: '#f5b94a',
+					desc: 'Uncoordinated',
+					detail:
+						'Some channels are managed but no deliberate channel strategy exists. Occasional redundancy, occasional gaps. The viewer follows when lucky, drifts when not. Retention is inconsistent and hard to predict.'
+				},
+				{
+					bars: [55, 30, 45, 20],
+					colors: ['#4aafff', '#f5b94a', '#ff4f68', '#3dd9a4'],
+					score: 'LOW',
+					scoreColor: '#3dd9a4',
+					desc: 'Coordinated',
+					detail:
+						'Each channel carries a distinct layer. Narration carries the argument. Text highlights one key term or number. Visuals provide a conceptual analog, not a repetition. Audio marks transitions and pace without narrating. Total load is lower despite more happening — because nothing conflicts.'
+				}
+			];
+
+			function selectCogMode(idx) {
+				document
+					.querySelectorAll('.cog-meter')
+					.forEach((el, i) => el.classList.toggle('selected', i === idx));
+				renderCogMeters(idx);
+			}
+
+			function renderCogMeters(selected) {
+				cogData.forEach((data, i) => {
+					const barsEl = document.getElementById('cog-bars-' + i);
+					barsEl.innerHTML = '';
+					data.bars.forEach((h, j) => {
+						const bar = document.createElement('div');
+						bar.className = 'cog-bar';
+						bar.style.height = h + 'px';
+						bar.style.background = data.colors[j];
+						bar.style.opacity = i === selected ? '1' : '0.35';
+						barsEl.appendChild(bar);
+					});
+					document.getElementById('cog-score-' + i).textContent = data.score;
+					document.getElementById('cog-score-' + i).style.color = data.scoreColor;
+					document.getElementById('cog-desc-' + i).textContent = data.desc;
+				});
+				document.getElementById('cog-detail').innerHTML = cogData[selected].detail;
+				document.getElementById('cog-detail').style.borderColor = cogData[selected].scoreColor;
+				document.getElementById('cog-detail').style.background =
+					`color-mix(in srgb, ${cogData[selected].scoreColor} 5%, var(--vs-surface))`;
+			}
+
+			renderCogMeters(0);
+
+			/* ─── QUIZ ─── */
+			const scores = {};
+			function answer(qId, el, correct) {
+				if (scores[qId] !== undefined) return;
+				scores[qId] = correct ? 1 : 0;
+				const opts = el.parentElement.querySelectorAll('.option');
+				opts.forEach((o) => o.classList.add('disabled'));
+				const fb = document.getElementById('fb-' + qId);
+				if (correct) {
+					el.classList.add('correct');
+					fb.textContent = '✓ Correct.';
+					fb.className = 'feedback ok';
+				} else {
+					el.classList.add('wrong');
+					fb.className = 'feedback bad';
+					opts.forEach((o) => {
+						if (o.onclick.toString().includes('true')) o.classList.add('correct');
+					});
+					fb.textContent = '✗ Not quite — the correct answer is highlighted above.';
+				}
+				if (Object.keys(scores).length === 4) {
+					const total = Object.values(scores).reduce((a, b) => a + b, 0);
+					const sc = document.getElementById('quiz-score');
+					sc.style.display = 'block';
+					document.getElementById('score-display').textContent = total + ' / 4';
+					document.getElementById('score-display').style.color =
+						total >= 3 ? 'var(--vs-mint)' : total >= 2 ? 'var(--vs-amber)' : 'var(--vs-red)';
+				}
+			}
+		</script>
+	</body>
+</html>

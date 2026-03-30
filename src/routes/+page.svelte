@@ -5,7 +5,9 @@
 		animationCourse,
 		animationModules,
 		graphicDesignCourse,
-		graphicDesignModules
+		graphicDesignModules,
+		visualStorytellingCourse,
+		visualStorytellingModules
 	} from '$lib/data/courses';
 	const course = gameDevCourse;
 	const modules = gameDevModules;
@@ -118,6 +120,39 @@
 					>
 				</div>
 				<div class="card-cta gd-cta">Start Learning →</div>
+			</div>
+		</a>
+
+		<!-- Active: Visual Storytelling -->
+		<a href="/courses/visual-storytelling" class="course-card visual-storytelling">
+			<div class="card-accent-bar vs-bar"></div>
+			<div class="card-body">
+				<div class="card-eyebrow" style="color: var(--vs-blue)">
+					{visualStorytellingCourse.totalModules} Modules · Theory + Practice
+				</div>
+				<h2 class="card-title">{visualStorytellingCourse.title}</h2>
+				<p class="card-subtitle" style="color: var(--vs-blue)">
+					{visualStorytellingCourse.subtitle}
+				</p>
+				<p class="card-desc">
+					{visualStorytellingCourse.description}
+				</p>
+				<div class="card-meta">
+					<div class="meta-modules">
+						{#each visualStorytellingModules as mod}
+							<div
+								class="meta-dot vs"
+								class:active={mod.status === 'available'}
+								title={mod.title}
+							></div>
+						{/each}
+					</div>
+					<span class="meta-count"
+						>{visualStorytellingModules.filter((m) => m.status === 'available').length} / {visualStorytellingModules.length}
+						modules available</span
+					>
+				</div>
+				<div class="card-cta vs-cta">Start Learning →</div>
 			</div>
 		</a>
 
@@ -328,5 +363,22 @@
 	}
 	.course-card.graphic-design:not(.soon):hover .card-cta.gd-cta {
 		background: color-mix(in srgb, var(--gd-rose) 15%, transparent);
+	}
+
+	.card-accent-bar.vs-bar {
+		background: linear-gradient(90deg, var(--vs-blue), var(--vs-amber), var(--vs-red));
+	}
+	.course-card.visual-storytelling:not(.soon):hover {
+		border-color: var(--vs-blue);
+	}
+	.meta-dot.vs.active {
+		background: var(--vs-blue);
+	}
+	.card-cta.vs-cta {
+		color: var(--vs-blue);
+		border-color: var(--vs-blue);
+	}
+	.course-card.visual-storytelling:not(.soon):hover .card-cta.vs-cta {
+		background: color-mix(in srgb, var(--vs-blue) 15%, transparent);
 	}
 </style>

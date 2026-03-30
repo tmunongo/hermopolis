@@ -1,14 +1,25 @@
 <script>
-	/* eslint-disable @typescript-eslint/no-unused-vars */
+	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
 	import { onMount } from 'svelte';
 
+	let actions = {};
+
 	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
 		/* ═══════════════════════════════════════
    READING PROGRESS
 ═══════════════════════════════════════ */
-		window.addEventListener('scroll', () => {
+		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			const pct = el.scrollTop / (el.scrollHeight - el.clientHeight);
+			const pct = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
 			document.getElementById('reading-progress').style.width = pct * 100 + '%';
 		});
 
@@ -544,14 +555,14 @@
 			},
 			{ passive: false }
 		);
-		document.addEventListener('mousemove', (e) => {
+		_addDocListener('mousemove', (e) => {
 			if (!rotDragging) return;
 			const p = getRotPos(e);
 			rotSubject.x = Math.max(50, Math.min(RW - 50, p.x - rotDragOff.x));
 			rotSubject.y = Math.max(65, Math.min(RH - 65, p.y - rotDragOff.y));
 			drawRotFrame();
 		});
-		document.addEventListener(
+		_addDocListener(
 			'touchmove',
 			(e) => {
 				if (!rotDragging) return;
@@ -562,10 +573,10 @@
 			},
 			{ passive: false }
 		);
-		document.addEventListener('mouseup', () => {
+		_addDocListener('mouseup', () => {
 			rotDragging = false;
 		});
-		document.addEventListener('touchend', () => {
+		_addDocListener('touchend', () => {
 			rotDragging = false;
 		});
 
@@ -1049,42 +1060,42 @@
 			}
 		}
 
-		/* eslint-disable no-undef */
-		if (typeof getRotPos === 'function') window.getRotPos = getRotPos;
-		if (typeof setCcMode === 'function') window.setCcMode = setCcMode;
-		if (typeof drawFlatComposition === 'function') window.drawFlatComposition = drawFlatComposition;
-		if (typeof drawRotFrame === 'function') window.drawRotFrame = drawRotFrame;
-		if (typeof setCtPreset === 'function') window.setCtPreset = setCtPreset;
-		if (typeof drawContrast === 'function') window.drawContrast = drawContrast;
-		if (typeof handleQuiz === 'function') window.handleQuiz = handleQuiz;
-		if (typeof ctx_ep_drawWaypoint === 'function') window.ctx_ep_drawWaypoint = ctx_ep_drawWaypoint;
-		if (typeof setEpMode === 'function') window.setEpMode = setEpMode;
-		if (typeof getCtValues === 'function') window.getCtValues = getCtValues;
-		if (typeof drawCluttered === 'function') window.drawCluttered = drawCluttered;
-		if (typeof ctx_ep_drawSegment === 'function') window.ctx_ep_drawSegment = ctx_ep_drawSegment;
-		if (typeof resetEyePath === 'function') window.resetEyePath = resetEyePath;
-		if (typeof drawConflictComposition === 'function')
-			window.drawConflictComposition = drawConflictComposition;
-		if (typeof getRotPowerPoints === 'function') window.getRotPowerPoints = getRotPowerPoints;
-		if (typeof handleDiag === 'function') window.handleDiag = handleDiag;
-		if (typeof drawClean === 'function') window.drawClean = drawClean;
+		if (typeof drawBaseField === 'function') actions.drawBaseField = drawBaseField;
 		if (typeof drawStrongComposition === 'function')
-			window.drawStrongComposition = drawStrongComposition;
-		if (typeof tick === 'function') window.tick = tick;
-		if (typeof playEyePath === 'function') window.playEyePath = playEyePath;
-		if (typeof updateContrast === 'function') window.updateContrast = updateContrast;
-		if (typeof drawDiagComposition === 'function') window.drawDiagComposition = drawDiagComposition;
-		if (typeof drawEpFrame === 'function') window.drawEpFrame = drawEpFrame;
-		if (typeof toggleRotGrid === 'function') window.toggleRotGrid = toggleRotGrid;
-		if (typeof drawBaseField === 'function') window.drawBaseField = drawBaseField;
-		if (typeof calcRotScore === 'function') window.calcRotScore = calcRotScore;
-		if (typeof resetRotSubject === 'function') window.resetRotSubject = resetRotSubject;
-		/* eslint-enable no-undef */
+			actions.drawStrongComposition = drawStrongComposition;
+		if (typeof drawConflictComposition === 'function')
+			actions.drawConflictComposition = drawConflictComposition;
+		if (typeof drawFlatComposition === 'function')
+			actions.drawFlatComposition = drawFlatComposition;
+		if (typeof drawEpFrame === 'function') actions.drawEpFrame = drawEpFrame;
+		if (typeof ctx_ep_drawSegment === 'function') actions.ctx_ep_drawSegment = ctx_ep_drawSegment;
+		if (typeof ctx_ep_drawWaypoint === 'function')
+			actions.ctx_ep_drawWaypoint = ctx_ep_drawWaypoint;
+		if (typeof setEpMode === 'function') actions.setEpMode = setEpMode;
+		if (typeof playEyePath === 'function') actions.playEyePath = playEyePath;
+		if (typeof tick === 'function') actions.tick = tick;
+		if (typeof resetEyePath === 'function') actions.resetEyePath = resetEyePath;
+		if (typeof getRotPowerPoints === 'function') actions.getRotPowerPoints = getRotPowerPoints;
+		if (typeof calcRotScore === 'function') actions.calcRotScore = calcRotScore;
+		if (typeof drawRotFrame === 'function') actions.drawRotFrame = drawRotFrame;
+		if (typeof toggleRotGrid === 'function') actions.toggleRotGrid = toggleRotGrid;
+		if (typeof resetRotSubject === 'function') actions.resetRotSubject = resetRotSubject;
+		if (typeof getRotPos === 'function') actions.getRotPos = getRotPos;
+		if (typeof getCtValues === 'function') actions.getCtValues = getCtValues;
+		if (typeof drawContrast === 'function') actions.drawContrast = drawContrast;
+		if (typeof updateContrast === 'function') actions.updateContrast = updateContrast;
+		if (typeof setCtPreset === 'function') actions.setCtPreset = setCtPreset;
+		if (typeof drawCluttered === 'function') actions.drawCluttered = drawCluttered;
+		if (typeof drawClean === 'function') actions.drawClean = drawClean;
+		if (typeof setCcMode === 'function') actions.setCcMode = setCcMode;
+		if (typeof drawDiagComposition === 'function')
+			actions.drawDiagComposition = drawDiagComposition;
+		if (typeof handleDiag === 'function') actions.handleDiag = handleDiag;
+		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
 
 		return () => {
 			if (typeof epAnimId !== 'undefined' && epAnimId) cancelAnimationFrame(epAnimId);
-			// Note: window event listeners use anonymous functions and cannot be auto-removed.
-			// Consider refactoring to named handlers for proper cleanup.
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
 		};
 	});
 </script>
@@ -1105,7 +1116,13 @@
 		<div class="module-tag">Module 02 · Perception + Composition</div>
 		<h1 class="module-title">Visual Perception<br /><span>and Composition</span></h1>
 		<div class="progress-bar-wrap">
-			<div class="progress-bar-fill" id="reading-progress"></div>
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+			></div>
 		</div>
 	</div>
 
@@ -1197,7 +1214,7 @@
 						class="btn active"
 						id="ep-btn-strong"
 						onclick={(e) => {
-							window.setEpMode('strong');
+							actions.setEpMode('strong');
 						}}
 					>
 						Strong Hierarchy
@@ -1206,7 +1223,7 @@
 						class="btn"
 						id="ep-btn-conflict"
 						onclick={(e) => {
-							window.setEpMode('conflict');
+							actions.setEpMode('conflict');
 						}}
 					>
 						Competing Focal Points
@@ -1215,23 +1232,30 @@
 						class="btn"
 						id="ep-btn-flat"
 						onclick={(e) => {
-							window.setEpMode('flat');
+							actions.setEpMode('flat');
 						}}>No Hierarchy</button
 					>
 				</div>
-				<canvas id="ep-canvas" width="620" height="340"></canvas>
+				<canvas
+					id="ep-canvas"
+					width="620"
+					height="340"
+					aria-label="Ep Canvas Demonstration"
+					role="img"
+					tabindex="0"
+				></canvas>
 				<div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap">
 					<button
 						class="btn sky"
 						id="ep-play-btn"
 						onclick={(e) => {
-							window.playEyePath();
+							actions.playEyePath();
 						}}>▶ Play Path</button
 					>
 					<button
 						class="btn"
 						onclick={(e) => {
-							window.resetEyePath();
+							actions.resetEyePath();
 						}}>Reset</button
 					>
 				</div>
@@ -1383,17 +1407,24 @@
 						class="btn"
 						id="rot-grid-btn"
 						onclick={(e) => {
-							window.toggleRotGrid();
+							actions.toggleRotGrid();
 						}}>Show Grid</button
 					>
 					<button
 						class="btn rose"
 						onclick={(e) => {
-							window.resetRotSubject();
+							actions.resetRotSubject();
 						}}>Center Subject</button
 					>
 				</div>
-				<canvas id="rot-canvas" width="560" height="340"></canvas>
+				<canvas
+					id="rot-canvas"
+					width="560"
+					height="340"
+					aria-label="Rot Canvas Demonstration"
+					role="img"
+					tabindex="0"
+				></canvas>
 				<div class="rot-score-wrap">
 					<div
 						style="
@@ -1471,7 +1502,14 @@
 				</p>
 				<div class="two-col" style="align-items: start; gap: 1.5rem">
 					<div>
-						<canvas id="ct-canvas" width="300" height="260"></canvas>
+						<canvas
+							id="ct-canvas"
+							width="300"
+							height="260"
+							aria-label="Ct Canvas Demonstration"
+							role="img"
+							tabindex="0"
+						></canvas>
 					</div>
 					<div>
 						<div class="ct-controls">
@@ -1485,7 +1523,7 @@
 									step="0.05"
 									value="1"
 									oninput={() => {
-										window.updateContrast();
+										actions.updateContrast();
 									}}
 								/>
 								<span class="slider-val" id="ct-size-val">1×</span>
@@ -1500,7 +1538,7 @@
 									step="0.02"
 									value="0.5"
 									oninput={() => {
-										window.updateContrast();
+										actions.updateContrast();
 									}}
 								/>
 								<span class="slider-val" id="ct-bright-val">50%</span>
@@ -1515,7 +1553,7 @@
 									step="0.02"
 									value="0"
 									oninput={() => {
-										window.updateContrast();
+										actions.updateContrast();
 									}}
 								/>
 								<span class="slider-val" id="ct-hue-val">0%</span>
@@ -1524,31 +1562,31 @@
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setCtPreset('size');
+										actions.setCtPreset('size');
 									}}>Size Only</button
 								>
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setCtPreset('value');
+										actions.setCtPreset('value');
 									}}>Value Only</button
 								>
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setCtPreset('color');
+										actions.setCtPreset('color');
 									}}>Color Only</button
 								>
 								<button
 									class="btn rose"
 									onclick={(e) => {
-										window.setCtPreset('chaos');
+										actions.setCtPreset('chaos');
 									}}>Max Contrast</button
 								>
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setCtPreset('reset');
+										actions.setCtPreset('reset');
 									}}>Reset</button
 								>
 							</div>
@@ -1620,7 +1658,7 @@
 						class="btn rose active"
 						id="cc-btn-bad"
 						onclick={(e) => {
-							window.setCcMode('bad');
+							actions.setCcMode('bad');
 						}}
 					>
 						Cluttered
@@ -1629,14 +1667,21 @@
 						class="btn sage"
 						id="cc-btn-good"
 						onclick={(e) => {
-							window.setCcMode('good');
+							actions.setCcMode('good');
 						}}>Rebuilt</button
 					>
 				</div>
 				<div id="cc-state-label" class="cc-state-label" style="color: var(--rose)">
 					Before: Cluttered Layout
 				</div>
-				<canvas id="cc-canvas" width="560" height="380"></canvas>
+				<canvas
+					id="cc-canvas"
+					width="560"
+					height="380"
+					aria-label="Cc Canvas Demonstration"
+					role="img"
+					tabindex="0"
+				></canvas>
 				<div class="cc-annotation-list" id="cc-annotations"></div>
 			</div>
 		</div>
@@ -1674,71 +1719,43 @@
 				the same size, both high contrast against the background. What problem has this created?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The composition is now overdesigned and should be simplified
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. The headlines will be too large for mobile viewing
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Two equally-weighted primary elements create visual conflict — the eye oscillates
 					between them without a clear reading order
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. The composition is actually stronger because it has more emphasis
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-0"></div>
 		</div>
@@ -1750,71 +1767,43 @@
 				produce a more dynamic composition than centering it?
 			</div>
 			<div class="options" data-correct="1">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Centered compositions always feel unbalanced
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Off-center placement creates visual tension — the subject pulls against the frame,
 					generating energy and implied direction
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Power points are mathematically more visible than the center
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. The rule of thirds prevents cropping issues on social platforms
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-1"></div>
 		</div>
@@ -1826,71 +1815,43 @@
 				bold, colored. What is the perceptual result?
 			</div>
 			<div class="options" data-correct="3">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The design communicates more information faster
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Every element feels equally important, which reinforces the message
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. The high contrast makes the design legible at small sizes
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Maximum contrast everywhere is equivalent to no contrast anywhere — there is no focal
 					point, and the composition reads as chaotic
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-2"></div>
 		</div>
@@ -1902,71 +1863,43 @@
 				are considering adding a horizontal dividing line. What should they try first?
 			</div>
 			<div class="options" data-correct="0">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Increase the spacing between the groups — proximity alone creates perceived grouping,
 					and a line may not be necessary
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Use a different background color for one group
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Add a border box around each group
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Reduce the font size of one group to indicate it is secondary
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-3"></div>
 		</div>
@@ -1978,71 +1911,43 @@
 				means in the context of balance?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The physical file size of an image element
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. The number of pixels an element occupies on screen
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. The perceived heaviness of an element based on its size, value, color, and isolation
 					relative to surrounding elements
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. The amount of visual information (detail) contained in an element
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-4"></div>
 		</div>
@@ -2076,21 +1981,28 @@
 					the primary structural problem.
 				</p>
 				<div class="debug-canvas-wrap">
-					<canvas id="diag-canvas" width="560" height="300"></canvas>
+					<canvas
+						id="diag-canvas"
+						width="560"
+						height="300"
+						aria-label="Diag Canvas Demonstration"
+						role="img"
+						tabindex="0"
+					></canvas>
 				</div>
 			</div>
 			<div class="debug-options">
 				<div
 					class="debug-option"
 					onclick={(e) => {
-						window.handleDiag(e.currentTarget, 0);
+						actions.handleDiag(e.currentTarget, 0);
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.handleDiag(e.currentTarget, 0);
+							actions.handleDiag(e.currentTarget, 0);
 						}
 					}}
 				>
@@ -2099,14 +2011,14 @@
 				<div
 					class="debug-option"
 					onclick={(e) => {
-						window.handleDiag(e.currentTarget, 1);
+						actions.handleDiag(e.currentTarget, 1);
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.handleDiag(e.currentTarget, 1);
+							actions.handleDiag(e.currentTarget, 1);
 						}
 					}}
 				>
@@ -2116,14 +2028,14 @@
 				<div
 					class="debug-option"
 					onclick={(e) => {
-						window.handleDiag(e.currentTarget, 2);
+						actions.handleDiag(e.currentTarget, 2);
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.handleDiag(e.currentTarget, 2);
+							actions.handleDiag(e.currentTarget, 2);
 						}
 					}}
 				>
@@ -2132,14 +2044,14 @@
 				<div
 					class="debug-option"
 					onclick={(e) => {
-						window.handleDiag(e.currentTarget, 3);
+						actions.handleDiag(e.currentTarget, 3);
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
-							window.handleDiag(e.currentTarget, 3);
+							actions.handleDiag(e.currentTarget, 3);
 						}
 					}}
 				>
@@ -2385,7 +2297,7 @@
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
-	.callout.sky {
+	:global(.callout.sky) {
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
 	}
@@ -2406,7 +2318,7 @@
 	.callout.warn .callout-label {
 		color: var(--rose);
 	}
-	.callout.sky .callout-label {
+	:global(.callout.sky) .callout-label {
 		color: var(--sky);
 	}
 
@@ -2477,11 +2389,11 @@
 		color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
 	}
-	.btn.sky:hover {
+	:global(.btn.sky:hover) {
 		border-color: var(--sky);
 		color: var(--sky);
 	}
-	.btn.sky.active {
+	:global(.btn.sky.active) {
 		border-color: var(--sky);
 		color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 10%, transparent);
@@ -2495,11 +2407,11 @@
 		color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 10%, transparent);
 	}
-	.btn.sage:hover {
+	:global(.btn.sage:hover) {
 		border-color: var(--sage);
 		color: var(--sage);
 	}
-	.btn.sage.active {
+	:global(.btn.sage.active) {
 		border-color: var(--sage);
 		color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);

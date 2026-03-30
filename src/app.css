@@ -43,6 +43,36 @@
 	--gd-text: #d0dbe8;
 	--gd-muted: #5a7090;
 	--gd-dim: #2a3a50;
+
+	/* Visual Storytelling Course Tokens */
+	--vs-bg: #090808;
+	--vs-surface: #121010;
+	--vs-raised: #1a1717;
+	--vs-border: #2a2424;
+	--vs-border2: #3d3434;
+	--vs-blue: #4da8da;
+	--vs-amber: #e8a838;
+	--vs-mint: #56c9a8;
+	--vs-red: #e05555;
+	--vs-text: #ddd4d0;
+	--vs-muted: #7a6e6a;
+	--vs-dim: #3a3030;
+}
+
+.vs-theme {
+	--bg: var(--vs-bg);
+	--surface: var(--vs-surface);
+	--raised: var(--vs-raised);
+	--border: var(--vs-border);
+	--border2: var(--vs-border2);
+	--text: var(--vs-text);
+	--muted: var(--vs-muted);
+	--dim: var(--vs-dim);
+	--accent: var(--vs-blue);
+	--accent2: var(--vs-amber);
+	--accent3: var(--vs-mint);
+	--accent4: var(--vs-red);
+	--code-bg: var(--vs-surface);
 }
 
 .gd-theme {

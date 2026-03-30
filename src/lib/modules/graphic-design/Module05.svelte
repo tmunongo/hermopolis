@@ -2,14 +2,25 @@
 	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
 	import { onMount } from 'svelte';
 
+	let actions = {};
+
 	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
 		/* ═══════════════════════════════════
    READING PROGRESS
 ═══════════════════════════════════ */
-		window.addEventListener('scroll', () => {
+		_addWinListener('scroll', () => {
 			const el = document.documentElement;
 			document.getElementById('reading-progress').style.width =
-				(el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100 + '%';
+				(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
 		});
 
 		/* ═══════════════════════════════════
@@ -486,6 +497,21 @@
 			ctx.fillRect(0, 0, w, h);
 			drawFn(ctx, w, h);
 		}
+
+		/* duplicate roundRect removed */ var _dup_roundRect = function (ctx, x, y, w, h, r) {
+			r = Math.min(r, w / 2, h / 2);
+			ctx.beginPath();
+			ctx.moveTo(x + r, y);
+			ctx.lineTo(x + w - r, y);
+			ctx.arcTo(x + w, y, x + w, y + r, r);
+			ctx.lineTo(x + w, y + h - r);
+			ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+			ctx.lineTo(x + r, y + h);
+			ctx.arcTo(x, y + h, x, y + h - r, r);
+			ctx.lineTo(x, y + r);
+			ctx.arcTo(x, y, x + r, y, r);
+			ctx.closePath();
+		};
 
 		const rulesGrid = document.getElementById('icon-rules-grid');
 		ICON_RULES.forEach((rule, i) => {
@@ -1215,28 +1241,28 @@
 			}
 		}
 
-		if (typeof drawIconShape === 'function') window.drawIconShape = drawIconShape;
-		if (typeof clearIcon === 'function') window.clearIcon = clearIcon;
-		if (typeof handleQuiz === 'function') window.handleQuiz = handleQuiz;
-		if (typeof drawIconRuleCanvas === 'function') window.drawIconRuleCanvas = drawIconRuleCanvas;
-		if (typeof undoIcon === 'function') window.undoIcon = undoIcon;
-		if (typeof setShapePreset === 'function') window.setShapePreset = setShapePreset;
-		if (typeof lerp === 'function') window.lerp = lerp;
-		if (typeof syncIconPreviews === 'function') window.syncIconPreviews = syncIconPreviews;
-		if (typeof loadIconTemplate === 'function') window.loadIconTemplate = loadIconTemplate;
-		if (typeof redrawIconCanvas === 'function') window.redrawIconCanvas = redrawIconCanvas;
-		if (typeof buildAssessment === 'function') window.buildAssessment = buildAssessment;
-		if (typeof roundRect === 'function') window.roundRect = roundRect;
-		if (typeof drawShapeExplorer === 'function') window.drawShapeExplorer = drawShapeExplorer;
-		if (typeof setIconColor === 'function') window.setIconColor = setIconColor;
-		if (typeof buildBrandScenarios === 'function') window.buildBrandScenarios = buildBrandScenarios;
+		if (typeof lerp === 'function') actions.lerp = lerp;
+		if (typeof drawShapeExplorer === 'function') actions.drawShapeExplorer = drawShapeExplorer;
+		if (typeof roundRect === 'function') actions.roundRect = roundRect;
 		if (typeof updatePersonalityTags === 'function')
-			window.updatePersonalityTags = updatePersonalityTags;
-		if (typeof setIconTool === 'function') window.setIconTool = setIconTool;
+			actions.updatePersonalityTags = updatePersonalityTags;
+		if (typeof setShapePreset === 'function') actions.setShapePreset = setShapePreset;
+		if (typeof drawIconRuleCanvas === 'function') actions.drawIconRuleCanvas = drawIconRuleCanvas;
+		if (typeof setIconTool === 'function') actions.setIconTool = setIconTool;
+		if (typeof setIconColor === 'function') actions.setIconColor = setIconColor;
+		if (typeof redrawIconCanvas === 'function') actions.redrawIconCanvas = redrawIconCanvas;
+		if (typeof drawIconShape === 'function') actions.drawIconShape = drawIconShape;
+		if (typeof syncIconPreviews === 'function') actions.syncIconPreviews = syncIconPreviews;
+		if (typeof undoIcon === 'function') actions.undoIcon = undoIcon;
+		if (typeof clearIcon === 'function') actions.clearIcon = clearIcon;
+		if (typeof loadIconTemplate === 'function') actions.loadIconTemplate = loadIconTemplate;
+		if (typeof buildBrandScenarios === 'function')
+			actions.buildBrandScenarios = buildBrandScenarios;
+		if (typeof buildAssessment === 'function') actions.buildAssessment = buildAssessment;
+		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
 
 		return () => {
-			// Note: window event listeners use anonymous functions and cannot be auto-removed.
-			// Consider refactoring to named handlers for proper cleanup.
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
 		};
 	});
 </script>
@@ -1255,7 +1281,13 @@
 		<div class="module-tag">Module 05 · Shape + Symbol</div>
 		<h1 class="module-title">Shape Language<br /><span>&amp; Iconography</span></h1>
 		<div class="progress-bar-wrap">
-			<div class="progress-bar-fill" id="reading-progress"></div>
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+			></div>
 		</div>
 	</div>
 
@@ -1330,7 +1362,14 @@
 				</p>
 				<div class="two-col" style="align-items: start; gap: 1.5rem">
 					<div>
-						<canvas id="shape-canvas" width="300" height="300"></canvas>
+						<canvas
+							id="shape-canvas"
+							width="300"
+							height="300"
+							aria-label="Shape Canvas Demonstration"
+							role="img"
+							tabindex="0"
+						></canvas>
 						<div class="personality-tags" id="personality-tags"></div>
 						<div class="shape-desc" id="shape-desc"></div>
 					</div>
@@ -1346,7 +1385,7 @@
 									max="100"
 									value="15"
 									oninput={() => {
-										window.drawShapeExplorer();
+										actions.drawShapeExplorer();
 									}}
 								/>
 							</div>
@@ -1360,7 +1399,7 @@
 									max="100"
 									value="20"
 									oninput={() => {
-										window.drawShapeExplorer();
+										actions.drawShapeExplorer();
 									}}
 								/>
 							</div>
@@ -1382,31 +1421,31 @@
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setShapePreset(5, 8);
+										actions.setShapePreset(5, 8);
 									}}>Friendly / Organic</button
 								>
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setShapePreset(90, 90);
+										actions.setShapePreset(90, 90);
 									}}>Sharp / Geometric</button
 								>
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setShapePreset(15, 85);
+										actions.setShapePreset(15, 85);
 									}}>Precise / Clean</button
 								>
 								<button
 									class="btn"
 									onclick={(e) => {
-										window.setShapePreset(85, 12);
+										actions.setShapePreset(85, 12);
 									}}>Warm / Natural</button
 								>
 								<button
 									class="btn amber"
 									onclick={(e) => {
-										window.setShapePreset(50, 50);
+										actions.setShapePreset(50, 50);
 									}}>Balanced</button
 								>
 							</div>
@@ -1654,7 +1693,14 @@
 
 				<div class="two-col" style="align-items: start; gap: 1.5rem">
 					<div>
-						<canvas id="icon-canvas" width="300" height="300"></canvas>
+						<canvas
+							id="icon-canvas"
+							width="300"
+							height="300"
+							aria-label="Icon Canvas Demonstration"
+							role="img"
+							tabindex="0"
+						></canvas>
 						<div class="icon-size-preview" id="icon-size-preview">
 							<div class="icon-size-wrap">
 								<canvas
@@ -1662,6 +1708,9 @@
 									width="64"
 									height="64"
 									style="border: 1px solid var(--border2)"
+									aria-label="Icon Preview 64 Demonstration"
+									role="img"
+									tabindex="0"
 								></canvas>
 								<span class="icon-size-label">64px</span>
 							</div>
@@ -1671,6 +1720,9 @@
 									width="32"
 									height="32"
 									style="border: 1px solid var(--border2)"
+									aria-label="Icon Preview 32 Demonstration"
+									role="img"
+									tabindex="0"
 								></canvas>
 								<span class="icon-size-label">32px</span>
 							</div>
@@ -1680,6 +1732,9 @@
 									width="16"
 									height="16"
 									style="border: 1px solid var(--border2)"
+									aria-label="Icon Preview 16 Demonstration"
+									role="img"
+									tabindex="0"
 								></canvas>
 								<span class="icon-size-label">16px</span>
 							</div>
@@ -1714,7 +1769,7 @@
 								class="icon-tool active"
 								data-tool="circle"
 								onclick={(e) => {
-									window.setIconTool(e.currentTarget);
+									actions.setIconTool(e.currentTarget);
 								}}
 							>
 								<span class="icon-tool-icon">●</span> Circle
@@ -1723,7 +1778,7 @@
 								class="icon-tool"
 								data-tool="rect"
 								onclick={(e) => {
-									window.setIconTool(e.currentTarget);
+									actions.setIconTool(e.currentTarget);
 								}}
 							>
 								<span class="icon-tool-icon">■</span> Rectangle
@@ -1732,7 +1787,7 @@
 								class="icon-tool"
 								data-tool="triangle"
 								onclick={(e) => {
-									window.setIconTool(e.currentTarget);
+									actions.setIconTool(e.currentTarget);
 								}}
 							>
 								<span class="icon-tool-icon">▲</span> Triangle
@@ -1741,7 +1796,7 @@
 								class="icon-tool"
 								data-tool="line"
 								onclick={(e) => {
-									window.setIconTool(e.currentTarget);
+									actions.setIconTool(e.currentTarget);
 								}}
 							>
 								<span class="icon-tool-icon">━</span> Line
@@ -1750,7 +1805,7 @@
 								class="icon-tool"
 								data-tool="arc"
 								onclick={(e) => {
-									window.setIconTool(e.currentTarget);
+									actions.setIconTool(e.currentTarget);
 								}}
 							>
 								<span class="icon-tool-icon">◜</span> Arc
@@ -1759,7 +1814,7 @@
 								class="icon-tool"
 								data-tool="dot"
 								onclick={(e) => {
-									window.setIconTool(e.currentTarget);
+									actions.setIconTool(e.currentTarget);
 								}}
 							>
 								<span class="icon-tool-icon">•</span> Dot
@@ -1800,14 +1855,14 @@
 								class="icon-color-btn"
 								data-col="#e85d8a"
 								onclick={(e) => {
-									window.setIconColor(e.currentTarget);
+									actions.setIconColor(e.currentTarget);
 								}}
 								role="button"
 								tabindex="0"
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
 										e.preventDefault();
-										window.setIconColor(e.currentTarget);
+										actions.setIconColor(e.currentTarget);
 									}
 								}}
 								style="
@@ -1822,14 +1877,14 @@
 								class="icon-color-btn"
 								data-col="#ffffff"
 								onclick={(e) => {
-									window.setIconColor(e.currentTarget);
+									actions.setIconColor(e.currentTarget);
 								}}
 								role="button"
 								tabindex="0"
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
 										e.preventDefault();
-										window.setIconColor(e.currentTarget);
+										actions.setIconColor(e.currentTarget);
 									}
 								}}
 								style="
@@ -1844,14 +1899,14 @@
 								class="icon-color-btn"
 								data-col="#38c0e8"
 								onclick={(e) => {
-									window.setIconColor(e.currentTarget);
+									actions.setIconColor(e.currentTarget);
 								}}
 								role="button"
 								tabindex="0"
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
 										e.preventDefault();
-										window.setIconColor(e.currentTarget);
+										actions.setIconColor(e.currentTarget);
 									}
 								}}
 								style="
@@ -1866,14 +1921,14 @@
 								class="icon-color-btn"
 								data-col="#f5a623"
 								onclick={(e) => {
-									window.setIconColor(e.currentTarget);
+									actions.setIconColor(e.currentTarget);
 								}}
 								role="button"
 								tabindex="0"
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
 										e.preventDefault();
-										window.setIconColor(e.currentTarget);
+										actions.setIconColor(e.currentTarget);
 									}
 								}}
 								style="
@@ -1888,14 +1943,14 @@
 								class="icon-color-btn"
 								data-col="#56d0a0"
 								onclick={(e) => {
-									window.setIconColor(e.currentTarget);
+									actions.setIconColor(e.currentTarget);
 								}}
 								role="button"
 								tabindex="0"
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
 										e.preventDefault();
-										window.setIconColor(e.currentTarget);
+										actions.setIconColor(e.currentTarget);
 									}
 								}}
 								style="
@@ -1912,19 +1967,19 @@
 							<button
 								class="btn rose"
 								onclick={(e) => {
-									window.undoIcon();
+									actions.undoIcon();
 								}}>Undo</button
 							>
 							<button
 								class="btn"
 								onclick={(e) => {
-									window.clearIcon();
+									actions.clearIcon();
 								}}>Clear</button
 							>
 							<button
 								class="btn amber"
 								onclick={(e) => {
-									window.loadIconTemplate('camera');
+									actions.loadIconTemplate('camera');
 								}}
 							>
 								Template: Camera
@@ -1932,7 +1987,7 @@
 							<button
 								class="btn amber"
 								onclick={(e) => {
-									window.loadIconTemplate('person');
+									actions.loadIconTemplate('person');
 								}}
 							>
 								Template: Person
@@ -1940,7 +1995,7 @@
 							<button
 								class="btn amber"
 								onclick={(e) => {
-									window.loadIconTemplate('doc');
+									actions.loadIconTemplate('doc');
 								}}
 							>
 								Template: Document
@@ -2049,71 +2104,43 @@
 				proportions. Which shape register does this represent, and what does it communicate?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Organic — natural forms that grew rather than were constructed
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Sharp — aggressive energy and speed
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Geometric — communicating order, precision, and deliberate construction; the shapes say
 					something was carefully engineered
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Rounded — approachability and warmth through soft edges
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-0"></div>
 		</div>
@@ -2125,72 +2152,44 @@
 				failure?
 			</div>
 			<div class="options" data-correct="1">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The icon uses rounded shapes, which don't scale as well as angular ones
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. The icon contains too much detail — it was designed for a display context, not for the
 					target size where it will actually be used. Icon design must start at the smallest
 					required size.
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. The colors used are inappropriate for small sizes
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Icons for children's platforms should always be designed larger to aid recognition
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-1"></div>
 		</div>
@@ -2201,71 +2200,43 @@
 				angular photography and diagonal thumbnail compositions. What problem does this create?
 			</div>
 			<div class="options" data-correct="3">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The photography will compete with the logo mark for visual attention
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Angular photography makes thumbnails feel aggressive, which lowers click-through rates
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Rounded logos are not compatible with photographic content
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Contradictory shape registers across brand touchpoints produce conflicting personality
 					signals — the viewer cannot synthesize them into a single coherent brand identity
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-2"></div>
 		</div>
@@ -2276,74 +2247,46 @@
 				the same visual size?
 			</div>
 			<div class="options" data-correct="0">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The circle lacks corner mass — visual weight concentrates at the four corners of a
 					square, so a same-dimensioned circle appears smaller. Optical alignment requires
 					compensating for this perceptual difference.
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Circles always appear smaller because curved lines create less contrast than straight
 					lines
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. This is a color perception issue, not a shape issue — circles reflect light differently
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. They don't need to be different sizes — mathematical equality and visual equality are
 					the same thing
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-3"></div>
 		</div>
@@ -2354,71 +2297,43 @@
 				icon should attempt to communicate?
 			</div>
 			<div class="options" data-correct="1">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. One — icons should represent a single, unambiguous idea with no combination
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Two — the most effective icons combine two familiar elements into a single readable
 					form; a third concept exceeds what the format can hold
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Three — complex ideas require complex icons to avoid oversimplification
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. There is no limit — skilled icon designers can compress any number of concepts
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-4"></div>
 		</div>
@@ -2669,7 +2584,7 @@
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
 	}
-	.callout.sky {
+	:global(.callout.sky) {
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
 	}
@@ -2691,7 +2606,7 @@
 	.callout.sage .callout-label {
 		color: var(--sage);
 	}
-	.callout.sky .callout-label {
+	:global(.callout.sky) .callout-label {
 		color: var(--sky);
 	}
 	.callout.violet .callout-label {
@@ -2758,16 +2673,16 @@
 		color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 10%, transparent);
 	}
-	.btn.sage:hover {
+	:global(.btn.sage:hover) {
 		border-color: var(--sage);
 		color: var(--sage);
 	}
-	.btn.sage.active {
+	:global(.btn.sage.active) {
 		border-color: var(--sage);
 		color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
 	}
-	.btn.violet:hover {
+	:global(.btn.violet:hover) {
 		border-color: var(--violet);
 		color: var(--violet);
 	}
@@ -2776,11 +2691,11 @@
 		color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 10%, transparent);
 	}
-	.btn.sky:hover {
+	:global(.btn.sky:hover) {
 		border-color: var(--sky);
 		color: var(--sky);
 	}
-	.btn.sky.active {
+	:global(.btn.sky.active) {
 		border-color: var(--sky);
 		color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 10%, transparent);
@@ -2825,14 +2740,14 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
-	.three-col {
+	:global(.three-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
 		.two-col,
-		.three-col {
+		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
 	}
@@ -3099,7 +3014,7 @@
 		gap: 0.4rem;
 		margin-top: 1rem;
 	}
-	.p-tag {
+	:global(.p-tag) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
@@ -3192,59 +3107,59 @@
 		flex-direction: column;
 		gap: 1.5rem;
 	}
-	.brand-scenario {
+	:global(.brand-scenario) {
 		border: 1px solid var(--border);
 		padding: 1.25rem;
 	}
-	.brand-scenario-label {
+	:global(.brand-scenario-label) {
 		font-size: 10px;
 		letter-spacing: 0.15em;
 		text-transform: uppercase;
 		color: var(--muted);
 		margin-bottom: 0.75rem;
 	}
-	.brand-prompt {
+	:global(.brand-prompt) {
 		font-size: 13px;
 		color: #fff;
 		margin-bottom: 1rem;
 	}
-	.shape-options {
+	:global(.shape-options) {
 		display: flex;
 		gap: 0.75rem;
 		flex-wrap: wrap;
 		margin-bottom: 0.75rem;
 	}
-	.shape-choice {
+	:global(.shape-choice) {
 		padding: 4px;
 		border: 2px solid var(--border);
 		cursor: pointer;
 		transition: all 0.15s;
 		background: var(--code-bg);
 	}
-	.shape-choice:hover {
+	:global(.shape-choice:hover) {
 		border-color: var(--rose);
 	}
-	.shape-choice.selected {
+	:global(.shape-choice.selected) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 8%, var(--code-bg));
 	}
-	.shape-choice.correct-reveal {
+	:global(.shape-choice.correct-reveal) {
 		border-color: var(--sage);
 	}
-	.shape-choice.wrong-reveal {
+	:global(.shape-choice.wrong-reveal) {
 		border-color: var(--rose);
 		opacity: 0.5;
 	}
-	.brand-feedback {
+	:global(.brand-feedback) {
 		font-size: 12px;
 		color: var(--muted);
 		min-height: 1.4em;
 		margin-top: 0.5rem;
 	}
-	.brand-feedback.ok {
+	:global(.brand-feedback.ok) {
 		color: var(--sage);
 	}
-	.brand-feedback.bad {
+	:global(.brand-feedback.bad) {
 		color: var(--rose);
 	}
 
@@ -3255,35 +3170,35 @@
 		gap: 1rem;
 		margin-top: 1rem;
 	}
-	.icon-rule-card {
+	:global(.icon-rule-card) {
 		border: 1px solid var(--border);
 		background: var(--code-bg);
 		padding: 1rem;
 	}
-	.icon-rule-card-label {
+	:global(.icon-rule-card-label) {
 		font-size: 10px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		margin-bottom: 0.75rem;
 		font-weight: 600;
 	}
-	.icon-rule-canvas {
+	:global(.icon-rule-canvas) {
 		display: block;
 		width: 100%;
 		border: 1px solid var(--border2);
 	}
-	.icon-rule-verdict {
+	:global(.icon-rule-verdict) {
 		font-size: 11px;
 		margin-top: 0.5rem;
 		padding: 3px 8px;
 		border-left: 2px solid;
 		line-height: 1.5;
 	}
-	.icon-rule-verdict.pass {
+	:global(.icon-rule-verdict.pass) {
 		border-color: var(--sage);
 		color: var(--sage);
 	}
-	.icon-rule-verdict.fail {
+	:global(.icon-rule-verdict.fail) {
 		border-color: var(--rose);
 		color: var(--rose);
 	}
@@ -3311,23 +3226,23 @@
 		margin: 0.75rem 0;
 		flex-wrap: wrap;
 	}
-	.assess-option-canvas {
+	:global(.assess-option-canvas) {
 		cursor: pointer;
 		border: 2px solid var(--border);
 		transition: all 0.15s;
 		display: block;
 	}
-	.assess-option-canvas:hover {
+	:global(.assess-option-canvas:hover) {
 		border-color: var(--rose);
 	}
-	.assess-option-canvas.correct-reveal {
+	:global(.assess-option-canvas.correct-reveal) {
 		border-color: var(--sage);
 	}
-	.assess-option-canvas.wrong-reveal {
+	:global(.assess-option-canvas.wrong-reveal) {
 		border-color: var(--rose);
 		opacity: 0.55;
 	}
-	.assess-canvas-label {
+	:global(.assess-canvas-label) {
 		font-size: 10px;
 		color: var(--muted);
 		text-align: center;
@@ -3342,10 +3257,10 @@
 		min-height: 1.4em;
 		color: var(--muted);
 	}
-	.assess-feedback.ok {
+	:global(.assess-feedback.ok) {
 		color: var(--sage);
 	}
-	.assess-feedback.bad {
+	:global(.assess-feedback.bad) {
 		color: var(--rose);
 	}
 </style>

@@ -383,6 +383,129 @@ export const graphicDesignModules: Module[] = [
 	}
 ];
 
+export const visualStorytellingCourse: Course = {
+	id: 'visual-storytelling',
+	title: 'Visual Storytelling for Faceless Video',
+	subtitle: 'Narrative, Pacing & Visual Communication',
+	description:
+		'Learn to create compelling faceless videos using text, images, b-roll, motion graphics, and pacing. This course teaches you to communicate meaning — not just information — through deliberate visual and narrative structure.',
+	totalModules: 10
+};
+
+export const visualStorytellingModules: Module[] = [
+	{
+		id: '01',
+		number: 1,
+		title: 'The Foundations of Visual Storytelling',
+		subtitle: 'Theory + Practice',
+		status: 'available',
+		accentVar: '--vs-blue',
+		description:
+			"What makes faceless content engaging, story structure for informational video, and how the viewer's cognitive process shapes every production decision."
+	},
+	{
+		id: '02',
+		number: 2,
+		title: 'Sequencing, Pacing & Viewer Retention',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-amber',
+		description:
+			'Use pacing strategically to maintain attention. Combine narration, visuals, and beats into deliberate rhythms that prevent cognitive drift.'
+	},
+	{
+		id: '03',
+		number: 3,
+		title: 'Structuring Text for Video',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-mint',
+		description:
+			'Use text as a visual element, not a transcript. Emphasis, contrast, hierarchy, and when to animate vs keep static.'
+	},
+	{
+		id: '04',
+		number: 4,
+		title: 'Using Images, Diagrams & B-Roll Intentionally',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-red',
+		description:
+			'Choose visuals that support the narrative rather than distract from it. Build diagrammatic clarity for educational storytelling.'
+	},
+	{
+		id: '05',
+		number: 5,
+		title: 'Composition & Visual Hierarchy in Video Frames',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-blue',
+		description:
+			"Plan frames that guide the viewer's eye purposefully. Use composition, balance, contrast, and isolation to support meaning."
+	},
+	{
+		id: '06',
+		number: 6,
+		title: 'Motion Graphics for Narrative Support',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-amber',
+		description:
+			'Use movement to explain concepts, not merely decorate. Direct attention with motion: reveal, highlight, transform.'
+	},
+	{
+		id: '07',
+		number: 7,
+		title: 'Audio as a Narrative Anchor',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-mint',
+		description:
+			'Use narration and sound design to reinforce visual meaning. Align audio beats with visual beats for deliberate rhythm.'
+	},
+	{
+		id: '08',
+		number: 8,
+		title: 'Editing Techniques for Clarity & Engagement',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-red',
+		description:
+			'Make purposeful cuts, transitions, and timing adjustments. Remove redundancy and build momentum that sustains viewer interest.'
+	},
+	{
+		id: '09',
+		number: 9,
+		title: 'Building a Repeatable Visual Language',
+		subtitle: 'Theory + Practice',
+		status: 'coming-soon',
+		accentVar: '--vs-blue',
+		description:
+			'Develop a consistent style your audience recognizes. Color, fonts, and layout as narrative tools. Reusable graphic systems.'
+	},
+	{
+		id: '10',
+		number: 10,
+		title: 'End-to-End Faceless Video Production',
+		subtitle: 'Capstone Project',
+		status: 'coming-soon',
+		accentVar: '--vs-amber',
+		description:
+			'Combine narration, images, text, pacing, and motion into a complete 1–2 minute polished, engagement-oriented faceless video.'
+	}
+];
+
+export function getVSModule(id: string): Module | undefined {
+	return visualStorytellingModules.find((m) => m.id === id);
+}
+export function getAdjacentVSModules(id: string): { prev: Module | null; next: Module | null } {
+	const idx = visualStorytellingModules.findIndex((m) => m.id === id);
+	return {
+		prev: idx > 0 ? visualStorytellingModules[idx - 1] : null,
+		next: idx < visualStorytellingModules.length - 1 ? visualStorytellingModules[idx + 1] : null
+	};
+}
+
 export function getGraphicDesignModule(id: string): Module | undefined {
 	return graphicDesignModules.find((m) => m.id === id);
 }

@@ -2,13 +2,24 @@
 	/* eslint-disable @typescript-eslint/no-unused-vars, svelte/prefer-svelte-reactivity */
 	import { onMount } from 'svelte';
 
+	let actions = {};
+
 	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
 		/* ══════════════════════════════════
    READING PROGRESS
 ══════════════════════════════════ */
-		window.addEventListener('scroll', () => {
+		_addWinListener('scroll', () => {
 			const el = document.documentElement;
-			const progress = el.scrollTop / (el.scrollHeight - el.clientHeight);
+			const progress = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
 			document.getElementById('reading-progress').style.width = progress * 100 + '%';
 		});
 
@@ -311,20 +322,20 @@
 			tsDragging = true;
 			moveDrag(e);
 		});
-		document.addEventListener('mousemove', (e) => {
+		_addDocListener('mousemove', (e) => {
 			if (tsDragging) moveDrag(e);
 		});
-		document.addEventListener('mouseup', () => {
+		_addDocListener('mouseup', () => {
 			tsDragging = false;
 		});
 		tsTrack.addEventListener('touchstart', (e) => {
 			tsDragging = true;
 			moveDrag(e.touches[0]);
 		});
-		document.addEventListener('touchmove', (e) => {
+		_addDocListener('touchmove', (e) => {
 			if (tsDragging) moveDrag(e.touches[0]);
 		});
-		document.addEventListener('touchend', () => {
+		_addDocListener('touchend', () => {
 			tsDragging = false;
 		});
 
@@ -580,22 +591,21 @@
 			reflectFb.style.color = 'var(--sage)';
 		}
 
-		if (typeof moveDrag === 'function') window.moveDrag = moveDrag;
-		if (typeof setThumb === 'function') window.setThumb = setThumb;
-		if (typeof drawCustom === 'function') window.drawCustom = drawCustom;
-		if (typeof handleQuiz === 'function') window.handleQuiz = handleQuiz;
-		if (typeof drawLayers === 'function') window.drawLayers = drawLayers;
-		if (typeof resetComparison === 'function') window.resetComparison = resetComparison;
-		if (typeof toggleIssues === 'function') window.toggleIssues = toggleIssues;
-		if (typeof submitReflection === 'function') window.submitReflection = submitReflection;
-		if (typeof toggleLayer === 'function') window.toggleLayer = toggleLayer;
-		if (typeof drawBaseThumb === 'function') window.drawBaseThumb = drawBaseThumb;
-		if (typeof drawTemplate === 'function') window.drawTemplate = drawTemplate;
-		if (typeof redrawSR === 'function') window.redrawSR = redrawSR;
+		if (typeof drawBaseThumb === 'function') actions.drawBaseThumb = drawBaseThumb;
+		if (typeof drawLayers === 'function') actions.drawLayers = drawLayers;
+		if (typeof redrawSR === 'function') actions.redrawSR = redrawSR;
+		if (typeof toggleLayer === 'function') actions.toggleLayer = toggleLayer;
+		if (typeof setThumb === 'function') actions.setThumb = setThumb;
+		if (typeof moveDrag === 'function') actions.moveDrag = moveDrag;
+		if (typeof drawTemplate === 'function') actions.drawTemplate = drawTemplate;
+		if (typeof drawCustom === 'function') actions.drawCustom = drawCustom;
+		if (typeof toggleIssues === 'function') actions.toggleIssues = toggleIssues;
+		if (typeof resetComparison === 'function') actions.resetComparison = resetComparison;
+		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
+		if (typeof submitReflection === 'function') actions.submitReflection = submitReflection;
 
 		return () => {
-			// Note: window event listeners use anonymous functions and cannot be auto-removed.
-			// Consider refactoring to named handlers for proper cleanup.
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args.filter(Boolean)));
 		};
 	});
 </script>
@@ -616,7 +626,13 @@
 		<div class="module-tag">Module 01 · Foundations</div>
 		<h1 class="module-title">What Design<br /><span>Is (and Isn't)</span></h1>
 		<div class="progress-bar-wrap">
-			<div class="progress-bar-fill" id="reading-progress"></div>
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+			></div>
 		</div>
 	</div>
 
@@ -782,14 +798,14 @@
 						class="btn"
 						data-layer="grid"
 						onclick={(e) => {
-							window.toggleLayer(e.currentTarget);
+							actions.toggleLayer(e.currentTarget);
 						}}>Grid</button
 					>
 					<button
 						class="btn"
 						data-layer="hierarchy"
 						onclick={(e) => {
-							window.toggleLayer(e.currentTarget);
+							actions.toggleLayer(e.currentTarget);
 						}}
 					>
 						Hierarchy
@@ -798,7 +814,7 @@
 						class="btn"
 						data-layer="alignment"
 						onclick={(e) => {
-							window.toggleLayer(e.currentTarget);
+							actions.toggleLayer(e.currentTarget);
 						}}
 					>
 						Alignment
@@ -807,7 +823,7 @@
 						class="btn"
 						data-layer="focal"
 						onclick={(e) => {
-							window.toggleLayer(e.currentTarget);
+							actions.toggleLayer(e.currentTarget);
 						}}
 					>
 						Focal Point
@@ -816,13 +832,21 @@
 						class="btn"
 						data-layer="spacing"
 						onclick={(e) => {
-							window.toggleLayer(e.currentTarget);
+							actions.toggleLayer(e.currentTarget);
 						}}>Spacing</button
 					>
 				</div>
 
 				<div class="sr-canvas-wrap">
-					<canvas id="sr-canvas" width="560" height="315" style="max-width: 100%"></canvas>
+					<canvas
+						id="sr-canvas"
+						width="560"
+						height="315"
+						style="max-width: 100%"
+						aria-label="Sr Canvas Demonstration"
+						role="img"
+						tabindex="0"
+					></canvas>
 				</div>
 				<div class="layer-desc" id="layer-desc">
 					Activate a layer above to reveal a structural principle hidden in this composition.
@@ -966,7 +990,7 @@
 						class="btn"
 						id="show-issues-btn"
 						onclick={(e) => {
-							window.toggleIssues();
+							actions.toggleIssues();
 						}}
 					>
 						Show Analysis
@@ -975,7 +999,7 @@
 						class="btn violet"
 						id="reset-btn"
 						onclick={(e) => {
-							window.resetComparison();
+							actions.resetComparison();
 						}}>Reset</button
 					>
 				</div>
@@ -983,12 +1007,26 @@
 				<div class="compare-wrap">
 					<div class="compare-panel">
 						<div class="compare-label template">Template Version</div>
-						<canvas id="cv-template" width="320" height="180"></canvas>
+						<canvas
+							id="cv-template"
+							width="320"
+							height="180"
+							aria-label="Cv Template Demonstration"
+							role="img"
+							tabindex="0"
+						></canvas>
 						<ul class="issue-list" id="template-issues" style="display: none"></ul>
 					</div>
 					<div class="compare-panel">
 						<div class="compare-label custom">Designed Version</div>
-						<canvas id="cv-custom" width="320" height="180"></canvas>
+						<canvas
+							id="cv-custom"
+							width="320"
+							height="180"
+							aria-label="Cv Custom Demonstration"
+							role="img"
+							tabindex="0"
+						></canvas>
 						<ul class="issue-list" id="custom-strengths" style="display: none"></ul>
 					</div>
 				</div>
@@ -1059,70 +1097,42 @@
 				reflects a design-as-problem-solving mindset?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. What colors look good together for this topic?
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. How can I make this look similar to channels I admire?
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. What does this thumbnail need to communicate at 168px wide to earn a click?
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. How many elements can I fit without it looking too empty?
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-0"></div>
 		</div>
@@ -1133,70 +1143,42 @@
 				<span class="q-num">02.</span> Visual hierarchy is best described as:
 			</div>
 			<div class="options" data-correct="1">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. Making the most important elements the most colourful
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Arranging elements so the eye encounters them in a deliberate order
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Ensuring all elements are the same visual weight
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Placing text at the top of every composition
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-1"></div>
 		</div>
@@ -1208,70 +1190,42 @@
 				though I can tell something is wrong with it." What does this indicate?
 			</div>
 			<div class="options" data-correct="2">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. They lack both taste and skill and should reconsider this path
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. They have skill but their taste hasn't developed yet
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. Their taste is already working — their skill just needs to catch up
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. They should stop critiquing their work and focus on output volume
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-2"></div>
 		</div>
@@ -1282,70 +1236,40 @@
 				<span class="q-num">04.</span> Why do templates fail to create authentic visual identity?
 			</div>
 			<div class="options" data-correct="3">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
-					}}
+						actions.handleQuiz(e.currentTarget, 0);
+					}}>A. They use too many colors</button
 				>
-					A. They use too many colors
-				</div>
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. They are designed by people with low skill
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. They are hard to edit without professional tools
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. They are optimized for general acceptability, not a specific creator's identity
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-3"></div>
 		</div>
@@ -1356,71 +1280,43 @@
 				<span class="q-num">05.</span> Good design "hides its scaffolding." What does this mean?
 			</div>
 			<div class="options" data-correct="0">
-				<div
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 0);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 0);
-						}
+						actions.handleQuiz(e.currentTarget, 0);
 					}}
 				>
 					A. The underlying structural decisions (hierarchy, alignment, spacing) are invisible in
 					the final work, even though they drive its quality
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 1);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 1);
-						}
+						actions.handleQuiz(e.currentTarget, 1);
 					}}
 				>
 					B. Designers should not show their work-in-progress to clients
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 2);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 2);
-						}
+						actions.handleQuiz(e.currentTarget, 2);
 					}}
 				>
 					C. The best designs use hidden layers that can only be seen in editing software
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
 					class="option"
 					onclick={(e) => {
-						window.handleQuiz(e.currentTarget, 3);
-					}}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							window.handleQuiz(e.currentTarget, 3);
-						}
+						actions.handleQuiz(e.currentTarget, 3);
 					}}
 				>
 					D. Simple designs are always better than complex ones
-				</div>
+				</button>
 			</div>
 			<div class="feedback" id="fb-4"></div>
 		</div>
@@ -1457,7 +1353,7 @@
 			<button
 				class="btn amber"
 				onclick={(e) => {
-					window.submitReflection();
+					actions.submitReflection();
 				}}>Mark Complete</button
 			>
 		</div>
@@ -1786,7 +1682,7 @@
 		color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
 	}
-	.btn.violet:hover {
+	:global(.btn.violet:hover) {
 		border-color: var(--violet);
 		color: var(--violet);
 	}

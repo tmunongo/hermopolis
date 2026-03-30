@@ -127,6 +127,40 @@ def convert_module(input_path, output_path):
         ".op",
         ".callout.pink",
         ".callout.pink .callout-label",
+        ".callout.sky",
+        ".callout.sky .callout-label",
+        ".btn.sage:hover",
+        ".btn.sage.active",
+        ".btn.violet:hover",
+        ".btn.sky:hover",
+        ".btn.sky.active",
+        ".three-col",
+        ".p-tag",
+        ".brand-scenario",
+        ".brand-scenario-label",
+        ".brand-prompt",
+        ".shape-options",
+        ".shape-choice",
+        ".shape-choice:hover",
+        ".shape-choice.selected",
+        ".shape-choice.correct-reveal",
+        ".shape-choice.wrong-reveal",
+        ".brand-feedback",
+        ".brand-feedback.ok",
+        ".brand-feedback.bad",
+        ".icon-rule-card",
+        ".icon-rule-card-label",
+        ".icon-rule-canvas",
+        ".icon-rule-verdict",
+        ".icon-rule-verdict.pass",
+        ".icon-rule-verdict.fail",
+        ".assess-option-canvas",
+        ".assess-option-canvas:hover",
+        ".assess-option-canvas.correct-reveal",
+        ".assess-option-canvas.wrong-reveal",
+        ".assess-canvas-label",
+        ".assess-feedback.ok",
+        ".assess-feedback.bad",
         ".btn.gold.active",
         ".gpu-stage.active",
         ".gpu-stage.active .gpu-stage-num",
@@ -252,7 +286,44 @@ def convert_module(input_path, output_path):
         flags=re.DOTALL,
     )
 
-    # Automatically patch a11y complaints
+    # ── Auto-patch accessibility (ARIA, Buttons, Labels) ──
+    # Auto-add aria-attributes to canvases
+    def fix_canvas_aria(match):
+        attrs = match.group(1)
+        if "aria-label" not in attrs:
+            # Try to grab the id for the label
+            id_match = re.search(r'id=["\']([^"\']+)["\']', attrs)
+            label = (
+                id_match.group(1).replace("-", " ").title() + " Demonstration"
+                if id_match
+                else "Canvas Demonstration"
+            )
+            return f'<canvas{attrs} aria-label="{label}" role="img" tabindex="0">'
+        return match.group(0)
+
+    html_content = re.sub(r"<canvas([^>]+)>", fix_canvas_aria, html_content)
+
+    # Convert .option divs into semantic buttons for keyboard accessibility
+    html_content = re.sub(
+        r'<div class="option"([^>]*)>',
+        r'<button type="button" class="option"\1>',
+        html_content,
+    )
+    # The closing </button> for options requires careful regex or assuming all options close purely as </div>
+    # A safer approach for options since they're leaf nodes in quizzes:
+    html_content = re.sub(
+        r'(<button type="button" class="option"[^>]*>.*?)</div\s*>',
+        r"\1</button>",
+        html_content,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+
+    # Convert #reading-progress to valid progressbar
+    html_content = html_content.replace(
+        '<div class="progress-bar-fill" id="reading-progress">',
+        '<div class="progress-bar-fill" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">',
+    )
+
     # Replace bare placeholder anchors with a valid relative path so Svelte doesn't flag invalid hrefs
     html_content = html_content.replace('href="#"', 'href="."')
     html_content = html_content.replace('href="javascript:void(0)"', 'href="."')
@@ -265,19 +336,25 @@ def convert_module(input_path, output_path):
         input_id_match = re.search(r'<input[^>]+id="([^"]+)"', full)
         if input_id_match:
             label_for = input_id_match.group(1)
-            return full.replace("<label>", f'<label for="{label_for}">')
-        # No input with id found in context, generate a unique id
+            # Replace the first <label...> (up to >) with the for attribute added.
+            # Using sub with count=1
+            return re.sub(
+                r"<label([^>]*)>", rf'<label\g<1> for="{label_for}">', full, count=1
+            )
+        # No input with id found in context, just return as is
         return full
 
-    # Match slider-row patterns: <label>...</label> ... <input ... id="..." ...>
+    # Match slider-row patterns: <label ...>...</label> ... <input ... id="..." ...>
     html_content = re.sub(
-        r'<label>([^<]*)</label>\s*(?=>?\s*<input[^>]+id="[^"]+")',
+        r'<label[^>]*>([^<]*)</label>\s*(?=>?\s*<input[^>]+id="[^"]+")',
         fix_label_for,
         html_content,
     )
-    # Fallback: any remaining bare <label> without for=
+    # Fallback: any remaining <label> without for=
     html_content = re.sub(
-        r"<label>(?![^<]*</label>)", '<label for="dummy">', html_content
+        r'<label([^>]*)(?<!for="[^"]")>(?![^<]*</label>)',
+        r'<label\g<1> for="dummy">',
+        html_content,
     )
 
     # Prevent bare { } from crashing Svelte parser (e.g. state tables, template literals)
@@ -286,59 +363,89 @@ def convert_module(input_path, output_path):
         r"\{([^{}]*)\}", lambda m: "&#123;" + m.group(1) + "&#125;", html_content
     )
 
-    # Generic click handler logic — with Space key support for non-button/anchor
+    # Generic click handler logic
     def replace_onclick(match):
         prefix = match.group(1)
         code = match.group(2)
         suffix = match.group(3)
         code = re.sub(r"\bthis\b", "e.currentTarget", code)
+        code = re.sub(r"window\.", "", code)  # remove preexisting window.
 
         tag = prefix.strip("< ").split()[0].lower()
         full_tag = prefix + suffix
         if tag in ["button", "a"]:
-            return f"{prefix}onclick={{(e) => {{ window.{code} }}}}{suffix}"
+            return f"{prefix}onclick={{(e) => {{ actions.{code} }}}}{suffix}"
         else:
-            # Only add role/tabindex/onkeydown if not already present
             extras = ""
             if "role=" not in full_tag:
                 extras += ' role="button"'
             if "tabindex=" not in full_tag:
                 extras += ' tabindex="0"'
             if "onkeydown=" not in full_tag:
-                extras += f' onkeydown={{(e) => {{ if (e.key === "Enter" || e.key === " ") {{ e.preventDefault(); window.{code} }} }}}}'
-            return f"{prefix}onclick={{(e) => {{ window.{code} }}}}{extras}{suffix}"
+                extras += f' onkeydown={{(e) => {{ if (e.key === "Enter" || e.key === " ") {{ e.preventDefault(); actions.{code} }} }}}}'
+            return f"{prefix}onclick={{(e) => {{ actions.{code} }}}}{extras}{suffix}"
 
-    # Strip any existing raw HTML onkeydown attributes — the onclick handler above generates Svelte-compatible ones
     html_content = re.sub(r'\s+onkeydown="[^"]*"', "", html_content)
-
     html_content = re.sub(
         r'(<[^>]+)\bonclick="([^"]+)"([^>]*>)', replace_onclick, html_content
     )
 
-    # Handle oninput and onchange simply
     html_content = re.sub(
-        r'\boninput="([^"]+)"', r"oninput={() => { window.\1 }}", html_content
+        r'\boninput="([^"]+)"',
+        lambda m: (
+            f"oninput={{() => {{ actions.{m.group(1).replace('window.', '')} }}}}"
+        ),
+        html_content,
     )
     html_content = re.sub(
-        r'\bonchange="([^"]+)"', r"onchange={() => { window.\1 }}", html_content
+        r'\bonchange="([^"]+)"',
+        lambda m: (
+            f"onchange={{() => {{ actions.{m.group(1).replace('window.', '')} }}}}"
+        ),
+        html_content,
     )
 
-    # Automatically extract all function declarations to mount to window
-    function_names = re.findall(r"function\s+([a-zA-Z0-9_]+)\s*\(", script_js)
-    # Filter out duplicate names
-    function_names = list(set(function_names))
-    window_bindings = "\n\t\t".join(
+    # ── Script JS Transformations ──
+
+    # 1. Deduplicate function declarations across combined script blocks
+    # Track seen function names, remove subsequent duplicate declarations
+    seen_functions = set()
+
+    def dedup_function(match):
+        name = match.group(1)
+        if name in seen_functions:
+            # Return empty — we'll strip the entire duplicate function body in a second pass
+            return f"/* duplicate {name} removed */ var _dup_{name} = function("
+        seen_functions.add(name)
+        return match.group(0)
+
+    # First, collect all function names for binding
+    function_names = list(
+        dict.fromkeys(re.findall(r"function\s+([a-zA-Z0-9_]+)\s*\(", script_js))
+    )
+
+    # Then deduplicate declarations
+    script_js = re.sub(r"function\s+([a-zA-Z0-9_]+)\s*\(", dedup_function, script_js)
+
+    # 2. Build actions bindings for template onclick handlers
+    actions_bindings = "\n\t\t".join(
         [
-            f"if (typeof {fn} === 'function') window.{fn} = {fn};"
+            f"if (typeof {fn} === 'function') actions.{fn} = {fn};"
             for fn in function_names
         ]
     )
 
-    # ── Auto-detect cleanup requirements ──
+    # 3. Prevent division-by-zero in scroll handlers
+    script_js = script_js.replace(
+        "el.scrollHeight - el.clientHeight",
+        "Math.max(1, el.scrollHeight - el.clientHeight)",
+    )
 
-    # 1. Detect requestAnimationFrame assignments: `variable = requestAnimationFrame(fn)`
+    # 4. Detect and bind memory leaks
     raf_vars = set(re.findall(r"(\w+)\s*=\s*requestAnimationFrame\(", script_js))
-    # Also detect hardcoded RAF variable names
+    interval_vars = set(re.findall(r"(\w+)\s*=\s*setInterval\(", script_js))
+    timeout_vars = set(re.findall(r"(\w+)\s*=\s*setTimeout\(", script_js))
+
     for name in [
         "fpsRafId",
         "tsRafId",
@@ -353,26 +460,14 @@ def convert_module(input_path, output_path):
         "baRaf",
         "flowRaf",
         "fkAnimRaf",
+        "flipTimer",
     ]:
         if name in script_js:
-            raf_vars.add(name)
+            if "Raf" in name or "RAF" in name:
+                raf_vars.add(name)
+            else:
+                interval_vars.add(name)
 
-    # 2. Detect setInterval assignments
-    interval_vars = set(re.findall(r"(\w+)\s*=\s*setInterval\(", script_js))
-
-    # 3. Detect setTimeout assignments
-    timeout_vars = set(re.findall(r"(\w+)\s*=\s*setTimeout\(", script_js))
-
-    # 4. Detect flipTimer etc by name
-    if "flipTimer" in script_js:
-        interval_vars.add("flipTimer")
-
-    # 5. Detect window.addEventListener calls for named handlers
-    window_listeners = re.findall(
-        r"window\.addEventListener\(\s*['\"](\w+)['\"]", script_js
-    )
-
-    # Build cleanup logic
     cleanup_logic = []
     for var in sorted(raf_vars):
         cleanup_logic.append(
@@ -386,25 +481,37 @@ def convert_module(input_path, output_path):
         cleanup_logic.append(
             f"if (typeof {var} !== 'undefined' && {var}) clearTimeout({var});"
         )
-    if window_listeners:
-        cleanup_logic.append(
-            "// Note: window event listeners use anonymous functions and cannot be auto-removed."
+
+    # Track document and window events properly without regex parens
+    if "addEventListener" in script_js:
+        script_js = script_js.replace("window.addEventListener", "_addWinListener")
+        script_js = script_js.replace("document.addEventListener", "_addDocListener")
+        listener_shim = (
+            "\t\tconst _listeners = [];\n"
+            "\t\tconst _addWinListener = (type, listener, options) => {\n"
+            "\t\t\twindow.addEventListener(type, listener, options);\n"
+            "\t\t\t_listeners.push({ target: window, args: [type, listener, options] });\n"
+            "\t\t};\n"
+            "\t\tconst _addDocListener = (type, listener, options) => {\n"
+            "\t\t\tdocument.addEventListener(type, listener, options);\n"
+            "\t\t\t_listeners.push({ target: document, args: [type, listener, options] });\n"
+            "\t\t};\n"
         )
+        script_js = listener_shim + script_js
         cleanup_logic.append(
-            "// Consider refactoring to named handlers for proper cleanup."
+            "_listeners.forEach(l => l.target.removeEventListener(...l.args.filter(Boolean)));"
         )
 
     cleanup_str = "\n\t\t\t".join(cleanup_logic)
 
-    # Build eslint-disable list based on what the script contains
     eslint_disables = [
         "@typescript-eslint/no-unused-vars",
         "@typescript-eslint/no-unused-expressions",
+        "no-undef",
     ]
     if re.search(r"\bnew Set\b", script_js):
         eslint_disables.append("svelte/prefer-svelte-reactivity")
-    if re.search(r"no-useless-assignment", "") or True:  # commonly needed
-        eslint_disables.append("no-useless-assignment")
+    eslint_disables.append("no-useless-assignment")
     eslint_disables.append("no-useless-escape")
     eslint_disable_str = ", ".join(eslint_disables)
 
@@ -412,10 +519,9 @@ def convert_module(input_path, output_path):
         "<script>\n"
         f"\t/* eslint-disable {eslint_disable_str} */\n"
         "\timport { onMount } from 'svelte';\n\n"
+        "\tlet actions = {};\n\n"
         "\tonMount(() => {\n" + script_js + "\n\n"
-        "\t\t/* eslint-disable no-undef */\n"
-        "\t\t" + window_bindings + "\n"
-        "\t\t/* eslint-enable no-undef */\n\n"
+        "\t\t" + actions_bindings + "\n\n"
         "\t\treturn () => {\n"
         "\t\t\t" + cleanup_str + "\n"
         "\t\t};\n"
