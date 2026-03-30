@@ -434,9 +434,6 @@ def convert_module(input_path, output_path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        convert_module(
-            "/root/Projects/game-dev-course/Module1.html",
-            "/root/Projects/game-dev-course/src/lib/modules/animation/Module01.svelte",
-        )
+        print("Usage: python convert_module.py <input_path> <output_path>")
     else:
         convert_module(sys.argv[1], sys.argv[2])

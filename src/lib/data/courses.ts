@@ -306,7 +306,7 @@ export const graphicDesignModules: Module[] = [
 		number: 3,
 		title: 'Typography Essentials',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-sky',
 		description:
 			'Use type to communicate tone and personality. Serif, sans-serif, pairing fonts, kerning, leading, and type for thumbnails and websites.'
@@ -316,7 +316,7 @@ export const graphicDesignModules: Module[] = [
 		number: 4,
 		title: 'Color Theory & Emotional Impact',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-amber',
 		description:
 			'Build color palettes that communicate ideas. Hues, saturation, complementary palettes, warm vs cool behavior, and accessibility.'
@@ -326,7 +326,7 @@ export const graphicDesignModules: Module[] = [
 		number: 5,
 		title: 'Shape Language & Iconography',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-sage',
 		description:
 			'Use shapes to express personality. Sharp vs rounded forms, geometric vs organic, symbol design rules, and how shape language builds identity.'
