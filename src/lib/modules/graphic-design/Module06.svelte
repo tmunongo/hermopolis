@@ -1,0 +1,3219 @@
+<script lang="ts">
+	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions, svelte/prefer-svelte-reactivity, @typescript-eslint/no-explicit-any */
+	import { onMount } from 'svelte';
+
+	let actions: Record<string, any> = new Proxy(
+		{},
+		{
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
+		}
+	);
+
+	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
+		/* ══════════════════════════════════════
+   READING PROGRESS
+══════════════════════════════════════ */
+		_addWinListener('scroll', () => {
+			const el = document.documentElement;
+			const _rp = document.getElementById('reading-progress');
+			if (_rp) {
+				_rp.style.width =
+					(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight)) * 100 + '%';
+				_rp.setAttribute('aria-valuenow', String(Math.round(parseFloat(_rp.style.width) || 0)));
+			}
+		});
+
+		/* ══════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════ */
+		function hexToHsl(hex) {
+			let r = parseInt(hex.slice(1, 3), 16) / 255,
+				g = parseInt(hex.slice(3, 5), 16) / 255,
+				b = parseInt(hex.slice(5, 7), 16) / 255;
+			const max = Math.max(r, g, b),
+				min = Math.min(r, g, b);
+			let h,
+				s,
+				l = (max + min) / 2;
+			if (max === min) {
+				h = s = 0;
+			} else {
+				const d = max - min;
+				s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+				switch (max) {
+					case r:
+						h = (g - b) / d + (g < b ? 6 : 0);
+						break;
+					case g:
+						h = (b - r) / d + 2;
+						break;
+					default:
+						h = (r - g) / d + 4;
+				}
+				h /= 6;
+			}
+			return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+		}
+
+		function lighten(hex, amt) {
+			const [h, s, l] = hexToHsl(hex);
+			return `hsl(${h},${Math.max(0, s - 10)}%,${Math.min(95, l + amt)}%)`;
+		}
+		function darken(hex, amt) {
+			const [h, s, l] = hexToHsl(hex);
+			return `hsl(${h},${s}%,${Math.max(5, l - amt)}%)`;
+		}
+		function isLight(hex) {
+			const [h, s, l] = hexToHsl(hex);
+			return l > 55;
+		}
+
+		function roundRect(ctx, x, y, w, h, r) {
+			r = Math.min(r, w / 2, h / 2);
+			ctx.beginPath();
+			ctx.moveTo(x + r, y);
+			ctx.lineTo(x + w - r, y);
+			ctx.arcTo(x + w, y, x + w, y + r, r);
+			ctx.lineTo(x + w, y + h - r);
+			ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+			ctx.lineTo(x + r, y + h);
+			ctx.arcTo(x, y + h, x, y + h - r, r);
+			ctx.lineTo(x, y + r);
+			ctx.arcTo(x, y, x + r, y, r);
+			ctx.closePath();
+		}
+
+		/* ══════════════════════════════════════
+   DEMO 1: BRAND LAYERS
+══════════════════════════════════════ */
+		const LAYER_DATA = [
+			{
+				id: 'branding',
+				title: 'Branding',
+				subtitle: 'Strategic layer',
+				color: 'var(--sky)',
+				borderColor: '#38c0e8',
+				items: [
+					'Core values and beliefs — what the brand stands for',
+					'Target audience definition — who is it for, and what do they expect',
+					'Unique positioning — what you offer that no one else does',
+					'Brand voice — the personality expressed in language',
+					'Promise — the consistent experience the audience can rely on'
+				],
+				example:
+					'Example: "This channel is for analytical people who want rigorous, first-principles thinking on design. We believe most design education is too vague. Our voice is precise but not cold."'
+			},
+			{
+				id: 'identity',
+				title: 'Identity',
+				subtitle: 'Translation layer',
+				color: 'var(--violet)',
+				borderColor: '#9b6dff',
+				items: [
+					'Logo system — primary, secondary, and icon variants',
+					'Color palette — five to seven colors with defined roles',
+					'Typography system — two typefaces with specified weights and scale',
+					'Shape register — corner radii, geometry rules, icon grid',
+					"Tone rules — do and don't examples for visual decisions"
+				],
+				example:
+					'Example: Primary accent #38c0e8 (sky) — used only for interactive elements and focal points. Never used for backgrounds. Heading face: Syne 800. Body: IBM Plex Mono 400.'
+			},
+			{
+				id: 'assets',
+				title: 'Assets',
+				subtitle: 'Application layer',
+				color: 'var(--amber)',
+				borderColor: '#f5a623',
+				items: [
+					'YouTube thumbnails — 1280×720, generated from identity rules',
+					'Channel banner — 2560×1440, adapts identity to header format',
+					'Title cards — animated openers using identity type and color',
+					'Icon set — educational graphics using identity shape register',
+					'Website pages — layout and components using identity system'
+				],
+				example:
+					'Example: A thumbnail is produced by applying: accent color #38c0e8, Syne 800 for title, IBM Plex Mono for label, geometric mark at top-left, dark background #080b0f — all from the identity system.'
+			}
+		];
+
+		const openLayers = new Set();
+
+		LAYER_DATA.forEach((layer) => {
+			const wrap = document.createElement('div');
+
+			const btn = document.createElement('div');
+			btn.className = 'brand-layer';
+			btn.style.cssText = `border-color:${layer.borderColor};background:color-mix(in srgb,${layer.borderColor} 6%,var(--surface))`;
+			btn.innerHTML = `<div>
+    <div class="layer-title" style="color:${layer.color}">${layer.title}</div>
+    <div class="layer-subtitle">${layer.subtitle}</div>
+  </div><div class="layer-arrow" style="color:${layer.color}">›</div>`;
+
+			const content = document.createElement('div');
+			content.className = 'layer-content';
+			content.style.borderColor = layer.borderColor;
+			content.innerHTML = `<ul>${layer.items.map((i) => `<li style="color:var(--text)">${i}<br><span style="color:${layer.color};font-size:9px;letter-spacing:0.05em"></span></li>`).join('')}</ul>
+    <div class="layer-example" style="border-color:${layer.borderColor};color:${layer.color}">${layer.example}</div>`;
+
+			btn.addEventListener('click', () => {
+				const isOpen = openLayers.has(layer.id);
+				if (isOpen) {
+					openLayers.delete(layer.id);
+					content.classList.remove('open');
+					btn.classList.remove('open');
+				} else {
+					openLayers.add(layer.id);
+					content.classList.add('open');
+					btn.classList.add('open');
+				}
+			});
+
+			wrap.appendChild(btn);
+			wrap.appendChild(content);
+			document.getElementById('layers-diagram').appendChild(wrap);
+		});
+
+		/* ══════════════════════════════════════
+   DEMO 2: LOGO CONCEPT STUDIO
+══════════════════════════════════════ */
+		const logoCvs = document.getElementById('logo-canvas');
+		const lCtx = logoCvs.getContext('2d');
+		const LW = logoCvs.width,
+			LH = logoCvs.height;
+
+		// archetype → expected decisions
+		const ARCHETYPES = {
+			analytical: {
+				label: 'Analytical / Research-driven',
+				ideal: {
+					shape: 'geometric-sharp',
+					color: 'cool-precise',
+					type: 'mono',
+					complexity: 'simple'
+				},
+				scores: {
+					shape: { 'geometric-sharp': 100, 'geometric-round': 65, organic: 15, abstract: 50 },
+					color: {
+						'cool-precise': 100,
+						'warm-energy': 20,
+						'warm-natural': 35,
+						'dark-technical': 85,
+						'neutral-editorial': 70
+					},
+					type: { mono: 100, 'geometric-sans': 75, 'display-bold': 25, serif: 60, humanist: 40 },
+					complexity: { wordmark: 60, simple: 100, combined: 80 }
+				}
+			},
+			energetic: {
+				label: 'Energetic / High-performance',
+				ideal: {
+					shape: 'abstract',
+					color: 'warm-energy',
+					type: 'display-bold',
+					complexity: 'simple'
+				},
+				scores: {
+					shape: { 'geometric-sharp': 80, 'geometric-round': 35, organic: 30, abstract: 100 },
+					color: {
+						'cool-precise': 40,
+						'warm-energy': 100,
+						'warm-natural': 50,
+						'dark-technical': 70,
+						'neutral-editorial': 25
+					},
+					type: { mono: 20, 'geometric-sans': 55, 'display-bold': 100, serif: 30, humanist: 45 },
+					complexity: { wordmark: 50, simple: 100, combined: 70 }
+				}
+			},
+			warm: {
+				label: 'Warm / Educational & Approachable',
+				ideal: {
+					shape: 'geometric-round',
+					color: 'warm-natural',
+					type: 'humanist',
+					complexity: 'combined'
+				},
+				scores: {
+					shape: { 'geometric-sharp': 20, 'geometric-round': 100, organic: 80, abstract: 30 },
+					color: {
+						'cool-precise': 50,
+						'warm-energy': 60,
+						'warm-natural': 100,
+						'dark-technical': 25,
+						'neutral-editorial': 55
+					},
+					type: { mono: 25, 'geometric-sans': 65, 'display-bold': 35, serif: 70, humanist: 100 },
+					complexity: { wordmark: 60, simple: 80, combined: 100 }
+				}
+			},
+			creative: {
+				label: 'Creative / Experimental & Bold',
+				ideal: {
+					shape: 'abstract',
+					color: 'dark-technical',
+					type: 'display-bold',
+					complexity: 'combined'
+				},
+				scores: {
+					shape: { 'geometric-sharp': 65, 'geometric-round': 40, organic: 70, abstract: 100 },
+					color: {
+						'cool-precise': 55,
+						'warm-energy': 70,
+						'warm-natural': 45,
+						'dark-technical': 100,
+						'neutral-editorial': 80
+					},
+					type: { mono: 60, 'geometric-sans': 55, 'display-bold': 100, serif: 75, humanist: 45 },
+					complexity: { wordmark: 55, simple: 70, combined: 100 }
+				}
+			},
+			premium: {
+				label: 'Premium / Refined & Authoritative',
+				ideal: {
+					shape: 'geometric-round',
+					color: 'neutral-editorial',
+					type: 'serif',
+					complexity: 'wordmark'
+				},
+				scores: {
+					shape: { 'geometric-sharp': 55, 'geometric-round': 90, organic: 35, abstract: 40 },
+					color: {
+						'cool-precise': 75,
+						'warm-energy': 20,
+						'warm-natural': 50,
+						'dark-technical': 65,
+						'neutral-editorial': 100
+					},
+					type: { mono: 45, 'geometric-sans': 70, 'display-bold': 40, serif: 100, humanist: 60 },
+					complexity: { wordmark: 100, simple: 75, combined: 60 }
+				}
+			}
+		};
+
+		const COLOR_PALETTES = {
+			'cool-precise': { bg: '#070d14', accent: '#38c0e8', secondary: '#9b6dff', text: '#c8dae8' },
+			'warm-energy': { bg: '#120800', accent: '#ff6b35', secondary: '#f5a623', text: '#e8d0c0' },
+			'warm-natural': { bg: '#0e0a06', accent: '#f5a623', secondary: '#56d0a0', text: '#e8d8c0' },
+			'dark-technical': {
+				bg: '#080610',
+				accent: '#9b6dff',
+				secondary: '#e85d8a',
+				text: '#c8c0e0'
+			},
+			'neutral-editorial': {
+				bg: '#f5f4f0',
+				accent: '#111111',
+				secondary: '#555555',
+				text: '#333333'
+			}
+		};
+
+		function drawLogoCanvas() {
+			const archetype = document.getElementById('logo-archetype').value;
+			const shape = document.getElementById('logo-shape').value;
+			const colorKey = document.getElementById('logo-color').value;
+			const type = document.getElementById('logo-type').value;
+			const complexity = document.getElementById('logo-complexity').value;
+
+			const pal = COLOR_PALETTES[colorKey] || COLOR_PALETTES['cool-precise'];
+			lCtx.fillStyle = pal.bg;
+			lCtx.fillRect(0, 0, LW, LH);
+
+			const cx = LW / 2,
+				cy = LH / 2 - 20;
+
+			// Draw mark based on shape + complexity
+			const drawMark = (ox, oy, size, col) => {
+				lCtx.fillStyle = col;
+				lCtx.strokeStyle = col;
+				lCtx.lineWidth = size * 0.08;
+				lCtx.lineCap = 'round';
+				lCtx.lineJoin = 'round';
+
+				switch (shape) {
+					case 'geometric-sharp':
+						lCtx.beginPath();
+						lCtx.moveTo(ox, oy - size * 0.55);
+						lCtx.lineTo(ox + size * 0.55, oy + size * 0.45);
+						lCtx.lineTo(ox - size * 0.55, oy + size * 0.45);
+						lCtx.closePath();
+						lCtx.fill();
+						// Inner mark
+						lCtx.fillStyle = pal.bg;
+						lCtx.beginPath();
+						lCtx.arc(ox, oy + size * 0.1, size * 0.16, 0, Math.PI * 2);
+						lCtx.fill();
+						break;
+					case 'geometric-round':
+						lCtx.fillStyle = col;
+						lCtx.beginPath();
+						lCtx.arc(ox, oy, size * 0.52, 0, Math.PI * 2);
+						lCtx.fill();
+						lCtx.fillStyle = pal.bg;
+						lCtx.beginPath();
+						lCtx.arc(ox - size * 0.12, oy - size * 0.1, size * 0.22, 0, Math.PI * 2);
+						lCtx.fill();
+						lCtx.beginPath();
+						lCtx.arc(ox + size * 0.18, oy + size * 0.15, size * 0.14, 0, Math.PI * 2);
+						lCtx.fill();
+						break;
+					case 'organic': {
+						lCtx.fillStyle = col;
+						lCtx.beginPath();
+						const pts = 7;
+						for (let i = 0; i < pts; i++) {
+							const a = (i / pts) * Math.PI * 2;
+							const r =
+								size * 0.5 +
+								Math.sin(a * 2 + 0.3) * size * 0.12 +
+								Math.sin(a * 3 + 1.2) * size * 0.08;
+							i === 0
+								? lCtx.moveTo(ox + Math.cos(a) * r, oy + Math.sin(a) * r)
+								: lCtx.lineTo(ox + Math.cos(a) * r, oy + Math.sin(a) * r);
+						}
+						lCtx.closePath();
+						lCtx.fill();
+						break;
+					}
+					case 'abstract':
+						// Diagonal slash mark
+						lCtx.fillStyle = col;
+						lCtx.save();
+						lCtx.translate(ox, oy);
+						lCtx.rotate(-0.45);
+						roundRect(lCtx, -size * 0.55, -size * 0.15, size * 1.1, size * 0.3, size * 0.06);
+						lCtx.fill();
+						roundRect(lCtx, -size * 0.2, -size * 0.55, size * 0.28, size * 0.8, size * 0.06);
+						lCtx.fill();
+						lCtx.restore();
+						break;
+				}
+			};
+
+			// Type font mapping
+			const FONT_MAP = {
+				mono: "'IBM Plex Mono', monospace",
+				'geometric-sans': "'Syne', sans-serif",
+				'display-bold': "'Syne', sans-serif",
+				serif: "Georgia, 'Times New Roman', serif",
+				humanist: "'Syne', sans-serif"
+			};
+			const WEIGHT_MAP = {
+				mono: '600',
+				'geometric-sans': '700',
+				'display-bold': '800',
+				serif: '700',
+				humanist: '600'
+			};
+			const fontFamily = FONT_MAP[type] || "'Syne',sans-serif";
+			const fontWeight = WEIGHT_MAP[type] || '700';
+
+			if (complexity === 'wordmark') {
+				lCtx.fillStyle = pal.accent;
+				lCtx.font = `${fontWeight} 44px ${fontFamily}`;
+				lCtx.textAlign = 'center';
+				lCtx.fillText('CHANNEL', cx, cy + 16);
+				lCtx.fillStyle = pal.secondary;
+				lCtx.font = `400 13px 'IBM Plex Mono', monospace`;
+				lCtx.fillText('visual design', cx, cy + 44);
+			} else if (complexity === 'simple') {
+				drawMark(cx - 60, cy, 44, pal.accent);
+				lCtx.fillStyle = pal.text;
+				lCtx.font = `${fontWeight} 32px ${fontFamily}`;
+				lCtx.textAlign = 'left';
+				lCtx.fillText('CHANNEL', cx - 10, cy + 12);
+				lCtx.fillStyle = pal.secondary;
+				lCtx.font = `400 10px 'IBM Plex Mono', monospace`;
+				lCtx.fillText('visual design', cx - 10, cy + 34);
+			} else {
+				// Combined letterform
+				drawMark(cx, cy - 10, 52, pal.accent);
+				lCtx.fillStyle = pal.text;
+				lCtx.font = `${fontWeight} 24px ${fontFamily}`;
+				lCtx.textAlign = 'center';
+				lCtx.fillText('CHANNEL', cx, cy + 68);
+				lCtx.fillStyle = pal.secondary;
+				lCtx.font = `400 10px 'IBM Plex Mono', monospace`;
+				lCtx.fillText('VISUAL DESIGN', cx, cy + 86);
+			}
+			lCtx.textAlign = 'left';
+		}
+
+		function updateLogoStudio() {
+			const archetype = document.getElementById('logo-archetype').value;
+			if (!archetype) {
+				drawLogoCanvas();
+				return;
+			}
+
+			drawLogoCanvas();
+
+			const arch = ARCHETYPES[archetype];
+			const shape = document.getElementById('logo-shape').value;
+			const color = document.getElementById('logo-color').value;
+			const type = document.getElementById('logo-type').value;
+			const comp = document.getElementById('logo-complexity').value;
+
+			const scores = {
+				'Shape register': arch.scores.shape[shape] || 50,
+				'Color palette': arch.scores.color[color] || 50,
+				'Type register': arch.scores.type[type] || 50,
+				'Mark complexity': arch.scores.complexity[comp] || 50
+			};
+
+			const overall = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / 4);
+			const scoresWrap = document.getElementById('concept-scores');
+			scoresWrap.innerHTML =
+				`
+    <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;margin-top:0.75rem">
+      Concept Alignment — ${archetype.charAt(0).toUpperCase() + archetype.slice(1)}
+    </div>` +
+				Object.entries(scores)
+					.map(([label, val]) => {
+						const col = val >= 80 ? 'var(--sage)' : val >= 55 ? 'var(--amber)' : 'var(--rose)';
+						return `<div class="concept-score-row">
+        <span class="concept-score-label">${label}</span>
+        <div class="concept-score-bar-bg"><div class="concept-score-bar" style="width:${val}%;background:${col}"></div></div>
+        <span class="concept-score-val" style="color:${col}">${val}%</span>
+      </div>`;
+					})
+					.join('') +
+				`<div style="margin-top:0.5rem;font-size:11px;color:var(--muted);display:flex;justify-content:space-between">
+      <span>Overall alignment</span>
+      <span style="color:${overall >= 75 ? 'var(--sage)' : overall >= 50 ? 'var(--amber)' : 'var(--rose)'};font-weight:600">${overall}%</span>
+    </div>`;
+
+			const note = document.getElementById('concept-note');
+			const weak = Object.entries(scores)
+				.filter(([, v]) => v < 55)
+				.map(([k]) => k);
+			if (overall >= 80) {
+				note.style.borderColor = 'var(--sage)';
+				note.style.color = 'var(--sage)';
+				note.textContent =
+					'✓ Strong concept alignment — every decision reinforces the archetype. The viewer will form a coherent first impression.';
+			} else if (weak.length > 0) {
+				note.style.borderColor = 'var(--amber)';
+				note.style.color = 'var(--amber)';
+				note.textContent = `↑ Weak alignment in: ${weak.join(', ')}. These decisions contradict the archetype — the logo sends mixed signals. A viewer's impression will be confused.`;
+			} else {
+				note.style.borderColor = 'var(--sky)';
+				note.style.color = 'var(--muted)';
+				note.textContent =
+					'Moderate alignment. Some decisions support the archetype; others are neutral or slightly contradictory.';
+			}
+		}
+
+		drawLogoCanvas();
+
+		/* ══════════════════════════════════════
+   DEMO 3: LIVE STYLE GUIDE BUILDER
+══════════════════════════════════════ */
+		const sgState = {
+			name: 'SIGNAL',
+			accent: '#38c0e8',
+			bg: '#080b0f',
+			headingFont: 'Syne',
+			shape: 'sharp',
+			voice: 'precise'
+		};
+
+		const SG_COLOR_ROLES = {
+			accent: null, // set from state
+			surface: null,
+			text: null,
+			muted: null,
+			secondary: null
+		};
+
+		function setSgColor(el, role) {
+			document.querySelectorAll(`.sg-swatch-picker .sg-color-dot`).forEach((d) => {
+				if (d.parentElement === el.parentElement) d.classList.remove('selected');
+			});
+			el.classList.add('selected');
+			sgState[role] = el.dataset.color;
+			updateStyleGuide();
+		}
+
+		function getContrastText(hex) {
+			const [h, s, l] = hexToHsl(hex);
+			return l > 55 ? '#111111' : '#ffffff';
+		}
+
+		const SHAPE_MARKS = {
+			sharp: (ctx, x, y, sz, col) => {
+				ctx.fillStyle = col;
+				ctx.beginPath();
+				ctx.moveTo(x, y - sz * 0.55);
+				ctx.lineTo(x + sz * 0.5, y + sz * 0.45);
+				ctx.lineTo(x - sz * 0.5, y + sz * 0.45);
+				ctx.closePath();
+				ctx.fill();
+			},
+			rounded: (ctx, x, y, sz, col) => {
+				ctx.fillStyle = col;
+				ctx.beginPath();
+				ctx.arc(x, y, sz * 0.5, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle =
+					getContrastText(col) === '#111111' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+				ctx.beginPath();
+				ctx.arc(x - sz * 0.15, y - sz * 0.1, sz * 0.18, 0, Math.PI * 2);
+				ctx.fill();
+			},
+			circle: (ctx, x, y, sz, col) => {
+				ctx.strokeStyle = col;
+				ctx.lineWidth = sz * 0.1;
+				ctx.beginPath();
+				ctx.arc(x, y, sz * 0.45, 0, Math.PI * 2);
+				ctx.stroke();
+				ctx.fillStyle = col;
+				ctx.beginPath();
+				ctx.arc(x, y, sz * 0.15, 0, Math.PI * 2);
+				ctx.fill();
+			}
+		};
+
+		function drawSgThumbCanvas(canvas) {
+			const ctx = canvas.getContext('2d');
+			const w = canvas.width,
+				h = canvas.height;
+			const acc = sgState.accent,
+				bg = sgState.bg;
+			const textCol = getContrastText(bg);
+
+			ctx.fillStyle = bg;
+			ctx.fillRect(0, 0, w, h);
+
+			// Left subject area
+			const surfaceCol = isLight(bg) ? darken(bg, 5) : lighten(bg, 5);
+			ctx.fillStyle = surfaceCol;
+			ctx.fillRect(0, 0, Math.floor(w * 0.38), h);
+
+			// Mark
+			SHAPE_MARKS[sgState.shape](ctx, Math.floor(w * 0.19), Math.floor(h * 0.4), 28, acc);
+
+			// Accent bar
+			ctx.fillStyle = acc;
+			ctx.fillRect(0, 0, 3, h);
+
+			// Title
+			ctx.fillStyle = textCol;
+			ctx.font = `800 ${Math.floor(h * 0.19)}px '${sgState.headingFont}', sans-serif`;
+			ctx.fillText('LEARN', Math.floor(w * 0.42), Math.floor(h * 0.46));
+			ctx.fillStyle = acc;
+			ctx.font = `800 ${Math.floor(h * 0.14)}px '${sgState.headingFont}', sans-serif`;
+			ctx.fillText('DESIGN', Math.floor(w * 0.42), Math.floor(h * 0.66));
+			ctx.fillStyle = isLight(bg) ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.35)';
+			ctx.font = `400 ${Math.floor(h * 0.09)}px 'IBM Plex Mono', monospace`;
+			ctx.fillText('Episode 01', Math.floor(w * 0.42), Math.floor(h * 0.82));
+		}
+
+		function updateStyleGuide() {
+			sgState.name = document.getElementById('sg-name').value || 'SIGNAL';
+			sgState.headingFont = document.getElementById('sg-heading-font').value;
+			sgState.shape = document.getElementById('sg-shape').value;
+			sgState.voice = document.getElementById('sg-voice').value;
+
+			const acc = sgState.accent,
+				bg = sgState.bg;
+			const textCol = getContrastText(bg);
+			const mutedCol = isLight(bg) ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
+			const surfaceCol = isLight(bg) ? darken(bg, 4) : lighten(bg, 5);
+			const borderCol = isLight(bg) ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)';
+
+			const FONT_CSS = {
+				Syne: "'Syne',sans-serif",
+				serif: "Georgia,'Times New Roman',serif",
+				mono: "'IBM Plex Mono',monospace",
+				condensed: "'Syne',sans-serif"
+			};
+
+			const VOICE_LINES = {
+				precise: 'Systems thinking for visual minds.',
+				energetic: 'Design at full speed. No excuses.',
+				warm: 'Everyone can learn to design.',
+				bold: 'Design is a statement. Make yours.',
+				curious: 'What if every pixel had a reason?'
+			};
+
+			const headFont = FONT_CSS[sgState.headingFont] || "'Syne',sans-serif";
+			const headWeight = sgState.headingFont === 'condensed' ? '400' : '800';
+
+			// Palette swatches
+			const [ah, as, al] = hexToHsl(acc);
+			const secondaryHex = `hsl(${(ah + 150) % 360},${as}%,${Math.max(40, al - 8)}%)`;
+
+			const page = document.getElementById('sg-page');
+			page.style.background = bg;
+
+			page.innerHTML = `
+    <!-- Logo area -->
+    <div class="sgp-logo-area" style="border-color:${borderCol}">
+      <canvas id="sgp-mark-canvas" width="44" height="44" style="flex-shrink:0"></canvas>
+      <div>
+        <div class="sgp-brand-name" style="font-family:${headFont};font-weight:${headWeight};color:${textCol};letter-spacing:0.06em">${sgState.name.toUpperCase()}</div>
+        <div class="sgp-tagline" style="color:${mutedCol}">${VOICE_LINES[sgState.voice]}</div>
+      </div>
+    </div>
+
+    <!-- Palette -->
+    <div class="sgp-label" style="color:${mutedCol}">Palette</div>
+    <div class="sgp-palette-row" style="margin-top:0.35rem">
+      <div class="sgp-swatch" style="background:${bg};border:1px solid ${borderCol}" title="Background"></div>
+      <div class="sgp-swatch" style="background:${surfaceCol}" title="Surface"></div>
+      <div class="sgp-swatch" style="background:${acc}" title="Accent"></div>
+      <div class="sgp-swatch" style="background:${secondaryHex}" title="Secondary"></div>
+      <div class="sgp-swatch" style="background:${mutedCol.replace('rgba', 'rgb').replace(/,[^,]+\)/, ')')}" title="Muted"></div>
+    </div>
+
+    <!-- Typography -->
+    <div class="sgp-type-row" style="margin-top:1rem;border-color:${borderCol}">
+      <div class="sgp-label" style="color:${mutedCol}">Typography</div>
+      <div class="sgp-heading" style="font-family:${headFont};font-weight:${headWeight};color:${textCol}">Visual Design</div>
+      <div class="sgp-body-text" style="color:${mutedCol}">Systematic thinking applied to every pixel. The body font provides contrast against the display heading.</div>
+    </div>
+
+    <!-- Shape + voice -->
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem">
+      <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;border:1px solid ${acc};color:${acc}">Shape: ${sgState.shape}</div>
+      <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;border:1px solid ${secondaryHex};color:${secondaryHex}">Voice: ${sgState.voice}</div>
+    </div>
+
+    <!-- Thumbnail preview -->
+    <div class="sgp-label" style="color:${mutedCol}">Thumbnail Preview</div>
+    <canvas id="sgp-thumb-canvas" width="280" height="157" style="display:block;width:100%;margin-top:0.35rem;border:1px solid ${borderCol}"></canvas>
+  `;
+
+			// Draw mark
+			const markCvs = document.getElementById('sgp-mark-canvas');
+			if (markCvs) {
+				const ctx = markCvs.getContext('2d');
+				ctx.fillStyle = surfaceCol;
+				ctx.fillRect(0, 0, 44, 44);
+				SHAPE_MARKS[sgState.shape](ctx, 22, 22, 18, acc);
+			}
+
+			// Draw thumb
+			const thumbCvs = document.getElementById('sgp-thumb-canvas');
+			if (thumbCvs) drawSgThumbCanvas(thumbCvs);
+		}
+
+		updateStyleGuide();
+
+		/* ══════════════════════════════════════
+   DEMO 4: CONSISTENCY CHECKER
+══════════════════════════════════════ */
+		const CC_TOUCHPOINTS = [
+			{ label: 'YouTube Thumbnail', w: 280, h: 157 },
+			{ label: 'Channel Banner', w: 280, h: 105 },
+			{ label: 'Website Header', w: 280, h: 130 },
+			{ label: 'Profile Mark', w: 280, h: 157 }
+		];
+
+		function drawTouchpoint(canvas, idx, mode) {
+			const ctx = canvas.getContext('2d');
+			const w = canvas.width,
+				h = canvas.height;
+
+			if (mode === 'consistent') {
+				// Consistent brand — all use same: dark bg, sky accent, Syne bold, geometric mark
+				const bg = '#080b0f',
+					acc = '#38c0e8',
+					text = '#d0dbe8',
+					muted = 'rgba(255,255,255,0.4)';
+				ctx.fillStyle = bg;
+				ctx.fillRect(0, 0, w, h);
+
+				if (idx === 0) {
+					// Thumbnail
+					ctx.fillStyle = '#0d1520';
+					ctx.fillRect(0, 0, Math.floor(w * 0.38), h);
+					ctx.strokeStyle = acc;
+					ctx.lineWidth = 2;
+					ctx.beginPath();
+					ctx.arc(w * 0.19, h * 0.42, 18, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.fillStyle = acc;
+					ctx.beginPath();
+					ctx.arc(w * 0.19, h * 0.42, 6, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = acc;
+					ctx.fillRect(0, 0, 3, h);
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 22px Syne,sans-serif';
+					ctx.fillText('EPISODE', w * 0.42, h * 0.44);
+					ctx.fillStyle = acc;
+					ctx.font = 'bold 17px Syne,sans-serif';
+					ctx.fillText('01', w * 0.42, h * 0.65);
+					ctx.fillStyle = muted;
+					ctx.font = '9px IBM Plex Mono,monospace';
+					ctx.fillText('design thinking', w * 0.42, h * 0.82);
+				} else if (idx === 1) {
+					// Banner
+					ctx.fillStyle = 'rgba(56,192,232,0.06)';
+					for (let x = 0; x < w; x += 24) {
+						ctx.fillRect(x, 0, 1, h);
+					}
+					for (let y = 0; y < h; y += 24) {
+						ctx.fillRect(0, y, w, 1);
+					}
+					ctx.strokeStyle = acc;
+					ctx.lineWidth = 2;
+					ctx.beginPath();
+					ctx.arc(32, h / 2, 16, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.fillStyle = acc;
+					ctx.beginPath();
+					ctx.arc(32, h / 2, 5, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 18px Syne,sans-serif';
+					ctx.fillText('SIGNAL', 58, h / 2 + 6);
+					ctx.fillStyle = muted;
+					ctx.font = '9px IBM Plex Mono,monospace';
+					ctx.fillText('visual design fundamentals', 58, h / 2 + 20);
+					ctx.fillStyle = acc;
+					ctx.fillRect(0, h - 2, w, 2);
+				} else if (idx === 2) {
+					// Website Header
+					ctx.fillStyle = '#0d1520';
+					ctx.fillRect(0, 0, w, 44);
+					ctx.strokeStyle = acc;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.arc(18, 22, 10, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.fillStyle = acc;
+					ctx.beginPath();
+					ctx.arc(18, 22, 3, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 13px Syne,sans-serif';
+					ctx.fillText('SIGNAL', 34, 27);
+					['Learn', 'About', 'Course'].forEach((lbl, i) => {
+						ctx.fillStyle = i === 0 ? acc : muted;
+						ctx.font = '10px IBM Plex Mono,monospace';
+						ctx.fillText(lbl, w * 0.5 + i * 52, 27);
+					});
+					ctx.fillStyle = 'rgba(255,255,255,0.04)';
+					ctx.fillRect(0, 44, w, h - 44);
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 20px Syne,sans-serif';
+					ctx.fillText('Design with Intention', 16, h * 0.62);
+					ctx.fillStyle = muted;
+					ctx.font = '10px IBM Plex Mono,monospace';
+					ctx.fillText('Systematic approaches to visual communication', 16, h * 0.78);
+					ctx.fillStyle = acc;
+					roundRect(ctx, 16, h * 0.84, 84, 20, 3);
+					ctx.fill();
+					ctx.fillStyle = bg;
+					ctx.font = 'bold 9px IBM Plex Mono,monospace';
+					ctx.fillText('START COURSE', 24, h * 0.84 + 13);
+				} else {
+					// Profile
+					ctx.fillStyle = '#0d1520';
+					ctx.fillRect(0, 0, w, h);
+					ctx.strokeStyle = acc;
+					ctx.lineWidth = 3;
+					ctx.beginPath();
+					ctx.arc(w / 2, h * 0.44, 52, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.strokeStyle = acc;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.arc(w / 2, h * 0.44, 40, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.fillStyle = acc;
+					ctx.beginPath();
+					ctx.arc(w / 2, h * 0.44, 12, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = 'rgba(56,192,232,0.15)';
+					ctx.beginPath();
+					ctx.arc(w / 2, h * 0.44, 52, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 12px Syne,sans-serif';
+					ctx.textAlign = 'center';
+					ctx.fillText('SIGNAL', w / 2, h * 0.82);
+					ctx.textAlign = 'left';
+				}
+			} else {
+				// Fragmented — different accent, font, shapes each touchpoint
+				const FRAGS = [
+					{ bg: '#0f0520', acc: '#a855f7', font: 'Georgia', shape: 'circle' },
+					{ bg: '#f5f4f0', acc: '#22c55e', font: 'Syne', shape: 'rect' },
+					{ bg: '#0a1628', acc: '#f5a623', font: 'IBM Plex Mono', shape: 'triangle' },
+					{ bg: '#1a0a08', acc: '#e85d8a', font: 'Syne', shape: 'blob' }
+				];
+				const f = FRAGS[idx];
+				const textCol = getContrastText(f.bg);
+				ctx.fillStyle = f.bg;
+				ctx.fillRect(0, 0, w, h);
+
+				const drawFragMark = (x, y, sz) => {
+					ctx.fillStyle = f.acc;
+					if (f.shape === 'circle') {
+						ctx.beginPath();
+						ctx.arc(x, y, sz, 0, Math.PI * 2);
+						ctx.fill();
+					} else if (f.shape === 'rect') {
+						ctx.fillRect(x - sz, y - sz * 0.7, sz * 2, sz * 1.4);
+					} else if (f.shape === 'triangle') {
+						ctx.beginPath();
+						ctx.moveTo(x, y - sz);
+						ctx.lineTo(x + sz * 0.9, y + sz * 0.6);
+						ctx.lineTo(x - sz * 0.9, y + sz * 0.6);
+						ctx.closePath();
+						ctx.fill();
+					} else {
+						ctx.beginPath();
+						const ps = [
+							[0, -0.9],
+							[0.7, -0.3],
+							[0.8, 0.5],
+							[0, 0.9],
+							[-0.7, 0.4],
+							[-0.8, -0.4]
+						];
+						ps.forEach(([px, py], i) =>
+							i ? ctx.lineTo(x + px * sz, y + py * sz) : ctx.moveTo(x + px * sz, y + py * sz)
+						);
+						ctx.closePath();
+						ctx.fill();
+					}
+				};
+
+				if (idx === 0) {
+					drawFragMark(w * 0.15, h * 0.4, 22);
+					ctx.fillStyle = textCol;
+					ctx.font = `bold 18px ${f.font},serif`;
+					ctx.fillText('Episode 1', w * 0.3, h * 0.42);
+					ctx.fillStyle = f.acc;
+					ctx.font = `12px ${f.font}`;
+					ctx.fillText('Design Thinking', w * 0.3, h * 0.62);
+					ctx.font = '9px sans-serif';
+					ctx.fillStyle = 'rgba(128,128,128,0.7)';
+					ctx.fillText('a video about design', w * 0.3, h * 0.8);
+				} else if (idx === 1) {
+					ctx.fillStyle = f.bg;
+					ctx.fillRect(0, 0, w, h);
+					drawFragMark(w * 0.1, h * 0.5, 18);
+					ctx.fillStyle = textCol;
+					ctx.font = `bold 14px ${f.font},sans-serif`;
+					ctx.fillText('My Channel', 56, h * 0.4);
+					ctx.fillStyle = 'rgba(0,0,0,0.5)';
+					ctx.font = '10px sans-serif';
+					ctx.fillText('Welcome! Subscribe for more.', 56, h * 0.62);
+					ctx.fillStyle = f.acc;
+					ctx.fillRect(0, 0, w, 5);
+				} else if (idx === 2) {
+					ctx.fillStyle = '#1e3a5f';
+					ctx.fillRect(0, 0, w, 48);
+					drawFragMark(20, 24, 12);
+					ctx.fillStyle = '#fff';
+					ctx.font = `bold 11px ${f.font},monospace`;
+					ctx.fillText('channel.io', 40, 28);
+					['Home', 'Videos', 'Contact'].forEach((l, i) => {
+						ctx.fillStyle = i === 0 ? f.acc : 'rgba(255,255,255,0.5)';
+						ctx.font = '9px sans-serif';
+						ctx.fillText(l, w * 0.45 + i * 46, 28);
+					});
+					ctx.fillStyle = 'rgba(255,255,255,0.04)';
+					ctx.fillRect(0, 48, w, h - 48);
+					ctx.fillStyle = '#fff';
+					ctx.font = `bold 22px ${f.font},monospace`;
+					ctx.fillText('Welcome!', 16, h * 0.65);
+					ctx.fillStyle = f.acc;
+					roundRect(ctx, 16, h * 0.78, 70, 18, 9);
+					ctx.fill();
+					ctx.fillStyle = '#fff';
+					ctx.font = '8px sans-serif';
+					ctx.fillText('CLICK HERE', 24, h * 0.78 + 12);
+				} else {
+					ctx.fillStyle = '#261020';
+					ctx.fillRect(0, 0, w, h);
+					drawFragMark(w / 2, h * 0.42, 44);
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 10px Syne,sans-serif';
+					ctx.textAlign = 'center';
+					ctx.fillText('MY CHANNEL', w / 2, h * 0.8);
+					ctx.textAlign = 'left';
+				}
+			}
+		}
+
+		function buildCcTouchpoints() {
+			const wrap = document.getElementById('cc-touchpoints');
+			wrap.innerHTML = '';
+			CC_TOUCHPOINTS.forEach((tp, i) => {
+				const div = document.createElement('div');
+				div.className = 'cc-touchpoint';
+				const lbl = document.createElement('div');
+				lbl.className = 'cc-tp-label';
+				lbl.textContent = tp.label;
+				const cvs = document.createElement('canvas');
+				cvs.width = tp.w;
+				cvs.height = tp.h;
+				cvs.className = 'cc-tp-canvas';
+				cvs.style.width = '100%';
+				div.appendChild(lbl);
+				div.appendChild(cvs);
+				wrap.appendChild(div);
+			});
+		}
+
+		let ccMode = 'consistent';
+		function setCcMode(mode) {
+			ccMode = mode;
+			document
+				.getElementById('cc-btn-consistent')
+				.classList.toggle('active', mode === 'consistent');
+			document
+				.getElementById('cc-btn-fragmented')
+				.classList.toggle('active', mode === 'fragmented');
+			buildCcTouchpoints();
+			CC_TOUCHPOINTS.forEach((_, i) => {
+				const cvs = document.querySelectorAll('.cc-tp-canvas')[i];
+				if (cvs) drawTouchpoint(cvs, i, mode);
+			});
+			updateCcVerdict(mode);
+		}
+
+		function updateCcVerdict(mode) {
+			const v = document.getElementById('cc-verdict');
+			if (mode === 'consistent') {
+				v.innerHTML = `
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--sage)">✓</span><span>Same accent color (#38c0e8) across all four touchpoints — the palette is invariant</span></div>
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--sage)">✓</span><span>Same logo mark geometry (circle with center dot) — recognizable at all sizes</span></div>
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--sage)">✓</span><span>Same typeface family (Syne) for headings, IBM Plex Mono for labels</span></div>
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--sage)">✓</span><span>Same dark background tone — the viewer's eye adapts immediately to any touchpoint</span></div>`;
+			} else {
+				v.innerHTML = `
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--rose)">✗</span><span>Four different accent colors — violet, green, amber, rose. No recognizable palette invariant.</span></div>
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--rose)">✗</span><span>Four different mark shapes and background tones — no shared visual DNA between touchpoints</span></div>
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--rose)">✗</span><span>Mixed typefaces — Georgia, Syne, IBM Plex Mono, system sans — no type invariant</span></div>
+      <div class="cc-verdict-item"><span class="cc-verdict-icon" style="color:var(--rose)">✗</span><span>Result: a viewer who finds the channel through the website would not recognize the thumbnail as belonging to the same creator</span></div>`;
+			}
+		}
+
+		buildCcTouchpoints();
+		CC_TOUCHPOINTS.forEach((_, i) => {
+			const cvs = document.querySelectorAll('.cc-tp-canvas')[i];
+			if (cvs) drawTouchpoint(cvs, i, 'consistent');
+		});
+		updateCcVerdict('consistent');
+
+		/* ══════════════════════════════════════
+   ASSESSMENT: IDENTITY CRITIQUE
+══════════════════════════════════════ */
+		const CRITIQUES = [
+			{
+				label: 'Specimen A — Color Role Confusion',
+				canvasDraw: (ctx, w, h) => {
+					// Deliberately confused palette — accent used everywhere at same weight
+					ctx.fillStyle = '#080b0f';
+					ctx.fillRect(0, 0, w, h);
+					// ALL elements in accent — no hierarchy
+					['#38c0e8', '#38c0e8', '#38c0e8', '#38c0e8'].forEach((col, i) => {
+						ctx.fillStyle = col;
+						ctx.font = `${800 - i * 100} ${24 - i * 3}px Syne,sans-serif`;
+						ctx.fillText(
+							['CHANNEL NAME', 'Episode Title', 'Subtitle text here', 'metadata label'][i],
+							20,
+							55 + i * 46
+						);
+					});
+				},
+				question:
+					'This brand uses a single accent color at the same saturation across all four typographic tiers. What is the structural problem?',
+				correct: 1,
+				options: [
+					'A. The accent color is too saturated for dark backgrounds',
+					'B. Using one color at the same weight for all tiers eliminates hierarchy — the eye cannot determine reading order because every element has identical visual priority',
+					'C. The font weights are not varied enough',
+					'D. There are too many elements on a single surface'
+				],
+				ok: "Correct. Color only creates hierarchy when it differentiates — using the same accent value across all tiers means color is doing no hierarchical work. The viewer's eye has no guided path. Fix: reserve accent for the primary tier only; use muted or neutral tones for secondary and tertiary.",
+				bad: "Not quite. The problem is not saturation or quantity — it's that every element shares identical color weight. Color creates hierarchy through contrast and differentiation; using one value uniformly eliminates both."
+			},
+			{
+				label: 'Specimen B — Shape Register Conflict',
+				canvasDraw: (ctx, w, h) => {
+					ctx.fillStyle = '#f5f4f0';
+					ctx.fillRect(0, 0, w, h);
+					// Soft rounded logo
+					ctx.fillStyle = '#38c0e8';
+					ctx.beginPath();
+					ctx.arc(50, h / 2, 28, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = '#f5f4f0';
+					ctx.beginPath();
+					ctx.arc(40, h / 2 - 8, 10, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = '#111';
+					ctx.font = 'bold 18px Syne,sans-serif';
+					ctx.fillText('SOFTMARK', 90, h / 2 + 6);
+					// But sharp aggressive thumbnail preview
+					ctx.fillStyle = '#1a0010';
+					ctx.fillRect(0, h * 0.6, w, h * 0.4);
+					ctx.fillStyle = '#e85d8a';
+					ctx.beginPath();
+					ctx.moveTo(20, h * 0.7);
+					ctx.lineTo(w * 0.45, h * 0.62);
+					ctx.lineTo(w * 0.45, h * 0.98);
+					ctx.lineTo(20, h * 0.98);
+					ctx.closePath();
+					ctx.fill();
+					ctx.fillStyle = '#fff';
+					ctx.font = 'bold 14px Syne,sans-serif';
+					ctx.fillText('DOMINATE YOUR NICHE', w * 0.48, h * 0.78);
+					ctx.fillStyle = 'rgba(255,255,255,0.5)';
+					ctx.font = '8px IBM Plex Mono,monospace';
+					ctx.fillText('↑ thumbnail style', w * 0.48, h * 0.92);
+					ctx.fillStyle = 'rgba(0,0,0,0.5)';
+					ctx.font = '8px IBM Plex Mono,monospace';
+					ctx.fillText('↑ logo style', 24, h * 0.6 - 4);
+				},
+				question:
+					'The brand logo uses soft rounded circles and gentle color. The thumbnails use sharp aggressive diagonals and high-energy copy. What system-level problem does this create?',
+				correct: 2,
+				options: [
+					'A. The thumbnail style is inappropriate for the content topic',
+					'B. The two styles use different color temperatures, which reduces legibility',
+					'C. Contradictory shape registers across touchpoints produce conflicting personality signals — a viewer who discovers the channel via thumbnail expects a different brand than what the logo delivers',
+					'D. The logo is too simple compared to the detailed thumbnail style'
+				],
+				ok: 'Correct. Shape language communicates personality before any content is processed. A soft rounded logo signals warmth and approachability; sharp aggressive thumbnails signal intensity and confrontation. Together they produce an incoherent brand personality — the viewer cannot form a stable expectation of what this creator stands for.',
+				bad: 'Not quite. The core problem is shape register conflict — the logo and thumbnails are expressing opposite personalities, making it impossible for the viewer to synthesize a coherent brand identity.'
+			}
+		];
+
+		function buildCritique() {
+			const wrap = document.getElementById('critique-wrap');
+			CRITIQUES.forEach((cr, qi) => {
+				const div = document.createElement('div');
+				div.className = 'critique-specimen';
+				const lbl = document.createElement('div');
+				lbl.className = 'critique-specimen-label';
+				lbl.textContent = cr.label;
+
+				const cvs = document.createElement('canvas');
+				cvs.width = 560;
+				cvs.height = 160;
+				cvs.className = 'critique-specimen-canvas';
+				cvs.style.maxWidth = '100%';
+
+				const body = document.createElement('div');
+				body.style.padding = '1.25rem';
+
+				const q = document.createElement('div');
+				q.className = 'critique-q';
+				q.textContent = cr.question;
+
+				const opts = document.createElement('div');
+				opts.className = 'critique-opts';
+				cr.options.forEach((opt, oi) => {
+					const btn = document.createElement('div');
+					btn.className = 'critique-opt';
+					btn.textContent = opt;
+					btn.addEventListener('click', () => {
+						if (div.dataset.answered) return;
+						div.dataset.answered = '1';
+						opts.querySelectorAll('.critique-opt').forEach((b, bi) => {
+							b.classList.add('disabled');
+							if (bi === cr.correct) b.classList.add('correct');
+						});
+						const fb = div.querySelector('.critique-feedback');
+						if (oi === cr.correct) {
+							btn.classList.remove('disabled');
+							fb.textContent = '✓ ' + cr.ok;
+							fb.className = 'critique-feedback ok';
+						} else {
+							btn.classList.add('wrong');
+							fb.textContent = '✗ ' + cr.bad;
+							fb.className = 'critique-feedback bad';
+						}
+					});
+					opts.appendChild(btn);
+				});
+
+				const fb = document.createElement('div');
+				fb.className = 'critique-feedback';
+
+				body.appendChild(q);
+				body.appendChild(opts);
+				body.appendChild(fb);
+				div.appendChild(lbl);
+				div.appendChild(cvs);
+				div.appendChild(body);
+				wrap.appendChild(div);
+
+				const ctx = cvs.getContext('2d');
+				cr.canvasDraw(ctx, cvs.width, cvs.height);
+			});
+		}
+
+		buildCritique();
+
+		/* ══════════════════════════════════════
+   QUIZ
+══════════════════════════════════════ */
+		let quizScore = 0,
+			quizAnswered = 0;
+		const explanations = [
+			"Correct. Branding (strategy) is present — they have clear values and positioning. What's missing is the identity layer: a defined visual system of palette, type, and shape rules that translates the strategy into consistent visual decisions. Without identity, every asset requires starting from zero.",
+			'Correct. Concept-led design starts from a written brief defining what must be communicated, then evaluates every visual decision against that brief. Aesthetic-led design starts from "what looks good?" — which is subjective, produces arbitrary results, and cannot be evaluated systematically.',
+			'Correct. Without role definitions, a palette is just a list of colors with no decision-making power. Role definitions (this color is for interactive elements; this is for backgrounds; this is for secondary text) mean the system makes color decisions automatically, producing consistency without deliberate effort.',
+			'Correct. Invariants are the fixed elements — typically the accent color, primary typeface, and logo mark — that remain exactly the same regardless of platform, format, or context. Everything else adapts; these three elements provide cross-platform recognition.',
+			'Correct. Branding must precede identity because identity decisions are constrained by strategy — you cannot choose colors and shapes without knowing what you need to communicate. Identity must precede assets because assets are applications of identity rules. Reversing the order means each layer lacks the context to make correct decisions.'
+		];
+
+		function handleQuiz(el, idx) {
+			const parent = el.closest('.question');
+			const correct = parseInt(parent.querySelector('.options').dataset.correct);
+			const opts = parent.querySelectorAll('.option');
+			const fbIdx = Array.from(document.querySelectorAll('.question')).indexOf(parent);
+			const fb = document.getElementById('fb-' + fbIdx);
+			if (el.classList.contains('disabled')) return;
+			opts.forEach((o) => o.classList.add('disabled'));
+			if (idx === correct) {
+				el.classList.add('correct');
+				fb.textContent = '✓ ' + explanations[fbIdx];
+				fb.className = 'feedback ok';
+				quizScore++;
+			} else {
+				el.classList.add('wrong');
+				opts[correct].classList.add('correct');
+				fb.textContent =
+					'✗ Revisit the section on brand system layers — focus on what each layer does and why the order matters.';
+				fb.className = 'feedback bad';
+			}
+			quizAnswered++;
+			if (quizAnswered === 5) {
+				const s = document.getElementById('quiz-score');
+				document.getElementById('score-num').textContent = quizScore + ' / 5';
+				s.style.display = 'block';
+				setTimeout(() => s.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
+			}
+		}
+
+		if (typeof hexToHsl === 'function') actions.hexToHsl = hexToHsl;
+		if (typeof lighten === 'function') actions.lighten = lighten;
+		if (typeof darken === 'function') actions.darken = darken;
+		if (typeof isLight === 'function') actions.isLight = isLight;
+		if (typeof roundRect === 'function') actions.roundRect = roundRect;
+		if (typeof drawLogoCanvas === 'function') actions.drawLogoCanvas = drawLogoCanvas;
+		if (typeof updateLogoStudio === 'function') actions.updateLogoStudio = updateLogoStudio;
+		if (typeof setSgColor === 'function') actions.setSgColor = setSgColor;
+		if (typeof getContrastText === 'function') actions.getContrastText = getContrastText;
+		if (typeof drawSgThumbCanvas === 'function') actions.drawSgThumbCanvas = drawSgThumbCanvas;
+		if (typeof updateStyleGuide === 'function') actions.updateStyleGuide = updateStyleGuide;
+		if (typeof drawTouchpoint === 'function') actions.drawTouchpoint = drawTouchpoint;
+		if (typeof buildCcTouchpoints === 'function') actions.buildCcTouchpoints = buildCcTouchpoints;
+		if (typeof setCcMode === 'function') actions.setCcMode = setCcMode;
+		if (typeof updateCcVerdict === 'function') actions.updateCcVerdict = updateCcVerdict;
+		if (typeof buildCritique === 'function') actions.buildCritique = buildCritique;
+		if (typeof handleQuiz === 'function') actions.handleQuiz = handleQuiz;
+
+		return () => {
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
+		};
+	});
+</script>
+
+<div class="page-wrapper">
+	<header class="course-header">
+		<div>
+			<div class="course-label">Graphic Design &amp; Visual Storytelling</div>
+			<div class="course-title">Building a Personal Creative Identity</div>
+		</div>
+		<div style="font-size: 11px; color: var(--muted); text-align: right">Module 06 of 10</div>
+	</header>
+
+	<div class="module-hero">
+		<div class="module-number">06</div>
+		<div class="module-tag">Module 06 · System + Identity</div>
+		<h1 class="module-title">Brand Identity &amp;<br /><span>Visual Systems</span></h1>
+		<div class="progress-bar-wrap">
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+				aria-valuenow="0"
+			></div>
+		</div>
+	</div>
+
+	<nav class="toc">
+		<div class="toc-label">Contents</div>
+		<ul class="toc-list">
+			<li><a href="#objectives">Objectives</a></li>
+			<li><a href="#three-layers">Branding vs Identity vs Assets</a></li>
+			<li><a href="#concept-first">Designing from Concept</a></li>
+			<li><a href="#style-guide">The Style Guide</a></li>
+			<li><a href="#consistency">Consistency Across Platforms</a></li>
+			<li><a href="#practical">Practical Work</a></li>
+			<li><a href="#quiz">Quiz</a></li>
+			<li><a href="#assessment">Assessment</a></li>
+		</ul>
+	</nav>
+
+	<section id="objectives" class="objectives">
+		<div class="objectives-label">Learning Objectives</div>
+		<ul>
+			<li>
+				Distinguish branding, identity, and assets as three distinct but interdependent layers
+			</li>
+			<li>Design a logo from a concept brief rather than from aesthetic preference</li>
+			<li>Build a functional style guide covering palette, type, shape, and voice</li>
+			<li>Evaluate brand consistency across multiple touchpoints</li>
+		</ul>
+	</section>
+
+	<!-- ══════════════════════════
+     SECTION 1: THREE LAYERS
+══════════════════════════ -->
+	<section id="three-layers" class="section">
+		<div class="section-header">
+			<span class="section-num">06.01</span>
+			<h2 class="section-title">Branding vs Identity vs Assets</h2>
+		</div>
+
+		<p>
+			These three terms are used interchangeably in everyday conversation and incorrectly in most of
+			them. Distinguishing them is not pedantry — it determines where you start when building a
+			brand system, and what order the decisions happen in. Getting the order wrong is the most
+			common reason brand systems collapse into incoherence.
+		</p>
+
+		<p>
+			<strong>Branding</strong> is the strategic layer — the ideas, values, positioning, and promises
+			that define what an entity stands for. It answers: What do we believe? Who are we for? What do we
+			offer that no one else does? Branding exists entirely in language and concept before a single visual
+			decision is made. Most YouTube creators skip this layer entirely and wonder why their channel feels
+			generic.
+		</p>
+
+		<p>
+			<strong>Identity</strong> is the translation layer — the visual system that gives branding a consistent,
+			recognizable form. Identity includes the logo, the color palette, the typography system, the shape
+			register, and the voice. Identity decisions are constrained by branding decisions: if the brand
+			is about precision and analytical rigor, the identity must express those values — not contradict
+			them.
+		</p>
+
+		<p>
+			<strong>Assets</strong> are the application layer — the individual outputs produced using the identity
+			system. Thumbnails, channel banners, title cards, website pages, icon sets, social graphics. Assets
+			are infinitely varied, but all of them are generated by applying the same identity rules. A well-defined
+			identity makes asset production fast and consistent. A poorly-defined identity makes every asset
+			a new design problem from scratch.
+		</p>
+
+		<!-- DEMO 1: Brand Layers Explorer -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Brand Layers Anatomy</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+					Click each layer to expand what it contains and how it relates to the layers above and
+					below it. The order matters — lower layers are constrained by upper ones.
+				</p>
+				<div class="layers-diagram" id="layers-diagram"></div>
+			</div>
+		</div>
+
+		<div class="callout">
+			<div class="callout-label">The Order Problem</div>
+			The most common failure: jumping directly to assets without defining branding or identity. The result
+			is a collection of one-off outputs that look different from each other, require constant re-design,
+			and feel like they belong to different creators. The investment in the first two layers pays compound
+			interest — every asset becomes faster and more consistent to produce.
+		</div>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Layer</th>
+					<th>What It Contains</th>
+					<th>Output</th>
+					<th>Changes How Often</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Branding</td>
+					<td>Values, positioning, audience, promise, voice</td>
+					<td>A written brief or manifesto</td>
+					<td>Rarely — only with fundamental strategic shifts</td>
+				</tr>
+				<tr>
+					<td>Identity</td>
+					<td>Logo, palette, typography, shapes, tone</td>
+					<td>Style guide / brand manual</td>
+					<td>Occasionally — major redesigns every 3–5 years</td>
+				</tr>
+				<tr>
+					<td>Assets</td>
+					<td>Thumbnails, banners, cards, icons, pages</td>
+					<td>Individual deliverable files</td>
+					<td>Constantly — every video, every post</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<!-- ══════════════════════════
+     SECTION 2: CONCEPT FIRST
+══════════════════════════ -->
+	<section id="concept-first" class="section">
+		<div class="section-header">
+			<span class="section-num">06.02</span>
+			<h2 class="section-title">Designing a Logo from Concept, Not Aesthetics</h2>
+		</div>
+
+		<p>
+			The typical beginner process for logo design: open a design tool, try different shapes, pick
+			the one that looks best, choose colors that feel nice, write the channel name in a font that
+			seems appropriate. This is aesthetic-led design. It produces outputs that look designed but
+			communicate nothing specific.
+		</p>
+
+		<p>
+			Concept-led design reverses the sequence. It starts with a written brief:
+			<em>what three words should this logo communicate?</em> Then it maps those words to shape language
+			(angular vs rounded, geometric vs organic), color psychology (warm/cool, saturated/muted), and typographic
+			register (display/serif/sans/mono). Every visual decision is a translation of the brief, not an
+			aesthetic preference.
+		</p>
+
+		<p>
+			This approach has a specific practical benefit: it gives you criteria for evaluating your
+			designs. Aesthetic-led design produces options you have to "feel" your way through, with no
+			basis for choosing between them. Concept-led design produces options you can evaluate against
+			the brief — "does this shape communicate precision?" is a more answerable question than "does
+			this look good?"
+		</p>
+
+		<div class="callout amber">
+			<div class="callout-label">The Three-Word Brief</div>
+			Before opening any design tool, write down three words that your visual identity must communicate.
+			Not words like "professional" or "good" — those are table stakes. Words like:
+			<em>relentless, rigorous, accessible</em> or <em>playful, curious, sharp</em>. Every design
+			decision that cannot be justified by reference to those three words is a decoration, not a
+			communication.
+		</div>
+
+		<!-- DEMO 2: Logo Concept Studio -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Concept-Led Logo Studio</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+					Choose a brand archetype and make four design decisions. The alignment meter scores how
+					well each decision serves the concept — not whether it looks good.
+				</p>
+
+				<div class="two-col" style="align-items: start; gap: 1.5rem">
+					<div>
+						<canvas
+							id="logo-canvas"
+							width="300"
+							height="300"
+							aria-label="Logo Canvas Demonstration"
+							role="region"
+							tabindex="0"
+						></canvas>
+						<div class="concept-score-wrap" id="concept-scores"></div>
+						<div class="concept-note" id="concept-note">Select a brand archetype to begin.</div>
+					</div>
+					<div class="studio-controls" id="studio-controls">
+						<div class="ctrl-block" style="grid-column: 1/-1">
+							<div class="ctrl-label">Brand Archetype</div>
+							<select
+								id="logo-archetype"
+								onchange={() => {
+									actions.updateLogoStudio();
+								}}
+							>
+								<option value="">— Choose an archetype —</option>
+								<option value="analytical">Analytical / Research-driven</option>
+								<option value="energetic">Energetic / High-performance</option>
+								<option value="warm">Warm / Educational &amp; Approachable</option>
+								<option value="creative">Creative / Experimental &amp; Bold</option>
+								<option value="premium">Premium / Refined &amp; Authoritative</option>
+							</select>
+						</div>
+						<div class="ctrl-block">
+							<div class="ctrl-label">Shape Register</div>
+							<select
+								id="logo-shape"
+								onchange={() => {
+									actions.updateLogoStudio();
+								}}
+							>
+								<option value="geometric-sharp">Sharp Geometric</option>
+								<option value="geometric-round">Rounded Geometric</option>
+								<option value="organic">Organic / Irregular</option>
+								<option value="abstract">Abstract Diagonal</option>
+							</select>
+						</div>
+						<div class="ctrl-block">
+							<div class="ctrl-label">Color Temperature</div>
+							<select
+								id="logo-color"
+								onchange={() => {
+									actions.updateLogoStudio();
+								}}
+							>
+								<option value="cool-precise">Cool &amp; Precise (blues, teals)</option>
+								<option value="warm-energy">Warm &amp; Energetic (reds, oranges)</option>
+								<option value="warm-natural">Warm &amp; Natural (ambers, sage)</option>
+								<option value="dark-technical">Dark Technical (deep + violet)</option>
+								<option value="neutral-editorial">Neutral Editorial (monochrome)</option>
+							</select>
+						</div>
+						<div class="ctrl-block">
+							<div class="ctrl-label">Type Register</div>
+							<select
+								id="logo-type"
+								onchange={() => {
+									actions.updateLogoStudio();
+								}}
+							>
+								<option value="mono">Monospace — Precise</option>
+								<option value="geometric-sans">Geometric Sans — Clean</option>
+								<option value="display-bold">Display Bold — Impact</option>
+								<option value="serif">Serif — Authority</option>
+								<option value="humanist">Humanist Sans — Warm</option>
+							</select>
+						</div>
+						<div class="ctrl-block">
+							<div class="ctrl-label">Mark Complexity</div>
+							<select
+								id="logo-complexity"
+								onchange={() => {
+									actions.updateLogoStudio();
+								}}
+							>
+								<option value="wordmark">Wordmark only</option>
+								<option value="simple">Simple mark + text</option>
+								<option value="combined">Combined letterform</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="callout sage">
+			<div class="callout-label">What the Score Measures</div>
+			The alignment score does not measure beauty — it measures coherence between the concept and the
+			decisions. A logo that scores 90% on "analytical" is one where every decision — shape, color, type
+			— sends consistent signals about precision and rigor. A logo that scores 40% has contradictions:
+			perhaps a precise concept expressed with warm organic shapes.
+		</div>
+	</section>
+
+	<!-- ══════════════════════════
+     SECTION 3: STYLE GUIDE
+══════════════════════════ -->
+	<section id="style-guide" class="section">
+		<div class="section-header">
+			<span class="section-num">06.03</span>
+			<h2 class="section-title">The Style Guide</h2>
+		</div>
+
+		<p>
+			A style guide is the document that encodes your identity system. It is not a gallery of
+			finished work — it is a set of rules that could, in principle, allow someone who has never
+			seen your channel to produce assets that are indistinguishable from yours in register and
+			personality. That is the test of a good style guide.
+		</p>
+
+		<p>
+			For a YouTube channel and accompanying website, a functional style guide covers six areas: the <strong
+				>logo system</strong
+			>
+			(primary, secondary, and minimum-size versions), the
+			<strong>color palette</strong> (with precise HSL values and defined roles), the
+			<strong>typography system</strong> (with specific faces, weights, and size scales), the
+			<strong>shape register</strong> (corner radii, icon grid, spacing rules), the
+			<strong>voice</strong> (tone adjectives and anti-examples), and
+			<strong>usage examples</strong> (how each element is applied across thumbnails, titles, and web).
+		</p>
+
+		<p>
+			The most important part of a style guide is the <em>role definitions</em> — not just listing what
+			colors exist, but specifying what each color is for. The primary accent is for interactive elements
+			and focal points. The surface color is for card backgrounds. The muted tone is for secondary text.
+			Without role definitions, designers reach for palette colors arbitrarily and the system loses coherence.
+		</p>
+
+		<!-- DEMO 3: Live Style Guide Builder -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Live Style Guide Builder</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+					Make decisions in the left panel and watch your style guide preview update in real time.
+					Every decision compounds — each change affects how the whole system feels.
+				</p>
+				<div class="sg-builder">
+					<div class="sg-controls">
+						<div class="sg-controls-title">Decisions</div>
+
+						<div class="sg-control-group">
+							<div class="sg-control-label">Brand Name</div>
+							<input
+								type="text"
+								id="sg-name"
+								value="SIGNAL"
+								maxlength="12"
+								style="
+											width: 100%;
+											background: var(--code-bg);
+											border: 1px solid var(--border);
+											color: #fff;
+											padding: 5px 8px;
+											font-family: 'Syne', sans-serif;
+											font-size: 16px;
+											font-weight: 700;
+											outline: none;
+											letter-spacing: 0.06em;
+										"
+								oninput={() => {
+									actions.updateStyleGuide();
+								}}
+							/>
+						</div>
+
+						<div class="sg-control-group">
+							<div class="sg-control-label">Primary Accent</div>
+							<div class="sg-swatch-picker">
+								<div
+									class="sg-color-dot selected"
+									data-color="#38c0e8"
+									style="background: #38c0e8"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'accent')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'accent');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#e85d8a"
+									style="background: #e85d8a"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'accent')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'accent');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#9b6dff"
+									style="background: #9b6dff"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'accent')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'accent');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#f5a623"
+									style="background: #f5a623"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'accent')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'accent');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#56d0a0"
+									style="background: #56d0a0"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'accent')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'accent');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#ff6b35"
+									style="background: #ff6b35"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'accent')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'accent');
+										}
+									}}
+								></div>
+							</div>
+						</div>
+
+						<div class="sg-control-group">
+							<div class="sg-control-label">Background Tone</div>
+							<div class="sg-swatch-picker">
+								<div
+									class="sg-color-dot selected"
+									data-color="#080b0f"
+									style="background: #080b0f; border: 2px solid var(--border2)"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'bg')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'bg');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#0c0810"
+									style="background: #0c0810; border: 2px solid var(--border2)"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'bg')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'bg');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#0a100a"
+									style="background: #0a100a; border: 2px solid var(--border2)"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'bg')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'bg');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#100a08"
+									style="background: #100a08; border: 2px solid var(--border2)"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'bg')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'bg');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#f5f4f0"
+									style="background: #f5f4f0"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'bg')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'bg');
+										}
+									}}
+								></div>
+								<div
+									class="sg-color-dot"
+									data-color="#1a1a2e"
+									style="background: #1a1a2e; border: 2px solid var(--border2)"
+									onclick={(e) => actions.setSgColor(e.currentTarget, 'bg')}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											actions.setSgColor(e.currentTarget, 'bg');
+										}
+									}}
+								></div>
+							</div>
+						</div>
+
+						<div class="sg-control-group">
+							<div class="sg-control-label">Heading Style</div>
+							<select
+								id="sg-heading-font"
+								onchange={() => {
+									actions.updateStyleGuide();
+								}}
+							>
+								<option value="Syne">Syne (Geometric Bold)</option>
+								<option value="serif">Playfair (Serif)</option>
+								<option value="mono">IBM Plex Mono</option>
+								<option value="condensed">Bebas Neue</option>
+							</select>
+						</div>
+
+						<div class="sg-control-group">
+							<div class="sg-control-label">Shape Register</div>
+							<select
+								id="sg-shape"
+								onchange={() => {
+									actions.updateStyleGuide();
+								}}
+							>
+								<option value="sharp">Sharp / Angular</option>
+								<option value="rounded">Rounded / Friendly</option>
+								<option value="circle">Circle / Unified</option>
+							</select>
+						</div>
+
+						<div class="sg-control-group">
+							<div class="sg-control-label">Voice Word</div>
+							<select
+								id="sg-voice"
+								onchange={() => {
+									actions.updateStyleGuide();
+								}}
+							>
+								<option value="precise">Precise</option>
+								<option value="energetic">Energetic</option>
+								<option value="warm">Warm</option>
+								<option value="bold">Bold</option>
+								<option value="curious">Curious</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="sg-preview">
+						<div class="sg-page" id="sg-page">
+							<!-- Built by JS -->
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="callout violet">
+			<div class="callout-label">Role Definitions Matter More Than Colors</div>
+			A palette of five colors without role definitions is just a list. A palette of five colors with
+			role definitions — "this is the background, this is surface, this is primary interactive, this is
+			text, this is accent" — is a system. The difference is that a system makes decisions for you. Every
+			time you produce an asset, you don't choose which color goes where — the system already decided.
+		</div>
+	</section>
+
+	<!-- ══════════════════════════
+     SECTION 4: CONSISTENCY
+══════════════════════════ -->
+	<section id="consistency" class="section">
+		<div class="section-header">
+			<span class="section-num">06.04</span>
+			<h2 class="section-title">Consistency Across Platforms</h2>
+		</div>
+
+		<p>
+			Identity consistency does not mean visual monotony. It means that a viewer who encounters your
+			channel banner, your thumbnail, and your website header should recognize them as belonging to
+			the same creator without seeing a logo. The recognition comes from repeated visual patterns —
+			consistent color use, consistent type hierarchy, consistent shape register — that accumulate
+			into a recognizable signature.
+		</p>
+
+		<p>
+			The most common consistency failure is context drift: a creator designs their channel banner
+			carefully, then makes thumbnails with different fonts, then builds a website with a completely
+			different color palette, then creates educational graphics with yet another visual register.
+			Each individual piece might be well-designed, but together they produce no cumulative brand
+			recognition.
+		</p>
+
+		<p>
+			Consistency is especially difficult because each platform has different constraints. A
+			thumbnail is 16:9 at small scale; a profile picture is circular; a website header spans the
+			full viewport; an icon needs to work at 16px. The solution is to define
+			<em>invariants</em> — elements that stay constant regardless of format. Your accent color is invariant.
+			Your primary typeface is invariant. Your logo mark is invariant. Everything else adapts.
+		</p>
+
+		<!-- DEMO 4: Consistency Checker -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Identity Consistency Checker</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+					Toggle between a consistent brand system and a fragmented one — the same content applied
+					across four touchpoints. Identify the inconsistencies in the fragmented version.
+				</p>
+				<div class="cc-toggle">
+					<button
+						class="btn active"
+						id="cc-btn-consistent"
+						onclick={(e) => actions.setCcMode('consistent')}
+					>
+						Consistent Brand
+					</button>
+					<button
+						class="btn rose"
+						id="cc-btn-fragmented"
+						onclick={(e) => actions.setCcMode('fragmented')}
+					>
+						Fragmented Brand
+					</button>
+				</div>
+				<div class="cc-touchpoints" id="cc-touchpoints"></div>
+				<div class="cc-verdict" id="cc-verdict"></div>
+			</div>
+		</div>
+
+		<div class="callout">
+			<div class="callout-label">The Invariants Rule</div>
+			Define your three non-negotiable invariants before you produce any asset. These are the elements
+			that appear in exactly the same form — same color value, same typeface, same mark — regardless of
+			the surface. Everything else is variable. Three invariants, applied consistently, produce recognition
+			faster than ten loosely-applied style rules.
+		</div>
+	</section>
+
+	<!-- PRACTICAL -->
+	<section id="practical" class="section">
+		<div class="section-header">
+			<span class="section-num">06.05</span>
+			<h2 class="section-title">Practical Work</h2>
+		</div>
+
+		<div class="callout amber">
+			<div class="callout-label">Exercise 1 — Brand Brief</div>
+			Before any visuals, write a one-page brand brief for your channel. It must answer:<br /><br />
+			· Three words your visual identity must communicate (not "professional" or "good")<br />
+			· Who your audience is and what they already expect visually from your topic area<br />
+			· What you want to communicate that is different from every other channel in your space<br />
+			· One brand you admire that shares your register, and one that contradicts it<br /><br />
+			This document becomes the decision filter for every visual choice you make.
+		</div>
+
+		<div class="callout">
+			<div class="callout-label">Exercise 2 — Personal Brand Sheet</div>
+			Using your brief, produce a single-page brand sheet that defines:<br /><br />
+			· Your logo mark in at least two configurations (horizontal + square/icon)<br />
+			· Your five-color palette with HSL values and named roles for each<br />
+			· Your two typefaces with the specific weights you will use<br />
+			· Your shape register (corner radius, icon stroke weight, geometry rules)<br />
+			· Three do/don't examples for each major element<br /><br />
+			This sheet should be detailed enough that you could give it to another designer and they could produce
+			a correct thumbnail without asking you any questions.
+		</div>
+	</section>
+
+	<hr class="divider" />
+
+	<!-- QUIZ -->
+	<section id="quiz" class="quiz-section">
+		<div class="quiz-header">Module 06 — Check Your Understanding</div>
+		<div class="quiz-sub">Five questions · No time limit</div>
+
+		<div class="question">
+			<div class="q-text">
+				<span class="q-num">01.</span> A creator has a clear brand strategy but every thumbnail looks
+				different from the last because they choose colors and fonts by feel each time. Which layer of
+				the system is missing?
+			</div>
+			<div class="options" data-correct="1">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
+				>
+					A. Branding — they need to refine their values and positioning
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
+				>
+					B. Identity — without a defined visual system (palette, type, shape rules), every asset
+					becomes a new design problem rather than an application of established decisions
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
+				>
+					C. Assets — they need to produce more thumbnails to develop consistency through practice
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
+				>
+					D. All three layers are missing — clear strategy cannot exist without visual consistency
+				</button>
+			</div>
+			<div class="feedback" id="fb-0"></div>
+		</div>
+
+		<div class="question">
+			<div class="q-text">
+				<span class="q-num">02.</span> What distinguishes concept-led logo design from aesthetic-led logo
+				design?
+			</div>
+			<div class="options" data-correct="2">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
+				>
+					A. Concept-led design uses more complex shapes and avoids simple geometry
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
+				>
+					B. Aesthetic-led design always produces better-looking results but less strategic ones
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
+				>
+					C. Concept-led design starts from a written brief that defines what the logo must
+					communicate — every visual decision is evaluated against that brief rather than by whether
+					it looks appealing
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
+				>
+					D. Concept-led design is only relevant for commercial brands; personal creators should
+					design by feel
+				</button>
+			</div>
+			<div class="feedback" id="fb-1"></div>
+		</div>
+
+		<div class="question">
+			<div class="q-text">
+				<span class="q-num">03.</span> A style guide lists five colors but does not define roles for each.
+				What problem does this create?
+			</div>
+			<div class="options" data-correct="3">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
+				>
+					A. Five colors is too many — style guides should limit palettes to three maximum
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
+				>
+					B. Without names, the colors cannot be referenced consistently across design tools
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
+				>
+					C. The palette will feel inconsistent because designers will prefer different colors
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
+				>
+					D. Without role definitions, colors are applied arbitrarily — the system cannot make
+					decisions, so every asset requires a new color choice rather than applying an established
+					rule
+				</button>
+			</div>
+			<div class="feedback" id="fb-2"></div>
+		</div>
+
+		<div class="question">
+			<div class="q-text">
+				<span class="q-num">04.</span> What are "invariants" in the context of cross-platform brand consistency?
+			</div>
+			<div class="options" data-correct="0">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
+				>
+					A. The fixed elements — accent color, primary typeface, logo mark — that appear in
+					identical form regardless of platform or format, creating recognition even when other
+					elements adapt
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
+				>
+					B. The minimum file sizes required for assets to work across different platforms
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
+				>
+					C. The visual elements that should change between platforms to fit each context
+					appropriately
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
+				>
+					D. The mathematical proportions used to scale a logo mark at different sizes
+				</button>
+			</div>
+			<div class="feedback" id="fb-3"></div>
+		</div>
+
+		<div class="question">
+			<div class="q-text">
+				<span class="q-num">05.</span> In the three-layer model, in which order must decisions happen,
+				and why?
+			</div>
+			<div class="options" data-correct="1">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 0)}
+				>
+					A. Assets → Identity → Branding — start by producing work to discover what the brand is
+					about through output
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 1)}
+				>
+					B. Branding → Identity → Assets — strategy constrains identity decisions, and identity
+					constrains asset decisions; reversing the order means each layer lacks the context needed
+					to make correct choices
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 2)}
+				>
+					C. Identity → Branding → Assets — the visual system must exist before strategy can be
+					articulated
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.handleQuiz(e.currentTarget, 3)}
+				>
+					D. The order does not matter — the three layers are independent and can be developed
+					simultaneously
+				</button>
+			</div>
+			<div class="feedback" id="fb-4"></div>
+		</div>
+
+		<div class="quiz-score" id="quiz-score">
+			<div class="score-num" id="score-num">—</div>
+			<div class="score-label">questions correct out of 5</div>
+		</div>
+	</section>
+
+	<!-- ASSESSMENT -->
+	<section id="assessment" class="assessment-section">
+		<div class="assessment-header">Module Assessment — Identity System Critique</div>
+		<div class="assessment-sub">
+			Examine the partial brand identity below and identify the structural problem in each aspect.
+		</div>
+		<div class="critique-wrap" id="critique-wrap"></div>
+	</section>
+
+	<div class="nav-links">
+		<a href="gd-module-05.html" class="prev-link">← Module 05: Shape Language</a>
+		<a href="gd-module-07.html" class="next-module" style="flex: 1; max-width: 420px">
+			<div>
+				<div class="next-label">Next — Module 07</div>
+				<div class="next-title">Layout for Digital Platforms</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</div>
+</div>
+
+<!-- page-wrapper -->
+
+<style>
+	.page-wrapper {
+		background: var(--bg);
+		color: var(--text);
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 14px;
+		line-height: 1.8;
+	}
+
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 6rem;
+	}
+
+	.course-header {
+		border-bottom: 1px solid var(--border);
+		padding: 2rem 0 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.course-label {
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.course-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 13px;
+		color: var(--muted);
+		font-weight: 400;
+	}
+
+	.module-hero {
+		padding: 5rem 0 3.5rem;
+		border-bottom: 1px solid var(--border);
+		position: relative;
+		overflow: hidden;
+	}
+	.module-number {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(80px, 15vw, 140px);
+		font-weight: 800;
+		line-height: 1;
+		color: transparent;
+		-webkit-text-stroke: 1px var(--border2);
+		position: absolute;
+		right: -10px;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none;
+		user-select: none;
+	}
+	.module-tag {
+		display: inline-block;
+		font-size: 10px;
+		letter-spacing: 0.25em;
+		text-transform: uppercase;
+		color: var(--sky);
+		border: 1px solid var(--sky);
+		padding: 3px 10px;
+		margin-bottom: 1.5rem;
+	}
+	.module-title {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(28px, 5vw, 48px);
+		font-weight: 800;
+		line-height: 1.1;
+		color: #fff;
+		max-width: 620px;
+	}
+	.module-title span {
+		color: var(--sky);
+	}
+
+	.toc {
+		margin: 3rem 0;
+		padding: 1.5rem;
+		border: 1px solid var(--border);
+		background: var(--surface);
+	}
+	.toc-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+		margin-bottom: 1rem;
+	}
+	.toc-list {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.toc-list a {
+		font-size: 12px;
+		color: var(--muted);
+		text-decoration: none;
+		border: 1px solid var(--border);
+		padding: 4px 10px;
+		transition: all 0.15s;
+	}
+	.toc-list a:hover {
+		color: var(--sky);
+		border-color: var(--sky);
+	}
+
+	.objectives {
+		margin: 2.5rem 0;
+		padding: 1.5rem 2rem;
+		border-left: 2px solid var(--sky);
+		background: var(--surface);
+	}
+	.objectives-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--sky);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.2rem 0;
+		padding-left: 1.2rem;
+		position: relative;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--rose);
+	}
+
+	.section {
+		margin: 4rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border);
+	}
+	.section-num {
+		font-size: 11px;
+		color: var(--rose);
+		letter-spacing: 0.1em;
+		font-weight: 600;
+	}
+	.section-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 22px;
+		font-weight: 700;
+		color: #fff;
+	}
+
+	p {
+		margin-bottom: 1.2rem;
+		color: var(--text);
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--sky);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: normal;
+		font-weight: 500;
+	}
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+	:global(code) {
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		padding: 1px 6px;
+		font-size: 12px;
+		color: var(--violet);
+		font-family: 'IBM Plex Mono', monospace;
+	}
+
+	.callout {
+		margin: 1.5rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--sky);
+		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
+		font-size: 13px;
+	}
+	.callout.amber {
+		border-color: var(--amber);
+		background: color-mix(in srgb, var(--amber) 5%, var(--surface));
+	}
+	.callout.sage {
+		border-color: var(--sage);
+		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
+	}
+	.callout.warn {
+		border-color: var(--rose);
+		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
+	}
+	.callout.violet {
+		border-color: var(--violet);
+		background: color-mix(in srgb, var(--violet) 5%, var(--surface));
+	}
+	.callout-label {
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--sky);
+		margin-bottom: 0.4rem;
+		font-weight: 600;
+	}
+	.callout.amber .callout-label {
+		color: var(--amber);
+	}
+	.callout.sage .callout-label {
+		color: var(--sage);
+	}
+	.callout.warn .callout-label {
+		color: var(--rose);
+	}
+	.callout.violet .callout-label {
+		color: var(--violet);
+	}
+
+	.demo-box {
+		background: var(--surface);
+		border: 1px solid var(--border);
+		margin: 2rem 0;
+	}
+	.demo-header {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.demo-header > span {
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.demo-badge {
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid;
+	}
+	.demo-badge.interactive {
+		color: var(--sky);
+		border-color: var(--sky);
+		background: color-mix(in srgb, var(--sky) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--border2);
+		color: var(--text);
+		padding: 6px 16px;
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	:global(.btn:hover) {
+		border-color: var(--sky);
+		color: var(--sky);
+	}
+	:global(.btn.active) {
+		border-color: var(--sky);
+		color: var(--sky);
+		background: color-mix(in srgb, var(--sky) 10%, transparent);
+	}
+	:global(.btn.rose:hover) {
+		border-color: var(--rose);
+		color: var(--rose);
+	}
+	:global(.btn.rose.active) {
+		border-color: var(--rose);
+		color: var(--rose);
+		background: color-mix(in srgb, var(--rose) 10%, transparent);
+	}
+	:global(.btn.amber:hover) {
+		border-color: var(--amber);
+		color: var(--amber);
+	}
+	:global(.btn.amber.active) {
+		border-color: var(--amber);
+		color: var(--amber);
+		background: color-mix(in srgb, var(--amber) 10%, transparent);
+	}
+	:global(.btn.sage:hover) {
+		border-color: var(--sage);
+		color: var(--sage);
+	}
+	:global(.btn.sage.active) {
+		border-color: var(--sage);
+		color: var(--sage);
+		background: color-mix(in srgb, var(--sage) 10%, transparent);
+	}
+	:global(.btn.violet:hover) {
+		border-color: var(--violet);
+		color: var(--violet);
+	}
+	:global(.btn.violet.active) {
+		border-color: var(--violet);
+		color: var(--violet);
+		background: color-mix(in srgb, var(--violet) 10%, transparent);
+	}
+
+	select {
+		background: var(--raised);
+		border: 1px solid var(--border2);
+		color: var(--text);
+		padding: 5px 10px;
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		outline: none;
+		cursor: pointer;
+		width: 100%;
+	}
+	select:focus {
+		border-color: var(--sky);
+	}
+
+	.two-col {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+	}
+	:global(.three-col) {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 640px) {
+		.two-col,
+		:global(.three-col) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1.5rem 0;
+		font-size: 12px;
+	}
+	th {
+		background: var(--raised);
+		color: var(--sky);
+		text-align: left;
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--border);
+		font-weight: 600;
+		letter-spacing: 0.05em;
+	}
+	td {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--border);
+		color: var(--text);
+	}
+	tr:nth-child(even) td {
+		background: color-mix(in srgb, var(--raised) 50%, transparent);
+	}
+
+	.progress-bar-wrap {
+		height: 3px;
+		background: var(--border);
+		width: 100%;
+		margin: 2rem 0 0;
+	}
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--sky);
+		width: 0;
+		transition: width 0.4s ease;
+	}
+	.divider {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 3rem 0;
+	}
+
+	.quiz-section {
+		margin: 4rem 0;
+		padding: 2rem;
+		border: 1px solid var(--border);
+		background: var(--surface);
+	}
+	.quiz-header {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-bottom: 0.5rem;
+	}
+	.quiz-sub {
+		font-size: 12px;
+		color: var(--muted);
+		margin-bottom: 2rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	:global(.q-text) {
+		font-size: 13px;
+		color: #fff;
+		margin-bottom: 1rem;
+	}
+	:global(.q-num) {
+		color: var(--sky);
+		margin-right: 0.5rem;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	:global(.option) {
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.15s;
+		user-select: none;
+		font-family: 'IBM Plex Mono', monospace;
+	}
+	:global(.option:hover) {
+		border-color: var(--border2);
+		background: var(--raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--sage);
+		background: color-mix(in srgb, var(--sage) 10%, transparent);
+		color: var(--sage);
+	}
+	:global(.option.wrong) {
+		border-color: var(--rose);
+		background: color-mix(in srgb, var(--rose) 10%, transparent);
+		color: var(--rose);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.75rem;
+		min-height: 1.5em;
+		color: var(--muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--sage);
+	}
+	:global(.feedback.bad) {
+		color: var(--rose);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 1.5rem;
+		border: 1px solid var(--border);
+		text-align: center;
+		display: none;
+	}
+	.score-num {
+		font-family: 'Syne', sans-serif;
+		font-size: 36px;
+		font-weight: 800;
+		color: var(--sky);
+	}
+	.score-label {
+		font-size: 12px;
+		color: var(--muted);
+		margin-top: 0.25rem;
+	}
+
+	.assessment-section {
+		margin: 4rem 0;
+		padding: 2rem;
+		border: 1px solid var(--border);
+		background: var(--surface);
+	}
+	.assessment-header {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-bottom: 0.25rem;
+	}
+	.assessment-sub {
+		font-size: 12px;
+		color: var(--muted);
+		margin-bottom: 1.5rem;
+	}
+
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 4rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	:global(.prev-link) {
+		font-size: 12px;
+		color: var(--muted);
+		text-decoration: none;
+		border: 1px solid var(--border);
+		padding: 0.75rem 1.25rem;
+		transition: all 0.2s;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	:global(.prev-link:hover) {
+		border-color: var(--sky);
+		color: var(--sky);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--border);
+		text-decoration: none;
+		transition: all 0.2s;
+		background: var(--surface);
+	}
+	.next-module:hover {
+		border-color: var(--violet);
+	}
+	.next-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.next-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.25rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--violet);
+	}
+
+	/* ════════════════════════════════
+   DEMO 1: BRAND LAYERS
+════════════════════════════════ */
+	.layers-diagram {
+		position: relative;
+		max-width: 560px;
+		margin: 0 auto;
+	}
+	.brand-layer {
+		border: 1px solid;
+		padding: 0.75rem 1.25rem;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 4px;
+		user-select: none;
+	}
+	.brand-layer .layer-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 15px;
+		font-weight: 700;
+	}
+	.brand-layer .layer-subtitle {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		margin-top: 0.1rem;
+		opacity: 0.7;
+	}
+	.brand-layer .layer-arrow {
+		font-size: 18px;
+		transition: transform 0.2s;
+	}
+	.brand-layer.open .layer-arrow {
+		transform: rotate(90deg);
+	}
+	.layer-content {
+		border: 1px solid;
+		border-top: none;
+		padding: 0;
+		max-height: 0;
+		overflow: hidden;
+		transition:
+			max-height 0.35s ease,
+			padding 0.25s;
+		font-size: 12px;
+		line-height: 1.7;
+	}
+	.layer-content.open {
+		max-height: 500px;
+		padding: 1rem 1.25rem;
+	}
+	.layer-content ul {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+	.layer-content li {
+		padding-left: 1rem;
+		position: relative;
+	}
+	.layer-content li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		font-size: 10px;
+		top: 0.15em;
+	}
+	.layer-content .layer-example {
+		margin-top: 0.75rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 11px;
+		border-left: 2px solid;
+		opacity: 0.8;
+	}
+
+	/* ════════════════════════════════
+   DEMO 2: LOGO CONCEPT STUDIO
+════════════════════════════════ */
+	#logo-canvas {
+		display: block;
+		max-width: 100%;
+		border: 1px solid var(--border2);
+		background: #070b10;
+	}
+	.concept-score-wrap {
+		margin-top: 1rem;
+	}
+	.concept-score-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.35rem 0;
+	}
+	.concept-score-label {
+		font-size: 11px;
+		color: var(--muted);
+		min-width: 150px;
+	}
+	.concept-score-bar-bg {
+		flex: 1;
+		height: 3px;
+		background: var(--border2);
+	}
+	.concept-score-bar {
+		height: 100%;
+		transition:
+			width 0.4s,
+			background 0.4s;
+	}
+	.concept-score-val {
+		font-size: 11px;
+		font-weight: 600;
+		min-width: 36px;
+		text-align: right;
+	}
+	.concept-note {
+		font-size: 12px;
+		margin-top: 0.75rem;
+		padding: 0.5rem 0.75rem;
+		border-left: 2px solid var(--sky);
+		color: var(--muted);
+		min-height: 2em;
+		line-height: 1.6;
+		transition: all 0.3s;
+	}
+	.studio-controls {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 560px) {
+		.studio-controls {
+			grid-template-columns: 1fr;
+		}
+	}
+	.ctrl-block {
+		padding: 0.75rem;
+		border: 1px solid var(--border);
+		background: var(--raised);
+	}
+	:global(.ctrl-label) {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		margin-bottom: 0.5rem;
+	}
+
+	/* ════════════════════════════════
+   DEMO 3: LIVE STYLE GUIDE
+════════════════════════════════ */
+	.sg-builder {
+		display: grid;
+		grid-template-columns: 260px 1fr;
+		gap: 0;
+		border: 1px solid var(--border);
+	}
+	@media (max-width: 700px) {
+		.sg-builder {
+			grid-template-columns: 1fr;
+		}
+	}
+	.sg-controls {
+		border-right: 1px solid var(--border);
+		padding: 1.25rem;
+		background: var(--raised);
+	}
+	.sg-controls-title {
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--muted);
+		margin-bottom: 1rem;
+	}
+	.sg-control-group {
+		margin-bottom: 1.25rem;
+	}
+	.sg-control-label {
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--muted);
+		margin-bottom: 0.4rem;
+	}
+	.sg-preview {
+		padding: 0;
+		overflow: hidden;
+		background: var(--code-bg);
+		min-height: 480px;
+	}
+	.sg-page {
+		padding: 1.5rem;
+		transition: all 0.4s;
+		min-height: 480px;
+	}
+
+	/* Style guide page elements */
+	.sgp-logo-area {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid;
+	}
+	.sgp-logo-mark {
+		width: 44px;
+		height: 44px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.4s;
+	}
+	.sgp-brand-name {
+		font-weight: 700;
+		font-size: 18px;
+		line-height: 1;
+		transition: all 0.4s;
+	}
+	.sgp-tagline {
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		margin-top: 0.3rem;
+		transition: all 0.4s;
+	}
+	.sgp-palette-row {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 1.25rem;
+	}
+	.sgp-swatch {
+		height: 28px;
+		flex: 1;
+		border-radius: 2px;
+		transition: all 0.4s;
+	}
+	.sgp-type-row {
+		margin-bottom: 1rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	}
+	.sgp-heading {
+		font-size: 22px;
+		font-weight: 700;
+		line-height: 1.1;
+		margin-bottom: 0.3rem;
+		transition: all 0.4s;
+	}
+	.sgp-body-text {
+		font-size: 12px;
+		line-height: 1.7;
+		transition: all 0.4s;
+	}
+	.sgp-thumb {
+		width: 100%;
+		aspect-ratio: 16/9;
+		position: relative;
+		overflow: hidden;
+		margin-top: 1rem;
+		transition: all 0.4s;
+	}
+	.sgp-thumb-canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+	.sgp-label {
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		margin-bottom: 0.3rem;
+	}
+	.sg-swatch-picker {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		margin-top: 0.4rem;
+	}
+	.sg-color-dot {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		cursor: pointer;
+		border: 2px solid transparent;
+		transition: all 0.15s;
+	}
+	.sg-color-dot:hover {
+		transform: scale(1.15);
+	}
+	.sg-color-dot.selected {
+		border-color: #fff;
+		transform: scale(1.15);
+	}
+
+	/* ════════════════════════════════
+   DEMO 4: CONSISTENCY CHECKER
+════════════════════════════════ */
+	.cc-toggle {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.cc-touchpoints {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 560px) {
+		.cc-touchpoints {
+			grid-template-columns: 1fr;
+		}
+	}
+	.cc-touchpoint {
+		border: 1px solid var(--border);
+	}
+	.cc-tp-label {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--border);
+		background: var(--raised);
+	}
+	.cc-tp-canvas {
+		display: block;
+		width: 100%;
+	}
+	.cc-verdict {
+		margin-top: 1rem;
+		font-size: 12px;
+		line-height: 1.7;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--border);
+		background: var(--code-bg);
+		min-height: 60px;
+	}
+	.cc-verdict-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		margin: 0.3rem 0;
+		font-size: 12px;
+	}
+	.cc-verdict-icon {
+		min-width: 14px;
+		font-weight: 700;
+	}
+
+	/* Assessment: critique */
+	.critique-wrap {
+		margin-top: 1.25rem;
+	}
+	.critique-specimen {
+		border: 1px solid var(--border);
+		margin: 1rem 0;
+		overflow: hidden;
+	}
+	.critique-specimen-canvas {
+		display: block;
+		width: 100%;
+		background: #080b0f;
+	}
+	.critique-specimen-label {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--border);
+		background: var(--raised);
+	}
+	.critique-q {
+		font-size: 13px;
+		color: #fff;
+		margin: 1rem 0 0.75rem;
+	}
+	.critique-opts {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.critique-opt {
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.15s;
+		user-select: none;
+		font-family: 'IBM Plex Mono', monospace;
+	}
+	.critique-opt:hover {
+		border-color: var(--border2);
+		background: var(--raised);
+	}
+	.critique-opt.correct {
+		border-color: var(--sage);
+		background: color-mix(in srgb, var(--sage) 10%, transparent);
+		color: var(--sage);
+		pointer-events: none;
+	}
+	.critique-opt.wrong {
+		border-color: var(--rose);
+		background: color-mix(in srgb, var(--rose) 10%, transparent);
+		color: var(--rose);
+		pointer-events: none;
+	}
+	.critique-opt.disabled {
+		pointer-events: none;
+	}
+	.critique-feedback {
+		font-size: 12px;
+		margin-top: 0.6rem;
+		min-height: 1.4em;
+		color: var(--muted);
+	}
+	.critique-feedback.ok {
+		color: var(--sage);
+	}
+	.critique-feedback.bad {
+		color: var(--rose);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
+	}
+</style>

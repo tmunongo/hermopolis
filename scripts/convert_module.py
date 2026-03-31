@@ -680,7 +680,7 @@ def convert_module(input_path, output_path):
         '<script lang="ts">\n'
         f"\t/* eslint-disable {eslint_disable_str} */\n"
         "\timport { onMount } from 'svelte';\n\n"
-        "\tlet actions: Record<string, unknown> = new Proxy(\n"
+        "\tlet actions: Record<string, any> = new Proxy(\n"
         "\t\t{},\n"
         "\t\t{\n"
         "\t\t\tget: (target: Record<string, unknown>, prop: string | symbol) => {\n"

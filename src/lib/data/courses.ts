@@ -336,7 +336,7 @@ export const graphicDesignModules: Module[] = [
 		number: 6,
 		title: 'Brand Identity & Visual Systems',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-rose',
 		description:
 			'Build a functional identity system: logo, colors, fonts, patterns. Designing a logo from concept and establishing a style guide.'

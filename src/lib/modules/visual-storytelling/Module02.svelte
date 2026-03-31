@@ -1,8 +1,8 @@
 <script lang="ts">
-	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
+	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef, @typescript-eslint/no-explicit-any */
 	import { onMount } from 'svelte';
 
-	let actions: Record<string, unknown> = new Proxy(
+	let actions: Record<string, any> = new Proxy(
 		{},
 		{
 			get: (target: Record<string, unknown>, prop: string | symbol) => {
