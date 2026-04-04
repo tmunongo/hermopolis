@@ -3218,7 +3218,7 @@
 		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
 		font-size: 13.5px;
 	}
-	.callout.gold {
+	:global(.callout.gold) {
 		border-color: var(--anim-gold);
 		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
 	}
@@ -3226,7 +3226,7 @@
 		border-color: var(--anim-coral);
 		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--anim-mint);
 		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
 	}
@@ -3239,13 +3239,13 @@
 		font-weight: 500;
 		color: var(--anim-lavender);
 	}
-	.callout.gold .callout-label {
+	:global(.callout.gold .callout-label) {
 		color: var(--anim-gold);
 	}
 	.callout.coral .callout-label {
 		color: var(--anim-coral);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint .callout-label) {
 		color: var(--anim-mint);
 	}
 
@@ -3269,7 +3269,7 @@
 		text-transform: uppercase;
 		color: var(--anim-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-family: var(--ff-mono);
 		font-size: 10px;
 		padding: 2px 8px;
@@ -3478,17 +3478,17 @@
 		border: 1px solid var(--anim-border);
 		margin: 0.75rem 0;
 	}
-	.timing-cell {
+	:global(.timing-cell) {
 		flex: 1;
 		background: var(--anim-surface);
 		padding: 0.65rem 0.85rem;
 		cursor: pointer;
 		transition: background 0.12s;
 	}
-	.timing-cell:hover {
+	:global(.timing-cell:hover) {
 		background: var(--anim-raised);
 	}
-	.timing-cell.active {
+	:global(.timing-cell.active) {
 		background: color-mix(in srgb, var(--anim-coral) 7%, var(--anim-raised));
 	}
 	.timing-cell-name {

@@ -1406,7 +1406,7 @@
 				</div>
 
 				<div class="motion-stage func-theater" style="margin-top: 0">
-					<canvas id="func-canvas" aria-label="Func Canvas Demonstration" role="region" tabindex="0"
+					<canvas id="func-canvas" aria-label="Func Canvas Demonstration" role="img" tabindex="0"
 					></canvas>
 				</div>
 
@@ -1555,7 +1555,7 @@
 						id="overuse-canvas"
 						style="display: block; width: 100%; height: 100%"
 						aria-label="Overuse Canvas Demonstration"
-						role="region"
+						role="img"
 						tabindex="0"
 					></canvas>
 				</div>
@@ -1627,7 +1627,7 @@
 					id="attn-canvas"
 					height="280"
 					aria-label="Attn Canvas Demonstration"
-					role="region"
+					role="img"
 					tabindex="0"
 				></canvas>
 
@@ -2249,7 +2249,7 @@
 		margin: 0 auto;
 		padding: 0 2rem 6rem;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -2260,7 +2260,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -2461,7 +2461,7 @@
 		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
 		font-size: 13px;
 	}
-	.callout.blue {
+	:global(.callout.blue) {
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 	}
@@ -2469,7 +2469,7 @@
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
 	}
@@ -2481,13 +2481,13 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.blue .callout-label {
+	:global(.callout.blue .callout-label) {
 		color: var(--vs-blue);
 	}
-	:global(.callout.red) .callout-label {
+	:global(.callout.red .callout-label) {
 		color: var(--vs-red);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint .callout-label) {
 		color: var(--vs-mint);
 	}
 
@@ -2509,12 +2509,12 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--vs-amber);
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
@@ -2842,7 +2842,7 @@
 		background: color-mix(in srgb, var(--vs-amber) 12%, var(--vs-raised));
 		color: var(--vs-amber);
 	}
-	.func-detail {
+	:global(.func-detail) {
 		padding: 0.75rem 1rem;
 		font-size: 12px;
 		color: var(--vs-text);
@@ -2850,7 +2850,7 @@
 		border-top: 1px solid var(--vs-border);
 		min-height: 52px;
 	}
-	.func-detail strong {
+	:global(.func-detail strong) {
 		color: var(--vs-amber);
 	}
 
@@ -2863,18 +2863,18 @@
 		overflow: hidden;
 		cursor: pointer;
 	}
-	.overuse-element {
+	:global(.overuse-element) {
 		position: absolute;
 		pointer-events: none;
 		font-family: 'IBM Plex Mono', monospace;
 	}
-	.overuse-score {
+	:global(.overuse-score) {
 		display: flex;
 		gap: 1rem;
 		margin-top: 0.75rem;
 		flex-wrap: wrap;
 	}
-	.overuse-chip {
+	:global(.overuse-chip) {
 		border: 1px solid;
 		padding: 4px 12px;
 		font-size: 11px;
@@ -2882,27 +2882,27 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
-	.overuse-meter-row {
+	:global(.overuse-meter-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		margin: 0.3rem 0;
 	}
-	.overuse-meter-label {
+	:global(.overuse-meter-label) {
 		font-size: 10px;
 		color: var(--vs-muted);
 		min-width: 100px;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 	}
-	.overuse-meter-bar {
+	:global(.overuse-meter-bar) {
 		flex: 1;
 		height: 5px;
 		background: var(--vs-border);
 		border-radius: 3px;
 		overflow: hidden;
 	}
-	.overuse-meter-fill {
+	:global(.overuse-meter-fill) {
 		height: 100%;
 		border-radius: 3px;
 		transition: width 0.5s ease;
@@ -2919,13 +2919,13 @@
 	}
 
 	/* ── MOTION TIMING GRID ── */
-	.timing-grid {
+	:global(.timing-grid) {
 		display: grid;
 		grid-template-columns: repeat(12, 1fr);
 		gap: 2px;
 		margin: 1rem 0;
 	}
-	.timing-cell {
+	:global(.timing-cell) {
 		aspect-ratio: 1;
 		border: 1px solid var(--vs-border);
 		cursor: pointer;
@@ -2936,23 +2936,23 @@
 		font-size: 8px;
 		position: relative;
 	}
-	.timing-cell.active-narr {
+	:global(.timing-cell.active-narr) {
 		background: color-mix(in srgb, var(--vs-blue) 25%, transparent);
 		border-color: var(--vs-blue);
 	}
-	.timing-cell.active-text {
+	:global(.timing-cell.active-text) {
 		background: color-mix(in srgb, var(--vs-amber) 25%, transparent);
 		border-color: var(--vs-amber);
 	}
-	.timing-cell.active-motion {
+	:global(.timing-cell.active-motion) {
 		background: color-mix(in srgb, var(--vs-red) 25%, transparent);
 		border-color: var(--vs-red);
 	}
-	.timing-cell.active-all {
+	:global(.timing-cell.active-all) {
 		background: color-mix(in srgb, var(--vs-mint) 20%, transparent);
 		border-color: var(--vs-mint);
 	}
-	.timing-row-label {
+	:global(.timing-row-label) {
 		font-size: 9px;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -2971,28 +2971,28 @@
 	}
 
 	/* ── MOTION COST CALCULATOR ── */
-	.motion-cost-item {
+	:global(.motion-cost-item) {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.5rem 0;
 		border-bottom: 1px solid var(--vs-border);
 	}
-	.motion-cost-item:last-child {
+	:global(.motion-cost-item:last-child) {
 		border-bottom: none;
 	}
-	.mci-icon {
+	:global(.mci-icon) {
 		font-size: 18px;
 		flex-shrink: 0;
 		width: 28px;
 		text-align: center;
 	}
-	.mci-label {
+	:global(.mci-label) {
 		flex: 1;
 		font-size: 12px;
 		color: var(--vs-text);
 	}
-	.mci-toggle {
+	:global(.mci-toggle) {
 		cursor: pointer;
 		border: 1px solid var(--vs-border2);
 		padding: 3px 10px;
@@ -3004,12 +3004,12 @@
 		font-family: 'IBM Plex Mono', monospace;
 		background: transparent;
 	}
-	.mci-toggle.on {
+	:global(.mci-toggle.on) {
 		border-color: var(--vs-amber);
 		color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
 	}
-	.mci-cost {
+	:global(.mci-cost) {
 		min-width: 40px;
 		text-align: right;
 		font-size: 12px;
@@ -3017,7 +3017,7 @@
 	}
 
 	/* ── NARRATION SYNC STRIP ── */
-	.sync-strip {
+	:global(.sync-strip) {
 		position: relative;
 		height: 48px;
 		background: var(--vs-raised);
@@ -3025,7 +3025,7 @@
 		overflow: hidden;
 		margin: 0.5rem 0;
 	}
-	.sync-strip-label {
+	:global(.sync-strip-label) {
 		position: absolute;
 		left: 8px;
 		top: 50%;
@@ -3036,14 +3036,14 @@
 		color: var(--vs-muted);
 		z-index: 2;
 	}
-	.sync-strip-events {
+	:global(.sync-strip-events) {
 		position: absolute;
 		left: 80px;
 		right: 0;
 		top: 8px;
 		bottom: 8px;
 	}
-	.sync-event {
+	:global(.sync-event) {
 		position: absolute;
 		height: 100%;
 		display: flex;
@@ -3057,7 +3057,7 @@
 		white-space: nowrap;
 		transition: all 0.3s ease;
 	}
-	.sync-playhead {
+	:global(.sync-playhead) {
 		position: absolute;
 		left: 80px;
 		top: 0;

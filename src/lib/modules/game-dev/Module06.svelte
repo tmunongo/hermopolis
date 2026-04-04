@@ -2396,7 +2396,7 @@
 		background: color-mix(in srgb, var(--lavender) 5%, var(--surface));
 		font-size: 13.5px;
 	}
-	.callout.gold {
+	:global(.callout.gold) {
 		border-color: var(--gold);
 		background: color-mix(in srgb, var(--gold) 5%, var(--surface));
 	}
@@ -2404,7 +2404,7 @@
 		border-color: var(--coral);
 		background: color-mix(in srgb, var(--coral) 5%, var(--surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--mint);
 		background: color-mix(in srgb, var(--mint) 5%, var(--surface));
 	}
@@ -2417,13 +2417,13 @@
 		font-weight: 500;
 		color: var(--lavender);
 	}
-	.callout.gold .callout-label {
+	:global(.callout.gold) .callout-label {
 		color: var(--gold);
 	}
 	.callout.coral .callout-label {
 		color: var(--coral);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint) .callout-label {
 		color: var(--mint);
 	}
 
@@ -2447,7 +2447,7 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-family: var(--ff-mono);
 		font-size: 10px;
 		padding: 2px 8px;
@@ -2635,7 +2635,7 @@
 	.tl-layer-names {
 		border-right: 1px solid var(--border2);
 	}
-	.tl-layer-name-row {
+	:global(.tl-layer-name-row) {
 		height: 32px;
 		display: flex;
 		align-items: center;
@@ -2647,34 +2647,34 @@
 		cursor: pointer;
 		transition: background 0.12s;
 	}
-	.tl-layer-name-row:hover {
+	:global(.tl-layer-name-row:hover) {
 		background: var(--raised);
 	}
-	.tl-layer-name-row.selected {
+	:global(.tl-layer-name-row.selected) {
 		background: color-mix(in srgb, var(--gold) 6%, var(--raised));
 	}
-	.tl-layer-swatch {
+	:global(.tl-layer-swatch) {
 		width: 8px;
 		height: 8px;
 		border-radius: 50%;
 		flex-shrink: 0;
 	}
-	.tl-layer-label {
+	:global(.tl-layer-label) {
 		color: var(--muted);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.tl-layer-name-row.selected .tl-layer-label {
+	:global(.tl-layer-name-row.selected) :global(.tl-layer-label) {
 		color: var(--text);
 	}
-	.tl-layer-eye {
+	:global(.tl-layer-eye) {
 		margin-left: auto;
 		font-size: 12px;
 		opacity: 0.4;
 		cursor: pointer;
 	}
-	.tl-layer-eye:hover {
+	:global(.tl-layer-eye:hover) {
 		opacity: 1;
 	}
 
@@ -2688,7 +2688,7 @@
 		position: relative;
 		background: var(--bg);
 	}
-	.tl-ruler-tick {
+	:global(.tl-ruler-tick) {
 		position: absolute;
 		top: 0;
 		bottom: 0;
@@ -2697,18 +2697,18 @@
 		justify-content: flex-end;
 		align-items: center;
 	}
-	.tl-ruler-num {
+	:global(.tl-ruler-num) {
 		font-size: 8px;
 		color: var(--dim);
 		padding-bottom: 2px;
 		user-select: none;
 	}
-	.tl-ruler-line {
+	:global(.tl-ruler-line) {
 		width: 1px;
 		background: var(--border);
 		height: 6px;
 	}
-	.tl-ruler-line.major {
+	:global(.tl-ruler-line.major) {
 		height: 10px;
 		background: var(--border2);
 	}
@@ -2734,18 +2734,18 @@
 	.tl-track-rows {
 		position: relative;
 	}
-	.tl-track-row {
+	:global(.tl-track-row) {
 		height: 32px;
 		border-bottom: 1px solid var(--border);
 		display: flex;
 		align-items: center;
 		position: relative;
 	}
-	.tl-track-bg {
+	:global(.tl-track-bg) {
 		position: absolute;
 		inset: 0;
 	}
-	.tl-keyframe {
+	:global(.tl-keyframe) {
 		position: absolute;
 		top: 50%;
 		width: 10px;
@@ -2755,10 +2755,10 @@
 		transition: background 0.12s;
 		z-index: 5;
 	}
-	.tl-keyframe:hover {
+	:global(.tl-keyframe:hover) {
 		outline: 1px solid #fff4;
 	}
-	.tl-tween-bar {
+	:global(.tl-tween-bar) {
 		position: absolute;
 		top: 50%;
 		height: 4px;
@@ -2766,7 +2766,7 @@
 		border-radius: 2px;
 		opacity: 0.55;
 	}
-	.tl-tween-bar.hold {
+	:global(.tl-tween-bar.hold) {
 		border-top: 1px dashed;
 		background: transparent !important;
 	}
@@ -2790,7 +2790,7 @@
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
-	.ls-layer {
+	:global(.ls-layer) {
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
@@ -2802,13 +2802,13 @@
 		transition: background 0.12s;
 		user-select: none;
 	}
-	.ls-layer:hover {
+	:global(.ls-layer:hover) {
 		background: var(--raised);
 	}
-	.ls-layer.selected {
+	:global(.ls-layer.selected) {
 		background: color-mix(in srgb, var(--gold) 6%, var(--raised));
 	}
-	.ls-layer.dragging {
+	:global(.ls-layer.dragging) {
 		opacity: 0.4;
 	}
 	.ls-swatch {
@@ -2821,7 +2821,7 @@
 		color: var(--muted);
 		flex: 1;
 	}
-	.ls-layer.selected .ls-name {
+	:global(.ls-layer.selected) .ls-name {
 		color: var(--text);
 	}
 	.ls-type {

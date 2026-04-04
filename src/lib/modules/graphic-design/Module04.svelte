@@ -2084,11 +2084,11 @@
 		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.amber {
+	:global(.callout.amber) {
 		border-color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 5%, var(--surface));
 	}
-	.callout.warn {
+	:global(.callout.warn) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
@@ -2096,7 +2096,7 @@
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
 	}
-	.callout.violet {
+	:global(.callout.violet) {
 		border-color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 5%, var(--surface));
 	}
@@ -2108,16 +2108,16 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.amber .callout-label {
+	:global(.callout.amber) .callout-label {
 		color: var(--amber);
 	}
-	.callout.warn .callout-label {
+	:global(.callout.warn) .callout-label {
 		color: var(--rose);
 	}
 	:global(.callout.sky) .callout-label {
 		color: var(--sky);
 	}
-	.callout.violet .callout-label {
+	:global(.callout.violet) .callout-label {
 		color: var(--violet);
 	}
 
@@ -2140,12 +2140,12 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--sage);
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
@@ -2247,13 +2247,13 @@
 	}
 
 	/* ── LAYOUT ── */
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
 	@media (max-width: 640px) {
-		.two-col {
+		:global(.two-col) {
 			grid-template-columns: 1fr;
 		}
 	}
@@ -2544,7 +2544,7 @@
 		flex-wrap: wrap;
 		margin-top: 1rem;
 	}
-	.h-swatch {
+	:global(.h-swatch) {
 		height: 48px;
 		flex: 1;
 		min-width: 60px;
@@ -2553,10 +2553,10 @@
 		cursor: default;
 		transition: transform 0.15s;
 	}
-	.h-swatch:hover {
+	:global(.h-swatch:hover) {
 		transform: translateY(-2px);
 	}
-	.h-swatch-label {
+	:global(.h-swatch-label) {
 		position: absolute;
 		bottom: 4px;
 		left: 0;
@@ -2692,7 +2692,7 @@
 		gap: 0.5rem;
 		margin-top: 0.75rem;
 	}
-	.cc-badge {
+	:global(.cc-badge) {
 		font-size: 11px;
 		padding: 3px 10px;
 		border: 1px solid;
@@ -2700,12 +2700,12 @@
 		text-transform: uppercase;
 		font-weight: 600;
 	}
-	.cc-badge.pass {
+	:global(.cc-badge.pass) {
 		color: var(--sage);
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
 	}
-	.cc-badge.fail {
+	:global(.cc-badge.fail) {
 		color: var(--rose);
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
@@ -2787,19 +2787,19 @@
 		border-color: var(--border2);
 		background: var(--raised);
 	}
-	.palette-opt.correct {
+	:global(.palette-opt.correct) {
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
 		color: var(--sage);
 		pointer-events: none;
 	}
-	.palette-opt.wrong {
+	:global(.palette-opt.wrong) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
 		color: var(--rose);
 		pointer-events: none;
 	}
-	.palette-opt.disabled {
+	:global(.palette-opt.disabled) {
 		pointer-events: none;
 	}
 	.palette-feedback {
@@ -2808,10 +2808,10 @@
 		min-height: 1.2em;
 		color: var(--muted);
 	}
-	.palette-feedback.ok {
+	:global(.palette-feedback.ok) {
 		color: var(--sage);
 	}
-	.palette-feedback.bad {
+	:global(.palette-feedback.bad) {
 		color: var(--rose);
 	}
 

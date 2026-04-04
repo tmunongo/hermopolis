@@ -2407,7 +2407,7 @@
 		background: color-mix(in srgb, var(--lavender) 5%, var(--surface));
 		font-size: 13.5px;
 	}
-	.callout.gold {
+	:global(.callout.gold) {
 		border-color: var(--gold);
 		background: color-mix(in srgb, var(--gold) 5%, var(--surface));
 	}
@@ -2415,7 +2415,7 @@
 		border-color: var(--coral);
 		background: color-mix(in srgb, var(--coral) 5%, var(--surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--mint);
 		background: color-mix(in srgb, var(--mint) 5%, var(--surface));
 	}
@@ -2428,13 +2428,13 @@
 		font-weight: 500;
 		color: var(--lavender);
 	}
-	.callout.gold .callout-label {
+	:global(.callout.gold) .callout-label {
 		color: var(--gold);
 	}
 	.callout.coral .callout-label {
 		color: var(--coral);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint) .callout-label {
 		color: var(--mint);
 	}
 
@@ -2458,7 +2458,7 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-family: var(--ff-mono);
 		font-size: 10px;
 		padding: 2px 8px;

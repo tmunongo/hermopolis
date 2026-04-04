@@ -2417,7 +2417,7 @@
 		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.amber {
+	:global(.callout.amber) {
 		border-color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 5%, var(--surface));
 	}
@@ -2425,11 +2425,11 @@
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
 	}
-	.callout.warn {
+	:global(.callout.warn) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
-	.callout.violet {
+	:global(.callout.violet) {
 		border-color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 5%, var(--surface));
 	}
@@ -2441,16 +2441,16 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.amber .callout-label {
+	:global(.callout.amber) .callout-label {
 		color: var(--amber);
 	}
 	.callout.sage .callout-label {
 		color: var(--sage);
 	}
-	.callout.warn .callout-label {
+	:global(.callout.warn) .callout-label {
 		color: var(--rose);
 	}
-	.callout.violet .callout-label {
+	:global(.callout.violet) .callout-label {
 		color: var(--violet);
 	}
 
@@ -2472,12 +2472,12 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--sky);
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 10%, transparent);
@@ -2557,7 +2557,7 @@
 		border-color: var(--sky);
 	}
 
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -2568,7 +2568,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -2789,7 +2789,7 @@
 		max-width: 560px;
 		margin: 0 auto;
 	}
-	.brand-layer {
+	:global(.brand-layer) {
 		border: 1px solid;
 		padding: 0.75rem 1.25rem;
 		cursor: pointer;
@@ -2800,26 +2800,26 @@
 		margin-bottom: 4px;
 		user-select: none;
 	}
-	.brand-layer .layer-title {
+	:global(.brand-layer) .layer-title {
 		font-family: 'Syne', sans-serif;
 		font-size: 15px;
 		font-weight: 700;
 	}
-	.brand-layer .layer-subtitle {
+	:global(.brand-layer) .layer-subtitle {
 		font-size: 10px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		margin-top: 0.1rem;
 		opacity: 0.7;
 	}
-	.brand-layer .layer-arrow {
+	:global(.brand-layer) .layer-arrow {
 		font-size: 18px;
 		transition: transform 0.2s;
 	}
-	.brand-layer.open .layer-arrow {
+	:global(.brand-layer.open .layer-arrow) {
 		transform: rotate(90deg);
 	}
-	.layer-content {
+	:global(.layer-content) {
 		border: 1px solid;
 		border-top: none;
 		padding: 0;
@@ -2831,28 +2831,28 @@
 		font-size: 12px;
 		line-height: 1.7;
 	}
-	.layer-content.open {
+	:global(.layer-content.open) {
 		max-height: 500px;
 		padding: 1rem 1.25rem;
 	}
-	.layer-content ul {
+	:global(.layer-content) ul {
 		list-style: none;
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
 	}
-	.layer-content li {
+	:global(.layer-content) li {
 		padding-left: 1rem;
 		position: relative;
 	}
-	.layer-content li::before {
+	:global(.layer-content) li::before {
 		content: '→';
 		position: absolute;
 		left: 0;
 		font-size: 10px;
 		top: 0.15em;
 	}
-	.layer-content .layer-example {
+	:global(.layer-content) .layer-example {
 		margin-top: 0.75rem;
 		padding: 0.5rem 0.75rem;
 		font-size: 11px;
@@ -2872,29 +2872,29 @@
 	.concept-score-wrap {
 		margin-top: 1rem;
 	}
-	.concept-score-row {
+	:global(.concept-score-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		margin: 0.35rem 0;
 	}
-	.concept-score-label {
+	:global(.concept-score-label) {
 		font-size: 11px;
 		color: var(--muted);
 		min-width: 150px;
 	}
-	.concept-score-bar-bg {
+	:global(.concept-score-bar-bg) {
 		flex: 1;
 		height: 3px;
 		background: var(--border2);
 	}
-	.concept-score-bar {
+	:global(.concept-score-bar) {
 		height: 100%;
 		transition:
 			width 0.4s,
 			background 0.4s;
 	}
-	.concept-score-val {
+	:global(.concept-score-val) {
 		font-size: 11px;
 		font-weight: 600;
 		min-width: 36px;
@@ -2982,7 +2982,7 @@
 	}
 
 	/* Style guide page elements */
-	.sgp-logo-area {
+	:global(.sgp-logo-area) {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
@@ -2990,7 +2990,7 @@
 		padding-bottom: 1rem;
 		border-bottom: 1px solid;
 	}
-	.sgp-logo-mark {
+	:global(.sgp-logo-mark) {
 		width: 44px;
 		height: 44px;
 		flex-shrink: 0;
@@ -2999,48 +2999,48 @@
 		justify-content: center;
 		transition: all 0.4s;
 	}
-	.sgp-brand-name {
+	:global(.sgp-brand-name) {
 		font-weight: 700;
 		font-size: 18px;
 		line-height: 1;
 		transition: all 0.4s;
 	}
-	.sgp-tagline {
+	:global(.sgp-tagline) {
 		font-size: 10px;
 		letter-spacing: 0.15em;
 		text-transform: uppercase;
 		margin-top: 0.3rem;
 		transition: all 0.4s;
 	}
-	.sgp-palette-row {
+	:global(.sgp-palette-row) {
 		display: flex;
 		gap: 6px;
 		margin-bottom: 1.25rem;
 	}
-	.sgp-swatch {
+	:global(.sgp-swatch) {
 		height: 28px;
 		flex: 1;
 		border-radius: 2px;
 		transition: all 0.4s;
 	}
-	.sgp-type-row {
+	:global(.sgp-type-row) {
 		margin-bottom: 1rem;
 		padding-bottom: 1rem;
 		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 	}
-	.sgp-heading {
+	:global(.sgp-heading) {
 		font-size: 22px;
 		font-weight: 700;
 		line-height: 1.1;
 		margin-bottom: 0.3rem;
 		transition: all 0.4s;
 	}
-	.sgp-body-text {
+	:global(.sgp-body-text) {
 		font-size: 12px;
 		line-height: 1.7;
 		transition: all 0.4s;
 	}
-	.sgp-thumb {
+	:global(.sgp-thumb) {
 		width: 100%;
 		aspect-ratio: 16/9;
 		position: relative;
@@ -3048,12 +3048,12 @@
 		margin-top: 1rem;
 		transition: all 0.4s;
 	}
-	.sgp-thumb-canvas {
+	:global(.sgp-thumb-canvas) {
 		display: block;
 		width: 100%;
 		height: 100%;
 	}
-	.sgp-label {
+	:global(.sgp-label) {
 		font-size: 9px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -3100,10 +3100,10 @@
 			grid-template-columns: 1fr;
 		}
 	}
-	.cc-touchpoint {
+	:global(.cc-touchpoint) {
 		border: 1px solid var(--border);
 	}
-	.cc-tp-label {
+	:global(.cc-tp-label) {
 		font-size: 10px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -3112,7 +3112,7 @@
 		border-bottom: 1px solid var(--border);
 		background: var(--raised);
 	}
-	.cc-tp-canvas {
+	:global(.cc-tp-canvas) {
 		display: block;
 		width: 100%;
 	}
@@ -3125,14 +3125,14 @@
 		background: var(--code-bg);
 		min-height: 60px;
 	}
-	.cc-verdict-item {
+	:global(.cc-verdict-item) {
 		display: flex;
 		align-items: flex-start;
 		gap: 0.5rem;
 		margin: 0.3rem 0;
 		font-size: 12px;
 	}
-	.cc-verdict-icon {
+	:global(.cc-verdict-icon) {
 		min-width: 14px;
 		font-weight: 700;
 	}
@@ -3141,17 +3141,17 @@
 	.critique-wrap {
 		margin-top: 1.25rem;
 	}
-	.critique-specimen {
+	:global(.critique-specimen) {
 		border: 1px solid var(--border);
 		margin: 1rem 0;
 		overflow: hidden;
 	}
-	.critique-specimen-canvas {
+	:global(.critique-specimen-canvas) {
 		display: block;
 		width: 100%;
 		background: #080b0f;
 	}
-	.critique-specimen-label {
+	:global(.critique-specimen-label) {
 		font-size: 10px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -3160,17 +3160,17 @@
 		border-bottom: 1px solid var(--border);
 		background: var(--raised);
 	}
-	.critique-q {
+	:global(.critique-q) {
 		font-size: 13px;
 		color: #fff;
 		margin: 1rem 0 0.75rem;
 	}
-	.critique-opts {
+	:global(.critique-opts) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.4rem;
 	}
-	.critique-opt {
+	:global(.critique-opt) {
 		padding: 0.6rem 1rem;
 		border: 1px solid var(--border);
 		cursor: pointer;
@@ -3179,35 +3179,35 @@
 		user-select: none;
 		font-family: 'IBM Plex Mono', monospace;
 	}
-	.critique-opt:hover {
+	:global(.critique-opt:hover) {
 		border-color: var(--border2);
 		background: var(--raised);
 	}
-	.critique-opt.correct {
+	:global(.critique-opt.correct) {
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
 		color: var(--sage);
 		pointer-events: none;
 	}
-	.critique-opt.wrong {
+	:global(.critique-opt.wrong) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
 		color: var(--rose);
 		pointer-events: none;
 	}
-	.critique-opt.disabled {
+	:global(.critique-opt.disabled) {
 		pointer-events: none;
 	}
-	.critique-feedback {
+	:global(.critique-feedback) {
 		font-size: 12px;
 		margin-top: 0.6rem;
 		min-height: 1.4em;
 		color: var(--muted);
 	}
-	.critique-feedback.ok {
+	:global(.critique-feedback.ok) {
 		color: var(--sage);
 	}
-	.critique-feedback.bad {
+	:global(.critique-feedback.bad) {
 		color: var(--rose);
 	}
 

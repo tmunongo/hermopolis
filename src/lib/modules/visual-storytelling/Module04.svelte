@@ -953,7 +953,7 @@
 				<canvas
 					id="broll-func-canvas"
 					aria-label="Broll Func Canvas Demonstration"
-					role="region"
+					role="img"
 					tabindex="0"
 				></canvas>
 				<div
@@ -1740,7 +1740,7 @@
 		margin: 0 auto;
 		padding: 0 2rem 6rem;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -1751,7 +1751,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -1952,15 +1952,15 @@
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 		font-size: 13px;
 	}
-	.callout.amber {
+	:global(.callout.amber) {
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
 	}
-	.callout.blue {
+	:global(.callout.blue) {
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
 	}
@@ -1972,13 +1972,13 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.amber .callout-label {
+	:global(.callout.amber .callout-label) {
 		color: var(--vs-amber);
 	}
-	.callout.blue .callout-label {
+	:global(.callout.blue .callout-label) {
 		color: var(--vs-blue);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint .callout-label) {
 		color: var(--vs-mint);
 	}
 
@@ -2000,12 +2000,12 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--vs-red);
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
@@ -2317,7 +2317,7 @@
 			grid-template-columns: 1fr 1fr;
 		}
 	}
-	.broll-card {
+	:global(.broll-card) {
 		border: 1px solid var(--vs-border);
 		background: var(--vs-raised);
 		padding: 0;
@@ -2326,19 +2326,19 @@
 		position: relative;
 		overflow: hidden;
 	}
-	.broll-card:hover {
+	:global(.broll-card:hover) {
 		border-color: var(--vs-border2);
 	}
-	.broll-card.rated-strong {
+	:global(.broll-card.rated-strong) {
 		border-color: var(--vs-mint);
 	}
-	.broll-card.rated-literal {
+	:global(.broll-card.rated-literal) {
 		border-color: var(--vs-amber);
 	}
-	.broll-card.rated-weak {
+	:global(.broll-card.rated-weak) {
 		border-color: var(--vs-red);
 	}
-	.broll-thumb {
+	:global(.broll-thumb) {
 		height: 80px;
 		display: flex;
 		align-items: center;
@@ -2347,7 +2347,7 @@
 		position: relative;
 		overflow: hidden;
 	}
-	.broll-thumb-label {
+	:global(.broll-thumb-label) {
 		position: absolute;
 		bottom: 4px;
 		right: 6px;
@@ -2356,18 +2356,18 @@
 		text-transform: uppercase;
 		color: rgba(255, 255, 255, 0.35);
 	}
-	.broll-desc {
+	:global(.broll-desc) {
 		padding: 0.5rem 0.6rem;
 		font-size: 10px;
 		color: var(--vs-text);
 		border-top: 1px solid var(--vs-border);
 		line-height: 1.5;
 	}
-	.broll-rating-strip {
+	:global(.broll-rating-strip) {
 		display: flex;
 		border-top: 1px solid var(--vs-border);
 	}
-	.broll-rate-btn {
+	:global(.broll-rate-btn) {
 		flex: 1;
 		padding: 4px;
 		font-size: 9px;
@@ -2384,22 +2384,22 @@
 		border-left: none;
 		border-bottom: none;
 	}
-	.broll-rate-btn:last-child {
+	:global(.broll-rate-btn:last-child) {
 		border-right: none;
 	}
-	.broll-rate-btn:hover {
+	:global(.broll-rate-btn:hover) {
 		color: #fff;
 		background: var(--vs-dim);
 	}
-	.broll-rate-btn.sel-strong {
+	:global(.broll-rate-btn.sel-strong) {
 		color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 12%, transparent);
 	}
-	.broll-rate-btn.sel-literal {
+	:global(.broll-rate-btn.sel-literal) {
 		color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 12%, transparent);
 	}
-	.broll-rate-btn.sel-weak {
+	:global(.broll-rate-btn.sel-weak) {
 		color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 12%, transparent);
 	}
@@ -2419,7 +2419,7 @@
 	}
 
 	/* ── VISUAL FUNCTION MATRIX ── */
-	.vfunc-row {
+	:global(.vfunc-row) {
 		display: flex;
 		align-items: stretch;
 		gap: 0;
@@ -2429,13 +2429,13 @@
 		cursor: pointer;
 		transition: border-color 0.15s;
 	}
-	.vfunc-row:hover {
+	:global(.vfunc-row:hover) {
 		border-color: var(--vs-border2);
 	}
-	.vfunc-row.selected {
+	:global(.vfunc-row.selected) {
 		border-color: var(--vs-red);
 	}
-	.vfunc-icon {
+	:global(.vfunc-icon) {
 		width: 52px;
 		min-width: 52px;
 		display: flex;
@@ -2445,23 +2445,23 @@
 		background: var(--vs-raised);
 		border-right: 1px solid var(--vs-border);
 	}
-	.vfunc-body {
+	:global(.vfunc-body) {
 		flex: 1;
 		padding: 0.6rem 1rem;
 	}
-	.vfunc-name {
+	:global(.vfunc-name) {
 		font-size: 11px;
 		font-weight: 600;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		margin-bottom: 0.2rem;
 	}
-	.vfunc-desc {
+	:global(.vfunc-desc) {
 		font-size: 11px;
 		color: var(--vs-muted);
 		line-height: 1.5;
 	}
-	.vfunc-badge {
+	:global(.vfunc-badge) {
 		width: 52px;
 		min-width: 52px;
 		display: flex;
@@ -2471,7 +2471,7 @@
 		font-weight: 700;
 		letter-spacing: 0.08em;
 	}
-	.vfunc-example {
+	:global(.vfunc-example) {
 		padding: 0.75rem 1rem;
 		font-size: 12px;
 		color: var(--vs-text);
@@ -2480,15 +2480,15 @@
 		display: none;
 		background: color-mix(in srgb, var(--vs-red) 4%, var(--vs-surface));
 	}
-	.vfunc-example.open {
+	:global(.vfunc-example.open) {
 		display: block;
 	}
-	.vfunc-example strong {
+	:global(.vfunc-example strong) {
 		color: var(--vs-red);
 	}
 
 	/* ── DIAGRAM SEQUENCER ── */
-	.diag-stage {
+	:global(.diag-stage) {
 		border: 1px solid var(--vs-border);
 		background: var(--vs-raised);
 		aspect-ratio: 16/9;
@@ -2496,10 +2496,10 @@
 		overflow: hidden;
 		transition: border-color 0.2s;
 	}
-	.diag-stage.current {
+	:global(.diag-stage.current) {
 		border-color: var(--vs-red);
 	}
-	.diag-stage-num {
+	:global(.diag-stage-num) {
 		position: absolute;
 		top: 8px;
 		left: 10px;
@@ -2508,7 +2508,7 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.diag-stage-badge {
+	:global(.diag-stage-badge) {
 		position: absolute;
 		top: 8px;
 		right: 10px;
@@ -2525,7 +2525,7 @@
 		margin-top: 0.75rem;
 		flex-wrap: wrap;
 	}
-	.diag-dot {
+	:global(.diag-dot) {
 		width: 8px;
 		height: 8px;
 		border-radius: 50%;
@@ -2533,11 +2533,11 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
-	.diag-dot.active {
+	:global(.diag-dot.active) {
 		background: var(--vs-red);
 		border-color: var(--vs-red);
 	}
-	.diag-detail {
+	:global(.diag-detail) {
 		margin-top: 0.75rem;
 		padding: 0.75rem 1rem;
 		border-left: 2px solid var(--vs-border2);
@@ -2546,7 +2546,7 @@
 		line-height: 1.7;
 		min-height: 52px;
 	}
-	.diag-detail strong {
+	:global(.diag-detail strong) {
 		color: var(--vs-red);
 	}
 
@@ -2557,7 +2557,7 @@
 	}
 
 	/* ── METAPHOR WORKSHOP ── */
-	.metaphor-concept-pill {
+	:global(.metaphor-concept-pill) {
 		display: inline-block;
 		padding: 4px 14px;
 		border: 1px solid var(--vs-border2);
@@ -2567,11 +2567,11 @@
 		margin: 3px;
 		color: var(--vs-muted);
 	}
-	.metaphor-concept-pill:hover {
+	:global(.metaphor-concept-pill:hover) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 	}
-	.metaphor-concept-pill.selected {
+	:global(.metaphor-concept-pill.selected) {
 		border-color: var(--vs-red);
 		color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
@@ -2588,11 +2588,11 @@
 			grid-template-columns: 1fr;
 		}
 	}
-	.metaphor-panel {
+	:global(.metaphor-panel) {
 		background: var(--vs-raised);
 		padding: 1rem;
 	}
-	.metaphor-panel-label {
+	:global(.metaphor-panel-label) {
 		font-size: 9px;
 		letter-spacing: 0.15em;
 		text-transform: uppercase;
@@ -2601,7 +2601,7 @@
 		padding-bottom: 0.4rem;
 		border-bottom: 1px solid var(--vs-border);
 	}
-	.metaphor-visual {
+	:global(.metaphor-visual) {
 		height: 100px;
 		display: flex;
 		align-items: center;
@@ -2609,12 +2609,12 @@
 		margin-bottom: 0.75rem;
 		position: relative;
 	}
-	.metaphor-text {
+	:global(.metaphor-text) {
 		font-size: 11px;
 		color: var(--vs-text);
 		line-height: 1.6;
 	}
-	.metaphor-verdict {
+	:global(.metaphor-verdict) {
 		font-size: 10px;
 		margin-top: 0.5rem;
 		padding: 3px 8px;

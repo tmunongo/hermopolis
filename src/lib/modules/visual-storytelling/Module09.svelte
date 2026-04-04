@@ -1,0 +1,3210 @@
+<script>
+	/* eslint-disable @typescript-eslint/no-unused-vars */
+	import { onMount } from 'svelte';
+
+	let actions = new Proxy(
+		{},
+		{
+			get: (target, prop) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args) => {};
+				if (prop in target) return target[prop];
+				return (..._args) => {};
+			}
+		}
+	);
+
+	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
+		/* ── READING PROGRESS ── */
+		_addWinListener('scroll', () => {
+			const el = document.getElementById('reading-progress');
+			const d = document.documentElement.scrollHeight - window.innerHeight;
+			if (d > 0) el.style.width = Math.min(100, (window.scrollY / d) * 100) + '%';
+		});
+
+		/* ════════════════════════════════════════════
+   COLOUR SYSTEM BUILDER
+════════════════════════════════════════════ */
+		const csbRoles = [
+			{
+				id: 'primary',
+				label: 'Primary Accent',
+				desc: 'Headlines, key terms, selected state',
+				hex: '#4aafff',
+				role: 'primary'
+			},
+			{
+				id: 'secondary',
+				label: 'Secondary Accent',
+				desc: 'Annotations, labels, context',
+				hex: '#f5b94a',
+				role: 'secondary'
+			},
+			{
+				id: 'signal',
+				label: 'Signal / Emphasis',
+				desc: 'Warnings, data peaks — use sparingly',
+				hex: '#ff4f68',
+				role: 'signal'
+			},
+			{
+				id: 'bg1',
+				label: 'Background Surface',
+				desc: 'Panel backgrounds, raised surfaces',
+				hex: '#0d1322',
+				role: 'background'
+			}
+		];
+
+		function buildCSBControls() {
+			const el = document.getElementById('csb-controls');
+			el.innerHTML = `
+    <div style="font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--vs-muted); margin-bottom:0.75rem;">Colour roles</div>
+    ${csbRoles
+			.map(
+				(r) => `
+      <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid var(--vs-border);">
+        <div style="font-size:11px; color:#fff; font-weight:600; margin-bottom:2px;">${r.label}</div>
+        <div style="font-size:10px; color:var(--vs-muted); margin-bottom:0.5rem;">${r.desc}</div>
+        <div class="color-picker-wrap">
+          <div class="color-picker-swatch" id="csb-swatch-${r.id}" style="background:${r.hex};" onclick="document.getElementById('csb-input-${r.id}').click()"></div>
+          <input type="color" id="csb-input-${r.id}" value="${r.hex}" style="display:none;" oninput="updateCSBColor('${r.id}', this.value)">
+          <input type="text" class="color-picker-hex" id="csb-hex-${r.id}" value="${r.hex}" maxlength="7" onchange="updateCSBColorHex('${r.id}', this.value)">
+          <span class="color-harmony-tag" id="csb-tag-${r.id}" style="border-color:${r.hex}; color:${r.hex};">${r.role.toUpperCase()}</span>
+        </div>
+      </div>`
+			)
+			.join('')}
+  `;
+			drawCSBPreview();
+			updateCSBHarmony();
+		}
+
+		function updateCSBColor(id, hex) {
+			const r = csbRoles.find((r) => r.id === id);
+			r.hex = hex;
+			document.getElementById('csb-swatch-' + id).style.background = hex;
+			document.getElementById('csb-hex-' + id).value = hex;
+			document.getElementById('csb-tag-' + id).style.borderColor = hex;
+			document.getElementById('csb-tag-' + id).style.color = hex;
+			drawCSBPreview();
+			updateCSBHarmony();
+		}
+
+		function updateCSBColorHex(id, val) {
+			if (!/^#[0-9a-fA-F]{6}$/.test(val)) return;
+			document.getElementById('csb-input-' + id).value = val;
+			updateCSBColor(id, val);
+		}
+
+		function hexToHsl(hex) {
+			let r = parseInt(hex.slice(1, 3), 16) / 255,
+				g = parseInt(hex.slice(3, 5), 16) / 255,
+				b = parseInt(hex.slice(5, 7), 16) / 255;
+			const max = Math.max(r, g, b),
+				min = Math.min(r, g, b);
+			let h,
+				s,
+				l = (max + min) / 2;
+			if (max === min) {
+				h = s = 0;
+			} else {
+				const d = max - min;
+				s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+				switch (max) {
+					case r:
+						h = (g - b) / d + (g < b ? 6 : 0);
+						break;
+					case g:
+						h = (b - r) / d + 2;
+						break;
+					default:
+						h = (r - g) / d + 4;
+				}
+				h /= 6;
+			}
+			return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+		}
+
+		function updateCSBHarmony() {
+			const p = csbRoles.find((r) => r.id === 'primary').hex;
+			const s = csbRoles.find((r) => r.id === 'secondary').hex;
+			const sig = csbRoles.find((r) => r.id === 'signal').hex;
+			const ph = hexToHsl(p),
+				sh = hexToHsl(s),
+				sigh = hexToHsl(sig);
+			const hueDiff = (h1, h2) => Math.min(Math.abs(h1 - h2), 360 - Math.abs(h1 - h2));
+			const ps = hueDiff(ph[0], sh[0]);
+			const psig = hueDiff(ph[0], sigh[0]);
+
+			let harmonyType, harmonyColor, harmonyMsg;
+			if (ps >= 150 && ps <= 210) {
+				harmonyType = 'COMPLEMENTARY';
+				harmonyColor = '#3dd9a4';
+				harmonyMsg =
+					'Primary and secondary are complementary (~180° apart). High contrast and visual tension. Strong for emphasis-heavy content.';
+			} else if (ps >= 60 && ps <= 120) {
+				harmonyType = 'TRIADIC';
+				harmonyColor = '#4aafff';
+				harmonyMsg = `Primary and secondary are ${Math.round(ps)}° apart — close to triadic. Vibrant and balanced. Works well for multi-topic educational content.`;
+			} else if (ps < 40) {
+				harmonyType = 'ANALOGOUS';
+				harmonyColor = '#f5b94a';
+				harmonyMsg = `Primary and secondary are only ${Math.round(ps)}° apart — analogous territory. Similar hues reduce contrast; ensure sufficient lightness difference to maintain hierarchy.`;
+			} else {
+				harmonyType = 'SPLIT';
+				harmonyColor = '#a78bfa';
+				harmonyMsg = `Primary and secondary are ${Math.round(ps)}° apart — a split or compound relationship. Versatile but requires careful application of saturation to maintain role clarity.`;
+			}
+
+			const el = document.getElementById('csb-harmony-row');
+			el.innerHTML = `<div style="display:flex; align-items:center; gap:0.75rem;">
+    <span style="font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:${harmonyColor}; border:1px solid ${harmonyColor}; padding:2px 8px;">${harmonyType}</span>
+    <span style="font-size:11px; color:var(--vs-muted);">${harmonyMsg}</span>
+  </div>`;
+
+			const verdict = document.getElementById('csb-verdict');
+			verdict.style.cssText = `margin-top:0.75rem; padding:0.75rem 1rem; border-left:2px solid ${harmonyColor}; font-size:12px; color:var(--vs-text); line-height:1.7; background:var(--vs-raised);`;
+			const bgLum = hexToHsl(csbRoles.find((r) => r.id === 'bg1').hex)[2];
+			const primarySat = ph[1];
+			let v = '';
+			if (bgLum > 30)
+				v =
+					'⚠ Background surface appears too light — text will compete with the background rather than sitting above it. Aim for L < 20% for video backgrounds. ';
+			if (primarySat < 50)
+				v +=
+					'⚠ Primary accent has low saturation — it may not clearly dominate lighter or busier frames. Increase saturation to at least 60% for the primary role. ';
+			if (!v)
+				v = `✓ Colour system looks viable. ${harmonyType} relationship between primary and secondary. Primary saturation: ${primarySat}%. Background luminosity: ${bgLum}% — suitable for video use.`;
+			verdict.textContent = v;
+		}
+
+		function drawCSBPreview() {
+			const canvas = document.getElementById('csb-canvas');
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.offsetWidth || 300;
+			const H = (W * 9) / 16;
+			if (canvas.width !== W * dpr) {
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.height = H + 'px';
+				canvas.getContext('2d').scale(dpr, dpr);
+			}
+			const ctx = canvas.getContext('2d');
+			const primary = csbRoles.find((r) => r.id === 'primary').hex;
+			const secondary = csbRoles.find((r) => r.id === 'secondary').hex;
+			const signal = csbRoles.find((r) => r.id === 'signal').hex;
+			const bg1 = csbRoles.find((r) => r.id === 'bg1').hex;
+
+			ctx.clearRect(0, 0, W, H);
+			ctx.fillStyle = bg1;
+			ctx.fillRect(0, 0, W, H);
+			// Subtle grid
+			ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+			ctx.lineWidth = 1;
+			for (let x = 0; x < W; x += W / 8) {
+				ctx.beginPath();
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, H);
+				ctx.stroke();
+			}
+
+			// Headline
+			ctx.font = `800 ${W * 0.07}px Syne,sans-serif`;
+			ctx.fillStyle = primary;
+			ctx.textAlign = 'left';
+			ctx.fillText('VISUAL LANGUAGE', W * 0.06, H * 0.38);
+			ctx.fillStyle = 'rgba(255,255,255,0.85)';
+			ctx.fillText('SYSTEM', W * 0.06, H * 0.52);
+			// Accent bar
+			ctx.fillStyle = primary;
+			ctx.fillRect(W * 0.06, H * 0.57, W * 0.22, 2);
+
+			// Supporting text
+			ctx.font = `${W * 0.028}px IBM Plex Mono`;
+			ctx.fillStyle = secondary + 'cc';
+			ctx.textAlign = 'left';
+			ctx.fillText('Secondary accent — labels & context', W * 0.06, H * 0.68);
+
+			// Signal element
+			ctx.font = `600 ${W * 0.024}px IBM Plex Mono`;
+			ctx.fillStyle = signal;
+			ctx.fillText('Signal: key stat', W * 0.06, H * 0.81);
+			ctx.strokeStyle = signal + '50';
+			ctx.lineWidth = 1;
+			ctx.strokeRect(W * 0.04, H * 0.73, W * 0.3, H * 0.14);
+
+			// Right panel
+			ctx.fillStyle = 'rgba(255,255,255,0.04)';
+			ctx.fillRect(W * 0.6, H * 0.1, W * 0.35, H * 0.8);
+			ctx.font = `${W * 0.022}px IBM Plex Mono`;
+			ctx.fillStyle = 'rgba(255,255,255,0.25)';
+			ctx.textAlign = 'center';
+			ctx.fillText('annotation area', W * 0.775, H * 0.52);
+			// Small colour swatches
+			[primary, secondary, signal, bg1].forEach((c, i) => {
+				const sx = W * 0.63 + i * (W * 0.075);
+				const sy = H * 0.75;
+				ctx.fillStyle = c;
+				ctx.fillRect(sx, sy, W * 0.06, H * 0.1);
+			});
+		}
+
+		_addWinListener('resize', drawCSBPreview);
+		setTimeout(() => {
+			buildCSBControls();
+		}, 50);
+
+		/* ════════════════════════════════════════════
+   TYPOGRAPHY PAIRING LAB
+════════════════════════════════════════════ */
+		const typeFonts = {
+			display: [
+				{
+					name: 'Syne',
+					weight: '800',
+					style: 'font-family:Syne,sans-serif;font-weight:800;',
+					tone: 'Geometric, authoritative, modern'
+				},
+				{
+					name: 'Playfair Display',
+					weight: '700',
+					style: 'font-family:Georgia,serif;font-weight:700;font-style:italic;',
+					tone: 'Editorial, narrative, considered'
+				},
+				{
+					name: 'Space Grotesk',
+					weight: '700',
+					style: 'font-family:Syne,sans-serif;font-weight:700;letter-spacing:-0.02em;',
+					tone: 'Technical, clean, functional'
+				},
+				{
+					name: 'DM Sans Bold',
+					weight: '800',
+					style: 'font-family:sans-serif;font-weight:800;letter-spacing:-0.01em;',
+					tone: 'Friendly, accessible, contemporary'
+				}
+			],
+			body: [
+				{
+					name: 'IBM Plex Mono',
+					weight: '400',
+					style: 'font-family:IBM Plex Mono,monospace;font-weight:400;',
+					tone: 'Technical, precise, digital'
+				},
+				{
+					name: 'System sans-serif',
+					weight: '400',
+					style: 'font-family:-apple-system,sans-serif;font-weight:400;',
+					tone: 'Neutral, utility, background'
+				},
+				{
+					name: 'Georgia / Serif',
+					weight: '400',
+					style: 'font-family:Georgia,serif;font-weight:400;',
+					tone: 'Warm, readable, literary'
+				},
+				{
+					name: 'Syne Light',
+					weight: '300',
+					style: 'font-family:Syne,sans-serif;font-weight:300;',
+					tone: 'Unified with display, elegant contrast'
+				}
+			],
+			data: [
+				{
+					name: 'IBM Plex Mono',
+					weight: '600',
+					style: 'font-family:IBM Plex Mono,monospace;font-weight:600;',
+					tone: 'Tabular, precise — best for data'
+				},
+				{
+					name: 'Monospace (system)',
+					weight: '500',
+					style: 'font-family:monospace;font-weight:500;',
+					tone: 'Functional fallback'
+				},
+				{
+					name: 'Courier / slab',
+					weight: '700',
+					style: 'font-family:Courier New,monospace;font-weight:700;',
+					tone: 'Retro, typewriter quality'
+				}
+			]
+		};
+
+		const typeSelections = { display: 0, body: 0, data: 0 };
+		let activeTypeRole = 'display';
+
+		const pairingAdvice = {
+			'0-0':
+				'✓ Geometric display + mono body: the combination this course uses. Clear distinction between roles; technical and precise. Works for analytical, systems, and educational content.',
+			'0-1':
+				'· Geometric display + neutral body: safe and readable. The display carries identity; the body is invisible. Risk: the system has no second voice — everything bold is primary.',
+			'0-2':
+				'⚠ Geometric display + serif body: tonal conflict. The geometric headline is cold and precise; the serif body is warm and literary. Requires strong content justification.',
+			'0-3':
+				'✓ Syne across display and body: unified and elegant. Weight contrast (800 vs 300) creates hierarchy within one typeface family. Very coherent; slightly less distinctive.',
+			'1-0':
+				'· Serif display + mono body: editorial tone with technical underpinning. Works for long-form essay content or historical analysis. The contrast is strong and intentional.',
+			'1-1':
+				'⚠ Serif display + neutral body: safe but tonally flat. Both are moderate voices. Consider whether the display is distinctive enough to carry the identity.',
+			'1-2':
+				'✓ Serif display + serif body: unified voice. Works for humanities, narrative, and cultural content where warmth and readability are prioritised over technical precision.',
+			'1-3':
+				'⚠ Serif display + Syne light body: tonal clash. The serif is warm; Syne is geometric and cold. The two typefaces read as belonging to different systems.'
+		};
+
+		function buildTypeRoleControls() {
+			const el = document.getElementById('type-role-controls');
+			const roles = ['display', 'body', 'data'];
+			el.innerHTML = roles
+				.map((role) => {
+					const fonts = typeFonts[role];
+					const isActive = role === activeTypeRole;
+					return `
+      <div class="type-role-card${isActive ? ' selected' : ''}" id="type-card-${role}" onclick="selectTypeRole('${role}')" style="margin-bottom:0.75rem;">
+        <div class="type-role-name">${role.charAt(0).toUpperCase() + role.slice(1)} Typeface</div>
+        <div class="type-preview" style="${fonts[typeSelections[role]].style}; color:${isActive ? '#fff' : 'rgba(255,255,255,0.5)'}; font-size:${role === 'data' ? '18px' : '22px'};">
+          ${role === 'display' ? 'The Signal' : role === 'body' ? 'Supporting context text' : '42.7%'}
+        </div>
+        <div style="font-size:10px; color:var(--vs-muted); margin-top:4px;">${fonts[typeSelections[role]].name} · ${fonts[typeSelections[role]].tone}</div>
+      </div>
+      ${
+				isActive
+					? `
+        <div style="margin-bottom:0.75rem;">
+          ${fonts
+						.map(
+							(f, i) => `
+            <div class="font-option${typeSelections[role] === i ? ' selected' : ''}" onclick="selectFont('${role}',${i})">
+              <div class="font-option-preview" style="${f.style}; font-size:16px;">${role === 'display' ? 'Aa' : role === 'body' ? 'Aa' : '42'}</div>
+              <div>
+                <div class="font-option-name">${f.name}</div>
+                <div class="font-option-meta">${f.tone}</div>
+              </div>
+            </div>`
+						)
+						.join('')}
+        </div>`
+					: ''
+			}`;
+				})
+				.join('');
+			drawTypePreview();
+			updateTypePairingVerdict();
+		}
+
+		function selectTypeRole(role) {
+			activeTypeRole = role;
+			buildTypeRoleControls();
+		}
+
+		function selectFont(role, idx) {
+			typeSelections[role] = idx;
+			buildTypeRoleControls();
+		}
+
+		function drawTypePreview() {
+			const canvas = document.getElementById('type-canvas');
+			if (!canvas) return;
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.offsetWidth || 300;
+			const H = (W * 9) / 16;
+			if (canvas.width !== W * dpr) {
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.height = H + 'px';
+				canvas.getContext('2d').scale(dpr, dpr);
+			}
+			const ctx = canvas.getContext('2d');
+			ctx.clearRect(0, 0, W, H);
+			ctx.fillStyle = '#040710';
+			ctx.fillRect(0, 0, W, H);
+
+			const dFont = typeFonts.display[typeSelections.display];
+			const bFont = typeFonts.body[typeSelections.body];
+			const dataFont = typeFonts.data[typeSelections.data];
+
+			// Display font headline
+			ctx.font = `${dFont.weight} ${W * 0.075}px ${dFont.name.includes('Syne') ? 'Syne' : dFont.name.includes('Georgia') || dFont.name.includes('serif') ? 'Georgia' : 'sans-serif'}`;
+			ctx.fillStyle = '#ffffff';
+			ctx.textAlign = 'left';
+			ctx.fillText('Core Concept', W * 0.06, H * 0.38);
+			ctx.fillStyle = '#4aafff';
+			ctx.fillText('Revealed', W * 0.06, H * 0.52);
+
+			// Accent bar
+			ctx.fillStyle = '#4aafff';
+			ctx.fillRect(W * 0.06, H * 0.57, W * 0.18, 2);
+
+			// Body font supporting text
+			ctx.font = `${W * 0.025}px ${bFont.name.includes('Mono') || bFont.name.includes('mono') ? 'IBM Plex Mono' : bFont.name.includes('Georgia') ? 'Georgia' : 'sans-serif'}`;
+			ctx.fillStyle = 'rgba(184,200,222,0.75)';
+			ctx.fillText('Supporting text — the second voice in your', W * 0.06, H * 0.66);
+			ctx.fillText('visual hierarchy. Legible, recessive, clear.', W * 0.06, H * 0.73);
+
+			// Data font stat
+			ctx.font = `600 ${W * 0.055}px ${dataFont.name.includes('Mono') || dataFont.name.includes('mono') ? 'IBM Plex Mono' : 'monospace'}`;
+			ctx.fillStyle = '#f5b94a';
+			ctx.textAlign = 'right';
+			ctx.fillText('84.2%', W * 0.92, H * 0.62);
+			ctx.font = `${W * 0.018}px IBM Plex Mono`;
+			ctx.fillStyle = 'rgba(245,185,74,0.5)';
+			ctx.fillText('DATA TYPEFACE', W * 0.92, H * 0.7);
+			ctx.textAlign = 'left';
+		}
+
+		function updateTypePairingVerdict() {
+			const key = `${typeSelections.display}-${typeSelections.body}`;
+			const advice =
+				pairingAdvice[key] ||
+				`Display index ${typeSelections.display} + body index ${typeSelections.body}. Evaluate for tonal consistency: do the two typefaces communicate the same register?`;
+			const v = document.getElementById('type-pairing-verdict');
+			v.textContent = advice;
+			v.style.borderLeftColor = advice.startsWith('✓')
+				? '#3dd9a4'
+				: advice.startsWith('⚠')
+					? '#ff4f68'
+					: '#4aafff';
+		}
+
+		setTimeout(() => {
+			buildTypeRoleControls();
+		}, 80);
+		_addWinListener('resize', drawTypePreview);
+
+		/* ════════════════════════════════════════════
+   CONSISTENCY CHECKER
+════════════════════════════════════════════ */
+		const ccStyles = {
+			modern: {
+				label: 'Modern / Technical',
+				accentColor: '#4aafff',
+				secondary: '#f5b94a',
+				bg: '#040d18',
+				font: 'mono',
+				layout: 'left-bottom',
+				draw(ctx, W, H, label) {
+					ctx.fillStyle = '#040d18';
+					ctx.fillRect(0, 0, W, H);
+					ctx.strokeStyle = '#14202e';
+					ctx.lineWidth = 0.5;
+					for (let x = 0; x < W; x += W / 8) {
+						ctx.beginPath();
+						ctx.moveTo(x, 0);
+						ctx.lineTo(x, H);
+						ctx.stroke();
+					}
+					ctx.font = `800 ${W * 0.07}px Syne,sans-serif`;
+					ctx.fillStyle = '#4aafff';
+					ctx.textAlign = 'left';
+					ctx.fillText('THE SIGNAL', W * 0.05, H * 0.42);
+					ctx.fillStyle = 'rgba(255,255,255,0.85)';
+					ctx.fillText('REACHES', W * 0.05, H * 0.56);
+					ctx.fillStyle = '#4aafff';
+					ctx.fillRect(W * 0.05, H * 0.6, W * 0.2, 2);
+					ctx.fillStyle = 'rgba(245,185,74,0.7)';
+					ctx.font = `${W * 0.02}px IBM Plex Mono`;
+					ctx.fillText('secondary accent · context label', W * 0.05, H * 0.72);
+					// Lower third
+					ctx.fillStyle = 'rgba(0,0,0,0.75)';
+					ctx.fillRect(0, H * 0.82, W, H * 0.18);
+					ctx.fillStyle = '#4aafff';
+					ctx.fillRect(W * 0.04, H * 0.84, 3, H * 0.1);
+					ctx.font = `700 ${W * 0.025}px Syne`;
+					ctx.fillStyle = '#fff';
+					ctx.fillText(label, W * 0.07, H * 0.915);
+				}
+			},
+			editorial: {
+				label: 'Editorial / Warm',
+				accentColor: '#e8c47a',
+				secondary: '#a09070',
+				bg: '#0e0c08',
+				font: 'serif',
+				layout: 'centre',
+				draw(ctx, W, H, label) {
+					ctx.fillStyle = '#0e0c08';
+					ctx.fillRect(0, 0, W, H);
+					ctx.font = `700 ${W * 0.065}px Georgia,serif`;
+					ctx.fillStyle = 'rgba(232,196,122,0.9)';
+					ctx.textAlign = 'center';
+					ctx.fillText('The Considered', W / 2, H * 0.38);
+					ctx.fillStyle = 'rgba(255,255,255,0.8)';
+					ctx.font = `400 italic ${W * 0.065}px Georgia,serif`;
+					ctx.fillText('Argument', W / 2, H * 0.52);
+					ctx.strokeStyle = '#e8c47a40';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.3, H * 0.57);
+					ctx.lineTo(W * 0.7, H * 0.57);
+					ctx.stroke();
+					ctx.font = `${W * 0.022}px Georgia,serif`;
+					ctx.fillStyle = 'rgba(160,144,112,0.7)';
+					ctx.fillText('supporting text in warm serif body', W / 2, H * 0.68);
+					ctx.fillStyle = 'rgba(0,0,0,0.8)';
+					ctx.fillRect(0, H * 0.84, W, H * 0.16);
+					ctx.font = `italic ${W * 0.022}px Georgia`;
+					ctx.fillStyle = 'rgba(232,196,122,0.8)';
+					ctx.fillText(label, W / 2, H * 0.93);
+				}
+			},
+			chaotic: {
+				label: 'Inconsistent ✕',
+				accentColor: '#ff0000',
+				secondary: '#00ff00',
+				bg: '#0a0a0a',
+				font: 'mixed',
+				layout: 'random',
+				draw(ctx, W, H, label) {
+					ctx.fillStyle = '#0a0a0a';
+					ctx.fillRect(0, 0, W, H);
+					ctx.font = `900 ${W * 0.08}px Syne,sans-serif`;
+					ctx.fillStyle = '#ff4444';
+					ctx.textAlign = 'left';
+					ctx.fillText('HEADLINE', W * 0.05, H * 0.3);
+					ctx.font = `400 italic ${W * 0.045}px Georgia,serif`;
+					ctx.fillStyle = '#44ff88';
+					ctx.fillText('Subtitle in different font', W * 0.05, H * 0.5);
+					ctx.font = `300 ${W * 0.03}px sans-serif`;
+					ctx.fillStyle = '#4488ff';
+					ctx.fillText('Third different typeface here', W * 0.05, H * 0.65);
+					ctx.fillStyle = '#ffff00';
+					ctx.fillRect(W * 0.3, H * 0.72, W * 0.4, 3);
+					ctx.font = `${W * 0.02}px monospace`;
+					ctx.fillStyle = 'rgba(255,165,0,0.8)';
+					ctx.textAlign = 'right';
+					ctx.fillText('lower third uses yet another font', W * 0.95, H * 0.9);
+				}
+			},
+			minimal: {
+				label: 'Minimal / Clean',
+				accentColor: '#ffffff',
+				secondary: '#666',
+				bg: '#060606',
+				font: 'mono',
+				layout: 'left-top',
+				draw(ctx, W, H, label) {
+					ctx.fillStyle = '#060606';
+					ctx.fillRect(0, 0, W, H);
+					ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(W * 0.06, H * 0.06, W * 0.88, H * 0.88);
+					ctx.font = `800 ${W * 0.065}px Syne,sans-serif`;
+					ctx.fillStyle = 'rgba(255,255,255,0.9)';
+					ctx.textAlign = 'left';
+					ctx.fillText('SIGNAL', W * 0.1, H * 0.42);
+					ctx.fillStyle = 'rgba(255,255,255,0.3)';
+					ctx.font = `${W * 0.02}px IBM Plex Mono`;
+					ctx.fillText('minimal — weight is the only contrast', W * 0.1, H * 0.56);
+					ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.1, H * 0.62);
+					ctx.lineTo(W * 0.35, H * 0.62);
+					ctx.stroke();
+					ctx.font = `${W * 0.02}px IBM Plex Mono`;
+					ctx.fillStyle = 'rgba(255,255,255,0.4)';
+					ctx.fillText(label, W * 0.1, H * 0.75);
+				}
+			}
+		};
+
+		let ccStyleA = 'modern';
+		let ccStyleB = 'modern';
+
+		function buildCCButtons() {
+			const keys = Object.keys(ccStyles);
+			['a', 'b'].forEach((side) => {
+				const el = document.getElementById('cc-' + side + '-btns');
+				const current = side === 'a' ? ccStyleA : ccStyleB;
+				el.innerHTML = keys
+					.map(
+						(k) =>
+							`<button class="btn${k === current ? ' active' : ''}" onclick="setCCStyle('${side}','${k}')">${ccStyles[k].label}</button>`
+					)
+					.join('');
+			});
+			drawCCFrames();
+			updateCCScore();
+		}
+
+		function setCCStyle(side, style) {
+			if (side === 'a') ccStyleA = style;
+			else ccStyleB = style;
+			buildCCButtons();
+		}
+
+		function drawCCFrame(canvasId, styleKey, frameLabel) {
+			const canvas = document.getElementById(canvasId);
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.offsetWidth || 280;
+			const H = (W * 9) / 16;
+			if (canvas.width !== W * dpr) {
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.height = H + 'px';
+				canvas.getContext('2d').scale(dpr, dpr);
+			}
+			ccStyles[styleKey].draw(canvas.getContext('2d'), W, H, frameLabel);
+		}
+
+		function drawCCFrames() {
+			drawCCFrame('cc-canvas-a', ccStyleA, 'Video 1 · How Memory Works');
+			drawCCFrame('cc-canvas-b', ccStyleB, 'Video 2 · Supply Chain Economics');
+		}
+
+		function updateCCScore() {
+			const a = ccStyles[ccStyleA],
+				b = ccStyles[ccStyleB];
+			const criteria = [
+				{
+					label: 'Colour',
+					score:
+						a.accentColor === b.accentColor
+							? 2
+							: colorSimilarity(a.accentColor, b.accentColor) > 0.7
+								? 1
+								: 0
+				},
+				{ label: 'Typography', score: a.font === b.font ? 2 : 0 },
+				{
+					label: 'Layout',
+					score: a.layout === b.layout ? 2 : a.layout !== 'random' && b.layout !== 'random' ? 1 : 0
+				},
+				{
+					label: 'BG Tone',
+					score: a.bg === b.bg ? 2 : colorSimilarity(a.bg, b.bg) > 0.8 ? 1 : 0
+				},
+				{
+					label: 'Overall',
+					score:
+						ccStyleA === ccStyleB
+							? 2
+							: a.font === b.font && colorSimilarity(a.accentColor, b.accentColor) > 0.5
+								? 1
+								: 0
+				}
+			];
+			const total = criteria.reduce((s, c) => s + c.score, 0);
+			const max = criteria.length * 2;
+			const pct = Math.round((total / max) * 100);
+			const scoreEl = document.getElementById('cc-score-grid');
+			scoreEl.innerHTML = criteria
+				.map((c) => {
+					const col = c.score === 2 ? '#3dd9a4' : c.score === 1 ? '#f5b94a' : '#ff4f68';
+					return `<div class="cc-score-cell">
+      <div class="cc-score-val" style="color:${col};">${c.score === 2 ? '✓' : c.score === 1 ? '~' : '✗'}</div>
+      <div class="cc-score-lbl">${c.label}</div>
+    </div>`;
+				})
+				.join('');
+			const v = document.getElementById('cc-verdict');
+			v.style.borderLeftColor = pct >= 80 ? '#3dd9a4' : pct >= 50 ? '#f5b94a' : '#ff4f68';
+			if (ccStyleA === ccStyleB)
+				v.textContent =
+					'✓ Same style applied to both frames. Maximum consistency — a returning viewer would immediately recognise both videos as belonging to the same channel.';
+			else if (pct >= 70)
+				v.textContent = `Strong consistency (${pct}%). The two frames share enough visual grammar that a returning viewer would recognise them as related. Minor variations in layout or colour role are acceptable as long as the primary accent and typographic system remain identical.`;
+			else if (pct >= 40)
+				v.textContent = `Partial consistency (${pct}%). Some shared elements but significant divergence in colour or typography. A first-time viewer might not associate the two videos. Review the failing criteria and align them before publishing both as part of the same series.`;
+			else
+				v.textContent = `⚠ Low consistency (${pct}%). The two frames read as different creators. Returning viewers will not benefit from prior visual knowledge. Either a deliberate rebrand is needed, or the visual language needs to be defined before production.`;
+		}
+
+		function colorSimilarity(h1, h2) {
+			const r1 = parseInt(h1.slice(1, 3), 16),
+				g1 = parseInt(h1.slice(3, 5), 16),
+				b1 = parseInt(h1.slice(5, 7), 16);
+			const r2 = parseInt(h2.slice(1, 3), 16),
+				g2 = parseInt(h2.slice(3, 5), 16),
+				b2 = parseInt(h2.slice(5, 7), 16);
+			const d = Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
+			return 1 - d / 441.67;
+		}
+
+		buildCCButtons();
+		_addWinListener('resize', drawCCFrames);
+
+		/* ════════════════════════════════════════════
+   COMPONENT LIBRARY
+════════════════════════════════════════════ */
+		const compTypes = [
+			{ id: 'lower-third', label: 'Lower Third' },
+			{ id: 'section-title', label: 'Section Title' },
+			{ id: 'key-term', label: 'Key Term Callout' },
+			{ id: 'data-label', label: 'Data Label' },
+			{ id: 'chapter-break', label: 'Chapter Break' }
+		];
+
+		const compStyles = {
+			'lower-third': {
+				variants: ['Clean Line', 'Filled Box', 'Minimal'],
+				notes: [
+					'Accent bar + text anchored bottom-left. Consistent edge padding. Always bottom edge — never floating mid-frame.',
+					'Semi-transparent filled strip across full width. Bold contrast; high visibility over busy footage.',
+					'Text only with letter-spacing — for sequences where any graphic element would compete. Requires clean background.'
+				]
+			},
+			'section-title': {
+				variants: ['Left + Number', 'Centre + Line', 'Full-Frame'],
+				notes: [
+					'Section number in accent + title in display weight. Anchored left with consistent leading line.',
+					'Centred composition with a thin horizontal rule. Neutral and professional; works across all content types.',
+					'Dark frame with large display text. Creates a definitive chapter break moment. Duration: 2–3s.'
+				]
+			},
+			'key-term': {
+				variants: ['Bracket Style', 'Pill Border', 'Underline'],
+				notes: [
+					'Term wrapped in half-brackets — an editorial, considered feel. Works for humanities and educational content.',
+					'Term enclosed in a thin pill border using secondary accent. Functional and visible in any frame context.',
+					'Term with a thin accent underline appears exactly on the narration beat. Minimal visual cost.'
+				]
+			},
+			'data-label': {
+				variants: ['Large + Context', 'Inline + Icon', 'Badge'],
+				notes: [
+					'Large number in data typeface, small context label below in secondary. High impact for a single key stat.',
+					'Number prefixed by a small icon, all inline. Works for rapid-fire lists of related data points.',
+					'Number in a bordered pill — treated as a distinct visual element rather than body text.'
+				]
+			},
+			'chapter-break': {
+				variants: ['Fade Through Black', 'Title Card', 'Line Reveal'],
+				notes: [
+					'Classic fade to black and back in. Maximum structural signal. Use sparingly — 1–2 per video.',
+					'Chapter number and title on a dark frame held for 2–3s. Viewers learn to expect this pattern.',
+					'A thin accent line draws across the frame, then the new content reveals. Lower cost; suitable for minor section breaks.'
+				]
+			}
+		};
+
+		let currentCompType = 'lower-third';
+		let currentCompVariant = 0;
+
+		function buildCompTypeButtons() {
+			const el = document.getElementById('comp-type-btns');
+			el.innerHTML = compTypes
+				.map(
+					(ct) =>
+						`<button class="comp-opt${ct.id === currentCompType ? ' active' : ''}" onclick="selectCompType('${ct.id}')">${ct.label}</button>`
+				)
+				.join('');
+			buildCompStyleControls();
+		}
+
+		function selectCompType(id) {
+			currentCompType = id;
+			currentCompVariant = 0;
+			buildCompTypeButtons();
+		}
+
+		function buildCompStyleControls() {
+			const styles = compStyles[currentCompType];
+			const el = document.getElementById('comp-style-controls');
+			el.innerHTML = `
+    <div style="font-size:10px; color:var(--vs-muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.5rem;">Style variant:</div>
+    ${styles.variants
+			.map(
+				(v, i) => `
+      <div class="font-option${i === currentCompVariant ? ' selected' : ''}" onclick="selectCompVariant(${i})" style="padding:0.5rem 0.75rem; cursor:pointer;">
+        <div>
+          <div style="font-size:12px; color:${i === currentCompVariant ? 'var(--vs-blue)' : 'var(--vs-text)'};">${v}</div>
+        </div>
+      </div>`
+			)
+			.join('')}`;
+			drawCompPreview();
+			document.getElementById('comp-notes').textContent = styles.notes[currentCompVariant];
+		}
+
+		function selectCompVariant(i) {
+			currentCompVariant = i;
+			buildCompStyleControls();
+		}
+
+		function drawCompPreview() {
+			const canvas = document.getElementById('comp-canvas');
+			if (!canvas) return;
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.offsetWidth || 300;
+			const H = (W * 9) / 16;
+			if (canvas.width !== W * dpr) {
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.height = H + 'px';
+				canvas.getContext('2d').scale(dpr, dpr);
+			}
+			const ctx = canvas.getContext('2d');
+			ctx.clearRect(0, 0, W, H);
+			ctx.fillStyle = '#040d18';
+			ctx.fillRect(0, 0, W, H);
+			// Grid bg
+			ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+			ctx.lineWidth = 1;
+			for (let x = 0; x < W; x += W / 8) {
+				ctx.beginPath();
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, H);
+				ctx.stroke();
+			}
+			for (let y = 0; y < H; y += H / 6) {
+				ctx.beginPath();
+				ctx.moveTo(0, y);
+				ctx.lineTo(W, y);
+				ctx.stroke();
+			}
+
+			// Draw component
+			const v = currentCompVariant;
+			const p = csbRoles.find((r) => r.id === 'primary')?.hex || '#4aafff';
+			const s = csbRoles.find((r) => r.id === 'secondary')?.hex || '#f5b94a';
+
+			if (currentCompType === 'lower-third') {
+				if (v === 0) {
+					ctx.fillStyle = 'rgba(0,0,0,0.78)';
+					ctx.fillRect(0, H * 0.78, W, H * 0.22);
+					ctx.fillStyle = p;
+					ctx.fillRect(W * 0.04, H * 0.8, 3, H * 0.13);
+					ctx.font = `${W * 0.022}px IBM Plex Mono`;
+					ctx.fillStyle = p + 'cc';
+					ctx.textAlign = 'left';
+					ctx.fillText('CONTEXT LABEL', W * 0.07, H * 0.86);
+					ctx.font = `700 ${W * 0.028}px Syne,sans-serif`;
+					ctx.fillStyle = '#fff';
+					ctx.fillText('Main identification text', W * 0.07, H * 0.95);
+				} else if (v === 1) {
+					ctx.fillStyle = `color-mix(in srgb,${p} 12%,rgba(0,0,0,0.85))`;
+					ctx.fillRect(0, H * 0.8, W, H * 0.2);
+					ctx.strokeStyle = p + '40';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(0, H * 0.8);
+					ctx.lineTo(W, H * 0.8);
+					ctx.stroke();
+					ctx.font = `${W * 0.022}px IBM Plex Mono`;
+					ctx.fillStyle = p;
+					ctx.textAlign = 'left';
+					ctx.fillText('LABEL', W * 0.05, H * 0.875);
+					ctx.fillStyle = 'rgba(255,255,255,0.9)';
+					ctx.font = `700 ${W * 0.03}px Syne,sans-serif`;
+					ctx.fillText('Identification text here', W * 0.05, H * 0.945);
+				} else {
+					ctx.font = `${W * 0.02}px IBM Plex Mono`;
+					ctx.fillStyle = 'rgba(255,255,255,0.5)';
+					ctx.textAlign = 'left';
+					ctx.fillText('MINIMAL LOWER THIRD · IDENTIFICATION', W * 0.05, H * 0.88);
+				}
+			} else if (currentCompType === 'section-title') {
+				if (v === 0) {
+					ctx.font = `${W * 0.045}px IBM Plex Mono`;
+					ctx.fillStyle = p;
+					ctx.textAlign = 'left';
+					ctx.fillText('02', W * 0.07, H * 0.42);
+					ctx.font = `800 ${W * 0.06}px Syne,sans-serif`;
+					ctx.fillStyle = '#fff';
+					ctx.fillText('Section Title', W * 0.07, H * 0.57);
+					ctx.fillStyle = p;
+					ctx.fillRect(W * 0.07, H * 0.62, W * 0.25, 2);
+				} else if (v === 1) {
+					ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.1, H * 0.35);
+					ctx.lineTo(W * 0.9, H * 0.35);
+					ctx.stroke();
+					ctx.font = `800 ${W * 0.065}px Syne,sans-serif`;
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText('Section Title Here', W / 2, H * 0.56);
+					ctx.beginPath();
+					ctx.moveTo(W * 0.1, H * 0.62);
+					ctx.lineTo(W * 0.9, H * 0.62);
+					ctx.stroke();
+				} else {
+					ctx.fillStyle = 'rgba(0,0,0,0.92)';
+					ctx.fillRect(0, 0, W, H);
+					ctx.font = `${W * 0.02}px IBM Plex Mono`;
+					ctx.fillStyle = p;
+					ctx.textAlign = 'center';
+					ctx.fillText('SECTION 03', W / 2, H * 0.38);
+					ctx.font = `800 ${W * 0.08}px Syne,sans-serif`;
+					ctx.fillStyle = '#fff';
+					ctx.fillText('Full Frame Title', W / 2, H * 0.58);
+				}
+			} else if (currentCompType === 'key-term') {
+				ctx.font = `800 ${W * 0.06}px Syne,sans-serif`;
+				ctx.fillStyle = '#fff';
+				ctx.textAlign = 'left';
+				ctx.fillText('The', W * 0.08, H * 0.45);
+				if (v === 0) {
+					ctx.fillStyle = p;
+					ctx.font = `800 ${W * 0.06}px Syne,sans-serif`;
+					ctx.fillText('⌐ signal ¬', W * 0.29, H * 0.45);
+				} else if (v === 1) {
+					const tw = W * 0.26;
+					const tx = W * 0.29;
+					ctx.strokeStyle = p;
+					ctx.lineWidth = 1.5;
+					ctx.strokeRect(tx - 4, H * 0.35, tw + 8, H * 0.17);
+					ctx.fillStyle = p;
+					ctx.fillText('signal', tx, H * 0.45);
+				} else {
+					ctx.fillStyle = p;
+					ctx.fillText('signal', W * 0.29, H * 0.45);
+					ctx.fillStyle = p;
+					ctx.fillRect(W * 0.29, H * 0.475, W * 0.18, 2);
+				}
+				ctx.fillStyle = '#fff';
+				ctx.fillText('matters.', W * 0.55, H * 0.45);
+			} else if (currentCompType === 'data-label') {
+				if (v === 0) {
+					ctx.font = `700 ${W * 0.11}px IBM Plex Mono`;
+					ctx.fillStyle = s;
+					ctx.textAlign = 'center';
+					ctx.fillText('84.2%', W / 2, H * 0.52);
+					ctx.font = `${W * 0.022}px IBM Plex Mono`;
+					ctx.fillStyle = 'rgba(245,185,74,0.5)';
+					ctx.fillText('comprehension rate', W / 2, H * 0.65);
+				} else if (v === 1) {
+					ctx.font = `${W * 0.03}px IBM Plex Mono`;
+					ctx.fillStyle = s;
+					ctx.textAlign = 'left';
+					ctx.fillText('▲ 84.2%  ·  23,000 viewers  ·  4.7 avg mins', W * 0.08, H * 0.5);
+				} else {
+					const tw = W * 0.22;
+					const tx = W * 0.5 - tw / 2;
+					ctx.strokeStyle = s;
+					ctx.lineWidth = 1.5;
+					ctx.strokeRect(tx, H * 0.33, tw, H * 0.24);
+					ctx.font = `700 ${W * 0.07}px IBM Plex Mono`;
+					ctx.fillStyle = s;
+					ctx.textAlign = 'center';
+					ctx.fillText('84.2%', W / 2, H * 0.52);
+				}
+			} else if (currentCompType === 'chapter-break') {
+				if (v === 0) {
+					const grad = ctx.createLinearGradient(0, 0, 0, H);
+					grad.addColorStop(0, '#040d18');
+					grad.addColorStop(0.4, '#000');
+					grad.addColorStop(0.6, '#000');
+					grad.addColorStop(1, '#040d18');
+					ctx.fillStyle = grad;
+					ctx.fillRect(0, 0, W, H);
+					ctx.font = `${W * 0.018}px IBM Plex Mono`;
+					ctx.fillStyle = 'rgba(255,255,255,0.2)';
+					ctx.textAlign = 'center';
+					ctx.fillText('— fade through black —', W / 2, H / 2 + 4);
+				} else if (v === 1) {
+					ctx.fillStyle = '#020408';
+					ctx.fillRect(0, 0, W, H);
+					ctx.font = `${W * 0.022}px IBM Plex Mono`;
+					ctx.fillStyle = p;
+					ctx.textAlign = 'left';
+					ctx.fillText('CHAPTER 03', W * 0.08, H * 0.38);
+					ctx.font = `800 ${W * 0.065}px Syne,sans-serif`;
+					ctx.fillStyle = '#fff';
+					ctx.fillText('New Direction', W * 0.08, H * 0.56);
+					ctx.font = `${W * 0.018}px IBM Plex Mono`;
+					ctx.fillStyle = 'rgba(255,255,255,0.25)';
+					ctx.fillText('held 2–3 seconds', W * 0.08, H * 0.7);
+				} else {
+					ctx.fillStyle = p;
+					ctx.fillRect(0, H * 0.49, W, 2);
+					ctx.font = `${W * 0.02}px IBM Plex Mono`;
+					ctx.fillStyle = p + '80';
+					ctx.textAlign = 'right';
+					ctx.fillText('draws across frame in 0.4s', W * 0.95, H * 0.45);
+					ctx.textAlign = 'left';
+					ctx.fillStyle = p + '80';
+					ctx.fillText('then new content fades in', W * 0.05, H * 0.56);
+				}
+			}
+		}
+
+		buildCompTypeButtons();
+		_addWinListener('resize', drawCompPreview);
+
+		/* ════════════════════════════════════════════
+   STYLE GUIDE GENERATOR
+════════════════════════════════════════════ */
+		const sgRules = {
+			spacing: [
+				{ id: 'sg-pad', label: 'Frame edge padding', value: '5%', unit: 'of frame width' },
+				{ id: 'sg-gap', label: 'Element spacing', value: '8px', unit: 'minimum gap' },
+				{ id: 'sg-safezone', label: 'Safe zone', value: '90%', unit: 'of frame (5% each edge)' }
+			],
+			motion: [
+				{ id: 'sg-appear', label: 'Text appearance', value: 'Fade 150ms', unit: 'ease-out' },
+				{
+					id: 'sg-section',
+					label: 'Section transition',
+					value: 'J-cut + dissolve 0.4s',
+					unit: 'audio leads by 1.5s'
+				},
+				{
+					id: 'sg-highlight',
+					label: 'Highlight',
+					value: 'Pulse 200ms',
+					unit: 'ease-out, 1.15× scale'
+				}
+			],
+			exclusions: [
+				'✕ No cross-dissolves between content cuts',
+				'✕ No more than one primary accent visible simultaneously',
+				'✕ No full-sentence narration on screen',
+				'✕ No background motion during dense narration',
+				'✕ No typeface changes within a series'
+			]
+		};
+
+		function buildSGSections() {
+			const el = document.getElementById('sg-sections');
+			const p = csbRoles.find((r) => r.id === 'primary')?.hex || '#4aafff';
+			const s = csbRoles.find((r) => r.id === 'secondary')?.hex || '#f5b94a';
+			const sig = csbRoles.find((r) => r.id === 'signal')?.hex || '#ff4f68';
+			const bg = csbRoles.find((r) => r.id === 'bg1')?.hex || '#0d1322';
+			const df = typeFonts.display[typeSelections.display];
+			const bf = typeFonts.body[typeSelections.body];
+			const daF = typeFonts.data[typeSelections.data];
+
+			el.innerHTML = `
+    <!-- Colour section -->
+    <div class="sg-section">
+      <div class="sg-section-header">Colour System <span style="color:var(--vs-muted); font-size:9px;">4 roles defined</span></div>
+      <div class="sg-section-body">
+        <div class="sg-color-strip">
+          ${[
+						['Primary', p],
+						['Secondary', s],
+						['Signal', sig],
+						['BG', bg]
+					]
+						.map(
+							([l, c]) =>
+								`<div class="sg-color-chip" style="background:${c}; color:${parseInt(c.slice(1, 3), 16) > 128 ? '#000' : 'rgba(255,255,255,0.6)'};">${l}</div>`
+						)
+						.join('')}
+        </div>
+        ${[
+					['Primary', p, 'Headlines, key terms — max 1 per frame'],
+					['Secondary', s, 'Labels, annotations, context'],
+					['Signal', sig, 'Emphasis, warnings — sparingly'],
+					['Background', bg, 'Panel surfaces, depth']
+				]
+					.map(
+						([l, c, d]) =>
+							`<div style="display:flex; align-items:center; gap:0.75rem; padding:0.25rem 0; border-bottom:1px solid var(--vs-border); font-size:11px;">
+            <div style="width:16px;height:16px;background:${c};flex-shrink:0;border:1px solid rgba(255,255,255,0.1);"></div>
+            <div style="flex:1;color:var(--vs-text);">${l}</div>
+            <div style="color:var(--vs-muted);font-size:10px;text-align:right;">${c} · ${d}</div>
+          </div>`
+					)
+					.join('')}
+      </div>
+    </div>
+
+    <!-- Typography section -->
+    <div class="sg-section">
+      <div class="sg-section-header">Typography System <span style="color:var(--vs-muted); font-size:9px;">3 roles defined</span></div>
+      <div class="sg-section-body">
+        ${[
+					['Display', df.name, '48px / 800', df.tone],
+					['Body', bf.name, '14px / 400', bf.tone],
+					['Data', daF.name, '32px / 600', daF.tone]
+				]
+					.map(
+						([role, name, size, tone]) =>
+							`<div class="sg-type-sample">
+            <div class="sg-type-label">${role}</div>
+            <div style="flex:1; font-size:12px; color:#fff;">${name}</div>
+            <div style="font-size:10px; color:var(--vs-muted);">${size} · ${tone}</div>
+          </div>`
+					)
+					.join('')}
+      </div>
+    </div>
+
+    <!-- Spacing section -->
+    <div class="sg-section">
+      <div class="sg-section-header">Spacing &amp; Layout Rules</div>
+      <div class="sg-section-body">
+        ${sgRules.spacing
+					.map(
+						(r) => `
+          <div class="sg-rule-row">
+            <div class="sg-rule-icon">⊡</div>
+            <div class="sg-rule-text">${r.label}</div>
+            <div class="sg-rule-val">${r.value} <span style="font-size:9px;color:var(--vs-muted);">${r.unit}</span></div>
+          </div>`
+					)
+					.join('')}
+      </div>
+    </div>
+
+    <!-- Motion section -->
+    <div class="sg-section">
+      <div class="sg-section-header">Motion Rules</div>
+      <div class="sg-section-body">
+        ${sgRules.motion
+					.map(
+						(r) => `
+          <div class="sg-rule-row">
+            <div class="sg-rule-icon">▷</div>
+            <div class="sg-rule-text">${r.label}</div>
+            <div class="sg-rule-val">${r.value} <span style="font-size:9px;color:var(--vs-muted);">${r.unit}</span></div>
+          </div>`
+					)
+					.join('')}
+      </div>
+    </div>
+
+    <!-- Exclusion list -->
+    <div class="sg-section">
+      <div class="sg-section-header" style="color:var(--vs-red);">Exclusion List <span style="color:var(--vs-muted); font-size:9px;">never use</span></div>
+      <div class="sg-section-body">
+        ${sgRules.exclusions
+					.map(
+						(e) => `
+          <div class="sg-rule-row">
+            <div class="sg-rule-icon" style="color:var(--vs-red);">✕</div>
+            <div class="sg-rule-text" style="color:var(--vs-text);">${e.replace('✕ ', '')}</div>
+          </div>`
+					)
+					.join('')}
+      </div>
+    </div>
+  `;
+		}
+
+		function exportStyleGuide() {
+			const p = csbRoles.find((r) => r.id === 'primary')?.hex || '#4aafff';
+			const s = csbRoles.find((r) => r.id === 'secondary')?.hex || '#f5b94a';
+			const sig = csbRoles.find((r) => r.id === 'signal')?.hex || '#ff4f68';
+			const bg = csbRoles.find((r) => r.id === 'bg1')?.hex || '#0d1322';
+			const df = typeFonts.display[typeSelections.display];
+			const bf = typeFonts.body[typeSelections.body];
+			const daF = typeFonts.data[typeSelections.data];
+
+			const text = `VISUAL STYLE GUIDE
+Generated: ${new Date().toLocaleDateString()}
+==========================================
+
+COLOUR SYSTEM
+─────────────
+Primary Accent    ${p}    Headlines, key terms (max 1 per frame)
+Secondary Accent  ${s}    Labels, annotations, context
+Signal Colour     ${sig}    Emphasis, warnings (use sparingly)
+Background        ${bg}    Panel surfaces and depth
+
+TYPOGRAPHY SYSTEM
+─────────────────
+Display    ${df.name.padEnd(20)} 48px · Weight 800 · ${df.tone}
+Body       ${bf.name.padEnd(20)} 14px · Weight 400 · ${bf.tone}
+Data       ${daF.name.padEnd(20)} 32px · Weight 600 · ${daF.tone}
+
+SPACING RULES
+─────────────
+Frame edge padding:   5% of frame width
+Element spacing:      8px minimum gap
+Safe zone:            90% of frame (5% each edge)
+Text max width:       88% of frame width
+
+MOTION RULES
+────────────
+Text appearance:      Fade 150ms ease-out
+Section transition:   J-cut + dissolve 0.4s (audio leads 1.5s)
+Highlight:            Pulse 200ms ease-out, 1.15× scale
+Narration sync:       Motion within ±200ms of spoken word
+
+COMPONENTS
+──────────
+Lower third:          Bottom edge, accent bar left, Syne 700
+Section title card:   Held 2–3s, chapter number + title
+Key term callout:     Secondary accent, appears on narration beat
+Data label:           Data typeface, context label below
+Chapter break:        J-cut audio lead + dissolve
+
+EXCLUSION LIST
+──────────────
+✕ No cross-dissolves between content cuts
+✕ No more than one primary accent visible simultaneously
+✕ No full-sentence narration on screen
+✕ No background motion during dense narration passages
+✕ No typeface changes within a series without rebrand
+
+==========================================
+END OF STYLE GUIDE`;
+
+			const output = document.getElementById('sg-export-output');
+			output.style.display = 'block';
+			output.textContent = text;
+		}
+
+		setTimeout(buildSGSections, 120);
+		// Rebuild SG when colours or type changes
+		const origUpdateCSB = window.updateCSBColor;
+		window.updateCSBColor = function (id, hex) {
+			const r = csbRoles.find((r) => r.id === id);
+			if (r) r.hex = hex;
+			document.getElementById('csb-swatch-' + id).style.background = hex;
+			document.getElementById('csb-hex-' + id).value = hex;
+			document.getElementById('csb-tag-' + id).style.borderColor = hex;
+			document.getElementById('csb-tag-' + id).style.color = hex;
+			drawCSBPreview();
+			updateCSBHarmony();
+			buildSGSections();
+		};
+
+		/* ── QUIZ ── */
+		const scores = {};
+		function answer(qId, el, correct) {
+			if (scores[qId] !== undefined) return;
+			scores[qId] = correct ? 1 : 0;
+			el.parentElement.querySelectorAll('.option').forEach((o) => {
+				o.classList.add('disabled');
+				if (o.onclick.toString().includes(',true)')) o.classList.add('correct');
+			});
+			el.classList.remove('correct');
+			if (!correct) el.classList.add('wrong');
+			const fb = document.getElementById('fb-' + qId);
+			fb.textContent = correct
+				? '✓ Correct.'
+				: '✗ Not quite — the correct answer is highlighted above.';
+			fb.className = 'feedback ' + (correct ? 'ok' : 'bad');
+			if (Object.keys(scores).length === 4) {
+				const total = Object.values(scores).reduce((a, b) => a + b, 0);
+				const sc = document.getElementById('quiz-score');
+				sc.style.display = 'block';
+				document.getElementById('score-display').textContent = total + ' / 4';
+				document.getElementById('score-display').style.color =
+					total >= 3 ? 'var(--vs-mint)' : total >= 2 ? 'var(--vs-amber)' : 'var(--vs-red)';
+			}
+		}
+
+		if (typeof buildCSBControls === 'function') actions.buildCSBControls = buildCSBControls;
+		if (typeof updateCSBColor === 'function') actions.updateCSBColor = updateCSBColor;
+		if (typeof updateCSBColorHex === 'function') actions.updateCSBColorHex = updateCSBColorHex;
+		if (typeof hexToHsl === 'function') actions.hexToHsl = hexToHsl;
+		if (typeof updateCSBHarmony === 'function') actions.updateCSBHarmony = updateCSBHarmony;
+		if (typeof drawCSBPreview === 'function') actions.drawCSBPreview = drawCSBPreview;
+		if (typeof buildTypeRoleControls === 'function')
+			actions.buildTypeRoleControls = buildTypeRoleControls;
+		if (typeof selectTypeRole === 'function') actions.selectTypeRole = selectTypeRole;
+		if (typeof selectFont === 'function') actions.selectFont = selectFont;
+		if (typeof drawTypePreview === 'function') actions.drawTypePreview = drawTypePreview;
+		if (typeof updateTypePairingVerdict === 'function')
+			actions.updateTypePairingVerdict = updateTypePairingVerdict;
+		if (typeof buildCCButtons === 'function') actions.buildCCButtons = buildCCButtons;
+		if (typeof setCCStyle === 'function') actions.setCCStyle = setCCStyle;
+		if (typeof drawCCFrame === 'function') actions.drawCCFrame = drawCCFrame;
+		if (typeof drawCCFrames === 'function') actions.drawCCFrames = drawCCFrames;
+		if (typeof updateCCScore === 'function') actions.updateCCScore = updateCCScore;
+		if (typeof colorSimilarity === 'function') actions.colorSimilarity = colorSimilarity;
+		if (typeof buildCompTypeButtons === 'function')
+			actions.buildCompTypeButtons = buildCompTypeButtons;
+		if (typeof selectCompType === 'function') actions.selectCompType = selectCompType;
+		if (typeof buildCompStyleControls === 'function')
+			actions.buildCompStyleControls = buildCompStyleControls;
+		if (typeof selectCompVariant === 'function') actions.selectCompVariant = selectCompVariant;
+		if (typeof drawCompPreview === 'function') actions.drawCompPreview = drawCompPreview;
+		if (typeof buildSGSections === 'function') actions.buildSGSections = buildSGSections;
+		if (typeof exportStyleGuide === 'function') actions.exportStyleGuide = exportStyleGuide;
+		if (typeof answer === 'function') actions.answer = answer;
+
+		return () => {
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
+		};
+	});
+</script>
+
+<div class="page-wrapper">
+	<header class="course-header">
+		<div>
+			<div class="course-label">Visual Storytelling for Faceless Video</div>
+			<div class="course-title">Narrative, Pacing &amp; Visual Communication</div>
+		</div>
+		<div style="font-size: 11px; color: var(--vs-muted); text-align: right">Module 09 of 10</div>
+	</header>
+
+	<div class="module-hero">
+		<div class="module-number">09</div>
+		<div class="module-tag">Module 09 · Theory + Practice</div>
+		<h1 class="module-title">Building a Repeatable<br /><span>Visual Language</span></h1>
+		<div class="progress-bar-wrap">
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+				aria-valuenow="0"
+			></div>
+		</div>
+	</div>
+
+	<nav class="toc">
+		<div class="toc-label">Contents</div>
+		<ul class="toc-list">
+			<li><a href="#objectives">Objectives</a></li>
+			<li><a href="#why-consistency">Why Consistency Matters</a></li>
+			<li><a href="#colour-systems">Colour Systems</a></li>
+			<li><a href="#typography">Typography as Identity</a></li>
+			<li><a href="#consistency">Testing Consistency</a></li>
+			<li><a href="#components">Reusable Components</a></li>
+			<li><a href="#style-guide">Building a Style Guide</a></li>
+			<li><a href="#practical">Practical Work</a></li>
+			<li><a href="#quiz">Quiz</a></li>
+		</ul>
+	</nav>
+
+	<section id="objectives" class="objectives">
+		<div class="objectives-label">Learning Objectives</div>
+		<ul>
+			<li>
+				Understand why visual consistency is a trust mechanism, not just an aesthetic preference
+			</li>
+			<li>
+				Build a purposeful colour system with primary, accent, and neutral roles clearly assigned
+			</li>
+			<li>Select and pair typefaces that communicate a consistent tone across all video frames</li>
+			<li>Test whether two frames "feel like the same creator" using measurable criteria</li>
+			<li>
+				Assemble a minimum viable style guide that can be applied to any new video in the series
+			</li>
+		</ul>
+	</section>
+
+	<!-- ═══ SECTION 1: WHY CONSISTENCY MATTERS ═══ -->
+	<section id="why-consistency" class="section">
+		<div class="section-header">
+			<span class="section-num">09.01</span>
+			<h2 class="section-title">Why Consistency Is a Trust Mechanism</h2>
+		</div>
+
+		<p>
+			Visual consistency in a video series is not about looking polished. It is about reducing the
+			cognitive cost of watching each new video. A viewer who has seen your previous work arrives
+			with a pre-loaded visual model: they know what your frames look like, where to expect text,
+			what your accent colour means, and what the structure of a section transition feels like. <strong
+				>That prior knowledge frees cognitive capacity for content</strong
+			> — the viewer is not spending attention parsing the visual grammar, because they already know it.
+		</p>
+		<p>
+			Inconsistency has the opposite effect. When the colour system changes between videos, or when
+			the same graphic element appears in three different styles across a series, the viewer must
+			re-orient on every new frame. The trust that builds over a series — the familiarity that makes
+			later videos easier to absorb than earlier ones — never accumulates. Every video is, visually,
+			a first viewing.
+		</p>
+
+		<div class="callout">
+			<div class="callout-label">Consistency ≠ Sameness</div>
+			A repeatable visual language does not mean every video looks identical. It means every video is
+			clearly made by the same creator — the same colour roles, the same typographic hierarchy, the same
+			structural components applied to different content. The content varies; the container stays recognisable.
+			This is the same principle that makes a newspaper feel coherent across wildly different stories.
+		</div>
+
+		<p>
+			The components of a visual language are: a <strong>colour system</strong> (which colours
+			appear, in which contexts, at which hierarchy levels), a
+			<strong>typographic system</strong> (which typefaces are used, for which roles, at which
+			sizes), <strong>spatial rules</strong> (how much padding, where elements anchor, what margins
+			are maintained), and <strong>graphic components</strong> (the specific lower-third, label, callout,
+			and transition styles used consistently across all videos). All four must be defined before production
+			begins — not discovered through the editing process.
+		</p>
+	</section>
+
+	<!-- ═══ SECTION 2: COLOUR SYSTEMS ═══ -->
+	<section id="colour-systems" class="section">
+		<div class="section-header">
+			<span class="section-num">09.02</span>
+			<h2 class="section-title">Building a Purposeful Colour System</h2>
+		</div>
+
+		<p>
+			A colour system for faceless video is not a palette — it is a set of colour roles with defined
+			communicative functions. The difference is critical. A palette says "these colours may
+			appear." A colour system says "this colour means primary information, this colour means
+			supporting information, this colour means caution, and this colour is background." When a
+			viewer sees a specific colour, they should know immediately what type of information to expect
+			from it.
+		</p>
+		<p>
+			The minimum viable colour system for educational faceless video contains four roles: a
+			<strong>primary accent</strong> (the colour used for the most important element in any frame —
+			headlines, key terms, selected diagram nodes), a
+			<strong>secondary accent</strong> (used for supporting or contextual elements — annotations,
+			secondary labels, supporting statistics), a
+			<strong>signal colour</strong> (reserved for emphasis or warning — used sparingly so it
+			retains force), and a <strong>background hierarchy</strong> (two or three values of the same dark
+			hue that establish depth without competing for attention).
+		</p>
+
+		<!-- DEMO: Colour System Builder -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Colour System Builder</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Build a four-role colour system. Edit each hex value and observe how the system renders
+					across a representative frame. The harmony analyser checks whether your choices form a
+					coherent relationship.
+				</p>
+
+				<div class="two-col" style="align-items: start; gap: 2rem">
+					<div id="csb-controls"></div>
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+										color: var(--vs-muted);
+										margin-bottom: 0.5rem;
+									"
+						>
+							System preview
+						</div>
+						<canvas
+							id="csb-canvas"
+							style="
+										display: block;
+										width: 100%;
+										aspect-ratio: 16/9;
+										border: 1px solid var(--vs-border);
+										background: #040710;
+									"
+							aria-label="Csb Canvas Demonstration"
+							role="application"
+							tabindex="0"
+						></canvas>
+						<div style="margin-top: 0.75rem" id="csb-harmony-row"></div>
+					</div>
+				</div>
+
+				<div
+					id="csb-verdict"
+					style="
+								margin-top: 1.25rem;
+								font-size: 12px;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+							"
+				></div>
+			</div>
+		</div>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Role</th>
+					<th>What It Marks</th>
+					<th>Frequency</th>
+					<th>Saturation Level</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Primary accent</td>
+					<td>Most important element in frame — headlines, key terms</td>
+					<td>1 per frame maximum</td>
+					<td>High — must win against background</td>
+				</tr>
+				<tr>
+					<td>Secondary accent</td>
+					<td>Supporting information — annotations, context labels</td>
+					<td>1–2 per frame</td>
+					<td>Medium — distinct but recessive</td>
+				</tr>
+				<tr>
+					<td>Signal colour</td>
+					<td>Warnings, emphasis, data peaks</td>
+					<td>Sparingly — reserve impact</td>
+					<td>High contrast, reserved colour</td>
+				</tr>
+				<tr>
+					<td>Background hierarchy</td>
+					<td>Surface depth — bg, surface, raised, border</td>
+					<td>Throughout</td>
+					<td>Low — near-neutral, dark</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div class="callout amber">
+			<div class="callout-label">The One-Active-Accent Rule</div>
+			At any moment in a frame, only one colour should be operating at full accent saturation. Two fully
+			saturated accent colours in the same frame compete — the viewer's eye stalls between them. The primary
+			accent should always win. The secondary should be noticeably less saturated or smaller in coverage
+			area. The signal colour appears in isolation, not alongside the primary.
+		</div>
+	</section>
+
+	<!-- ═══ SECTION 3: TYPOGRAPHY AS IDENTITY ═══ -->
+	<section id="typography" class="section">
+		<div class="section-header">
+			<span class="section-num">09.03</span>
+			<h2 class="section-title">Typography as Identity</h2>
+		</div>
+
+		<p>
+			Typography communicates tone before it communicates content. A viewer who sees a frame with a
+			geometric sans-serif headline and a monospace body has already received a set of signals:
+			technical, systematic, precise, contemporary. A viewer who sees the same headline in a
+			humanist serif has received the opposite: warm, considered, narrative, analogue. These signals
+			are involuntary — they occur before the viewer reads a word.
+		</p>
+		<p>
+			For faceless video, the typographic system needs to answer three questions. First: what
+			<strong>display typeface</strong> is used for headlines and key terms — the typeface that
+			communicates the series' core identity? Second: what <strong>body typeface</strong> is used
+			for supporting text, labels, and narration-adjacent copy — the typeface that is legible at
+			small sizes over footage? Third: what <strong>data or mono typeface</strong> is used for statistics,
+			code, or precise numerical information — where tabular alignment and visual distinctness from prose
+			is required?
+		</p>
+
+		<!-- DEMO: Typography Pairing Lab -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Typography Pairing Lab</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Select a typeface for each of the three roles. The preview frame renders your choices in
+					context. The pairing analyser assesses compatibility.
+				</p>
+
+				<div class="two-col" style="align-items: start; gap: 2rem">
+					<div id="type-role-controls"></div>
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.12em;
+										text-transform: uppercase;
+										color: var(--vs-muted);
+										margin-bottom: 0.5rem;
+									"
+						>
+							Frame preview
+						</div>
+						<canvas
+							id="type-canvas"
+							style="
+										display: block;
+										width: 100%;
+										aspect-ratio: 16/9;
+										border: 1px solid var(--vs-border);
+										background: #040710;
+									"
+							aria-label="Type Canvas Demonstration"
+							role="application"
+							tabindex="0"
+						></canvas>
+						<div
+							id="type-pairing-verdict"
+							style="
+										margin-top: 0.75rem;
+										padding: 0.75rem 1rem;
+										border-left: 2px solid var(--vs-border2);
+										font-size: 12px;
+										color: var(--vs-text);
+										line-height: 1.7;
+										background: var(--vs-raised);
+									"
+						></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<p>
+			The most reliable typographic choice for a new channel is to use one typeface family with
+			extreme weight variation: a black or heavy weight for headlines and an ultralight or regular
+			weight for body. This approach is visually coherent by definition — both weights share the
+			same underlying letterform structure — and the contrast in weight alone is sufficient to
+			establish hierarchy without a second typeface.
+		</p>
+	</section>
+
+	<!-- ═══ SECTION 4: TESTING CONSISTENCY ═══ -->
+	<section id="consistency" class="section">
+		<div class="section-header">
+			<span class="section-num">09.04</span>
+			<h2 class="section-title">Testing Consistency Across Frames</h2>
+		</div>
+
+		<p>
+			The test for visual language consistency is simple: take one frame from video A and one frame
+			from video B in the same series, and ask whether they feel like the same creator. Not whether
+			they are identical — but whether the visual grammar is shared. If a viewer who had never seen
+			either video could identify them as belonging to the same channel, the visual language is
+			consistent.
+		</p>
+		<p>
+			This test can be broken into measurable criteria: <strong>colour signature</strong> (does the
+			same accent colour appear in the same role?),
+			<strong>typographic system</strong> (does the same display typeface appear at the same
+			weight?), <strong>spatial signature</strong> (are the padding and anchor zones consistent?),
+			<strong>component style</strong>
+			(does the lower-third or label treatment look the same?), and <strong>tone</strong> (does the overall
+			luminosity and saturation of the frame register as the same creator's aesthetic?).
+		</p>
+
+		<!-- DEMO: Consistency Checker -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Cross-Frame Consistency Checker</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Select a style scenario for each frame. The consistency analyser evaluates how well they
+					match across five criteria. Try mixing "consistent" and "inconsistent" styles to see where
+					the score breaks down.
+				</p>
+
+				<div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem">
+					<div style="flex: 1; min-width: 200px">
+						<div
+							style="
+										font-size: 10px;
+										color: var(--vs-blue);
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.5rem;
+									"
+						>
+							Frame A — Video 1
+						</div>
+						<div id="cc-a-btns" class="btn-row" style="margin-bottom: 0"></div>
+					</div>
+					<div style="flex: 1; min-width: 200px">
+						<div
+							style="
+										font-size: 10px;
+										color: var(--vs-amber);
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.5rem;
+									"
+						>
+							Frame B — Video 2
+						</div>
+						<div id="cc-b-btns" class="btn-row" style="margin-bottom: 0"></div>
+					</div>
+				</div>
+
+				<div class="cc-frame-pair">
+					<div class="cc-frame">
+						<canvas
+							id="cc-canvas-a"
+							aria-label="Cc Canvas A Demonstration"
+							role="application"
+							tabindex="0"
+						></canvas>
+						<div class="cc-frame-label">FRAME A</div>
+					</div>
+					<div class="cc-frame">
+						<canvas
+							id="cc-canvas-b"
+							aria-label="Cc Canvas B Demonstration"
+							role="application"
+							tabindex="0"
+						></canvas>
+						<div class="cc-frame-label">FRAME B</div>
+					</div>
+				</div>
+
+				<div class="cc-score-grid" id="cc-score-grid"></div>
+				<div
+					id="cc-verdict"
+					style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 44px;
+							"
+				></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ═══ SECTION 5: REUSABLE COMPONENTS ═══ -->
+	<section id="components" class="section">
+		<div class="section-header">
+			<span class="section-num">09.05</span>
+			<h2 class="section-title">Reusable Graphic Components</h2>
+		</div>
+
+		<p>
+			A graphic component is a defined, reusable visual element that appears in the same form across
+			all videos in a series. Lower thirds, section title cards, callout labels, diagram node
+			styles, and transition frames are all components. When components are designed once and reused
+			consistently, two things happen: production time drops significantly (the design decision is
+			made once, not per video), and viewer recognition accumulates — the viewer learns what each
+			component means and no longer needs to interpret it.
+		</p>
+		<p>
+			The minimum component library for a faceless video series consists of five elements: a
+			<strong>lower-third strip</strong> for identifying speakers or sources; a
+			<strong>section title card</strong> that marks major conceptual transitions; a
+			<strong>key term callout</strong> that introduces vocabulary; a
+			<strong>data label</strong> for statistics, percentages, and precise values; and a
+			<strong>chapter break</strong> visual that signals the end of one topic and the beginning of another.
+		</p>
+
+		<!-- DEMO: Component Library Builder -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Component Library Preview</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Select a component type and customise its style. The preview renders the component on a
+					representative video frame. The consistency score shows how well this component uses your
+					colour and type system.
+				</p>
+
+				<div style="margin-bottom: 1rem">
+					<div
+						style="
+									font-size: 10px;
+									letter-spacing: 0.1em;
+									text-transform: uppercase;
+									color: var(--vs-muted);
+									margin-bottom: 0.5rem;
+								"
+					>
+						Component type:
+					</div>
+					<div class="comp-option-row" id="comp-type-btns"></div>
+				</div>
+
+				<div class="two-col" style="align-items: start; gap: 1.5rem">
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										color: var(--vs-muted);
+										margin-bottom: 0.5rem;
+									"
+						>
+							Style options:
+						</div>
+						<div id="comp-style-controls"></div>
+					</div>
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										color: var(--vs-muted);
+										margin-bottom: 0.5rem;
+									"
+						>
+							Preview:
+						</div>
+						<div class="comp-stage">
+							<canvas
+								id="comp-canvas"
+								aria-label="Comp Canvas Demonstration"
+								role="application"
+								tabindex="0"
+							></canvas>
+						</div>
+						<div
+							id="comp-notes"
+							style="
+										margin-top: 0.75rem;
+										font-size: 11px;
+										color: var(--vs-muted);
+										line-height: 1.7;
+									"
+						></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Component</th>
+					<th>Function</th>
+					<th>Key Rule</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Lower third</td>
+					<td>Identifies source, speaker, or context</td>
+					<td>Always anchored to same edge; same font; same accent bar width</td>
+				</tr>
+				<tr>
+					<td>Section title card</td>
+					<td>Marks major transitions</td>
+					<td>Same background treatment; same typeface; consistent number format</td>
+				</tr>
+				<tr>
+					<td>Key term callout</td>
+					<td>Introduces vocabulary in context</td>
+					<td>Consistent bracket or border style; always same secondary accent colour</td>
+				</tr>
+				<tr>
+					<td>Data label</td>
+					<td>Presents statistics and numbers</td>
+					<td>Always uses mono/tabular typeface; consistent size ratio to surrounding text</td>
+				</tr>
+				<tr>
+					<td>Chapter break</td>
+					<td>Signals topic end / new topic</td>
+					<td>Same duration (2–3s); same visual treatment; consistent fade or cut type</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<!-- ═══ SECTION 6: STYLE GUIDE ═══ -->
+	<section id="style-guide" class="section">
+		<div class="section-header">
+			<span class="section-num">09.06</span>
+			<h2 class="section-title">Assembling a Minimum Viable Style Guide</h2>
+		</div>
+
+		<p>
+			A style guide for faceless video is a single reference document that defines every decision in
+			your visual language. Its purpose is not documentation for its own sake — it is a
+			decision-locking mechanism. Once the decisions are written, they cannot be overridden by
+			convenience, fatigue, or momentary preference during production. The style guide is what you
+			consult when you are 80% through an edit and tempted to use a different accent colour "just
+			this once."
+		</p>
+		<p>
+			The minimum viable style guide contains: colour hex values with role assignments; typeface
+			names with weight and size specifications for each hierarchy level; spacing rules (baseline
+			padding, text margins, safe zone percentage); component specifications with dimensions and
+			positioning rules; and a list of explicitly excluded elements — things that are never used, to
+			prevent scope creep.
+		</p>
+
+		<!-- DEMO: Style Guide Generator -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Style Guide Generator</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Your choices from the colour and typography tools above are compiled here into a
+					structured style guide. Customise the remaining rules, then export as a reference
+					document.
+				</p>
+
+				<div id="sg-sections"></div>
+
+				<button class="sg-export-btn" onclick={(e) => actions.exportStyleGuide()}>
+					Export Style Guide as Text
+				</button>
+				<div
+					id="sg-export-output"
+					style="
+								display: none;
+								margin-top: 1rem;
+								background: #040710;
+								border: 1px solid var(--vs-border);
+								padding: 1rem;
+								font-size: 11px;
+								color: var(--vs-text);
+								white-space: pre-wrap;
+								line-height: 1.8;
+								max-height: 300px;
+								overflow-y: auto;
+							"
+				></div>
+			</div>
+		</div>
+
+		<div class="callout mint">
+			<div class="callout-label">The Exclusion List</div>
+			A style guide without an exclusion list will drift over time. For every element you include, explicitly
+			list at least one thing you will never use: a transition type, a colour, a typeface, an animation
+			style. The exclusion list is what prevents the style guide from becoming a maximum possible range
+			rather than a consistent discipline. "We use cross-dissolves for section transitions and never for
+			content cuts" is more useful than "we use cross-dissolves."
+		</div>
+	</section>
+
+	<!-- PRACTICAL -->
+	<section id="practical" class="section">
+		<div class="section-header">
+			<span class="section-num">09.07</span>
+			<h2 class="section-title">Practical Work</h2>
+		</div>
+
+		<div class="callout">
+			<div class="callout-label">Exercise A · Consistency Audit</div>
+			Select any two videos from a channel you follow regularly — ideally one early video and one recent
+			one from the same creator. Take one screenshot from each video at a similar point (around the 60%
+			mark). Apply the five-criteria consistency test: colour signature, typographic system, spatial signature,
+			component style, and overall tone. Score each criterion 1 (consistent) or 0 (inconsistent). Write
+			one sentence explaining each inconsistency you find.
+		</div>
+
+		<div class="callout amber">
+			<div class="callout-label">Exercise B · Visual Kit Construction</div>
+			Define your minimum viable visual language for a hypothetical or real video series: one display
+			typeface (with weight), one body typeface (with weight), four hex values with roles assigned, and
+			three component styles (lower third, key term callout, data label). Write the specifications as
+			if you are writing them for a collaborator who needs to build the components without seeing your
+			previous work. Ambiguity in a specification produces inconsistency in the output.
+		</div>
+
+		<div class="callout blue">
+			<div class="callout-label">Exercise C · Two-Topic Consistency Test</div>
+			Using your visual kit from Exercise B, design rough layouts for two completely unrelated topics
+			(e.g., "how sleep affects memory" and "the economics of supply chains"). Each layout should contain
+			a headline, a supporting point, and an annotation. The topics are different; the visual language
+			must be identical. Have someone else look at both layouts and confirm they "feel like the same creator."
+			If they cannot, identify which element broke the consistency.
+		</div>
+
+		<div style="margin-top: 2rem">
+			<div
+				style="
+							font-size: 10px;
+							letter-spacing: 0.15em;
+							text-transform: uppercase;
+							color: var(--vs-muted);
+							margin-bottom: 1rem;
+						"
+			>
+				Key terms from this module
+			</div>
+			<div class="two-col">
+				<div class="stats-panel">
+					<div class="stat-row">
+						<span class="stat-label">Visual language</span><span class="stat-val"
+							>container, not content</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Colour role</span><span class="stat-val"
+							>function, not decoration</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">One-active-accent rule</span><span class="stat-val"
+							>one primary at full sat.</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Display typeface</span><span class="stat-val"
+							>identity-carrying role</span
+						>
+					</div>
+				</div>
+				<div class="stats-panel">
+					<div class="stat-row">
+						<span class="stat-label">Graphic component</span><span class="stat-val"
+							>defined, reusable element</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Style guide</span><span class="stat-val"
+							>decision-locking document</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Exclusion list</span><span class="stat-val"
+							>prevents drift</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Consistency test</span><span class="stat-val"
+							>same creator, diff. topic</span
+						>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<hr class="divider" />
+
+	<section id="quiz" class="quiz-section">
+		<div class="quiz-header">Module 09 — Check Your Understanding</div>
+		<div class="quiz-sub">4 questions · No time limit</div>
+
+		<div class="question" id="q1">
+			<div class="q-text">
+				<span class="q-num">01.</span>A returning viewer arrives at a creator's new video. How does
+				visual consistency from previous videos benefit this viewer's comprehension, beyond making
+				the video look polished?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
+				>
+					It signals high production value, which increases the viewer's trust in the content's
+					accuracy
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q1', e.currentTarget, true)}
+				>
+					The viewer arrives with a pre-loaded visual model — they already know the colour roles,
+					typographic hierarchy, and component functions, freeing cognitive capacity for content
+					rather than parsing the visual grammar
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
+				>
+					Consistent visuals reduce file size and loading time, improving the viewing experience
+					technically
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
+				>
+					It creates a stronger brand association that makes the viewer more likely to subscribe
+				</button>
+			</div>
+			<div class="feedback" id="fb-q1"></div>
+		</div>
+
+		<div class="question" id="q2">
+			<div class="q-text">
+				<span class="q-num">02.</span>A frame contains two elements: a large headline in bright blue
+				and a statistic in bright orange. Both are at full saturation. What problem does the
+				one-active-accent rule identify here?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
+				>
+					The colours are complementary, which creates visual vibration that is difficult to watch
+					for extended periods
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q2', e.currentTarget, true)}
+				>
+					Two fully saturated accent colours in the same frame compete for the primary position —
+					the viewer's eye stalls between them and neither element achieves the intended dominance;
+					visual hierarchy collapses
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
+				>
+					Blue and orange are both warm colours, so they fail to provide sufficient contrast to
+					distinguish headline from statistic
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
+				>
+					The saturation levels violate accessibility guidelines for viewers with colour vision
+					deficiencies
+				</button>
+			</div>
+			<div class="feedback" id="fb-q2"></div>
+		</div>
+
+		<div class="question" id="q3">
+			<div class="q-text">
+				<span class="q-num">03.</span>What is the primary purpose of an exclusion list in a visual
+				style guide?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
+				>
+					To document elements that were considered and rejected during the design process, for
+					future reference
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
+				>
+					To list competing channels' visual styles that should not be imitated
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q3', e.currentTarget, true)}
+				>
+					To prevent the style guide from drifting over time — explicitly naming what is never used
+					stops convenience and fatigue from gradually expanding the range until the visual language
+					loses its coherence
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
+				>
+					To identify elements that are too expensive or complex to produce consistently and should
+					be avoided for practical reasons
+				</button>
+			</div>
+			<div class="feedback" id="fb-q3"></div>
+		</div>
+
+		<div class="question" id="q4">
+			<div class="q-text">
+				<span class="q-num">04.</span>A creator uses a geometric sans-serif for all text across
+				their video series but switches to a humanist serif for one video about a historical topic.
+				The content is different; the switch is intentional. What is the primary risk?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
+				>
+					The serif typeface will perform worse on screen at small sizes compared to the regular
+					sans-serif
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
+				>
+					Viewers will perceive the tonal shift as a quality drop, assuming the creator used a
+					fallback font
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q4', e.currentTarget, true)}
+				>
+					The returning viewer's pre-loaded visual model is broken — the visual language signal they
+					relied on is no longer reliable; they must re-orient, consuming cognitive capacity that
+					should be going to the content, and the trust accumulated through consistency is partially
+					reset
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
+				>
+					The serif typeface communicates a different tone, which may confuse viewers about whether
+					this is the same channel
+				</button>
+			</div>
+			<div class="feedback" id="fb-q4"></div>
+		</div>
+
+		<div class="quiz-score" id="quiz-score">
+			<div class="score-num" id="score-display">—</div>
+			<div class="score-label">questions correct out of 4</div>
+		</div>
+	</section>
+
+	<div class="nav-links">
+		<a href="./08" class="prev-link">← Module 08: Editing for Clarity &amp; Engagement</a>
+		<a href="./10" class="next-module">
+			<div>
+				<div class="next-label">Final Module</div>
+				<div class="next-title">End-to-End Faceless Video Production</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</div>
+</div>
+
+<style>
+	.page-wrapper {
+		background: var(--vs-bg);
+		color: var(--vs-text);
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 14px;
+		line-height: 1.8;
+	}
+
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 6rem;
+	}
+	:global(.two-col) {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+	}
+	:global(.three-col) {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 640px) {
+		:global(.two-col),
+		:global(.three-col) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.course-header {
+		border-bottom: 1px solid var(--vs-border);
+		padding: 2rem 0 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.course-label {
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	.course-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 13px;
+		color: var(--vs-muted);
+		font-weight: 400;
+	}
+
+	.module-hero {
+		padding: 5rem 0 3.5rem;
+		border-bottom: 1px solid var(--vs-border);
+		position: relative;
+		overflow: hidden;
+	}
+	.module-hero::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 2px,
+			rgba(74, 175, 255, 0.013) 2px,
+			rgba(74, 175, 255, 0.013) 4px
+		);
+	}
+	.module-number {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(80px, 15vw, 140px);
+		font-weight: 800;
+		line-height: 1;
+		color: transparent;
+		-webkit-text-stroke: 1px var(--vs-border2);
+		position: absolute;
+		right: -10px;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none;
+		user-select: none;
+	}
+	.module-tag {
+		display: inline-block;
+		font-size: 10px;
+		letter-spacing: 0.25em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		border: 1px solid var(--vs-blue);
+		padding: 3px 10px;
+		margin-bottom: 1.5rem;
+	}
+	.module-title {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(28px, 5vw, 48px);
+		font-weight: 800;
+		line-height: 1.1;
+		color: #fff;
+		max-width: 600px;
+	}
+	.module-title span {
+		color: var(--vs-blue);
+	}
+
+	.toc {
+		margin: 3rem 0;
+		padding: 1.5rem;
+		border: 1px solid var(--vs-border);
+		background: var(--vs-surface);
+	}
+	.toc-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+		margin-bottom: 1rem;
+	}
+	.toc-list {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.toc-list a {
+		font-size: 12px;
+		color: var(--vs-muted);
+		text-decoration: none;
+		border: 1px solid var(--vs-border);
+		padding: 4px 10px;
+		transition: all 0.15s;
+	}
+	.toc-list a:hover {
+		color: var(--vs-blue);
+		border-color: var(--vs-blue);
+	}
+
+	.objectives {
+		margin: 2.5rem 0;
+		padding: 1.5rem 2rem;
+		border-left: 2px solid var(--vs-blue);
+		background: var(--vs-surface);
+	}
+	.objectives-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.2rem 0;
+		padding-left: 1.2rem;
+		position: relative;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--vs-amber);
+	}
+
+	.section {
+		margin: 4rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--vs-border);
+	}
+	.section-num {
+		font-size: 11px;
+		color: var(--vs-amber);
+		letter-spacing: 0.1em;
+		font-weight: 600;
+	}
+	.section-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 22px;
+		font-weight: 700;
+		color: #fff;
+	}
+
+	p {
+		margin-bottom: 1.2rem;
+		color: var(--vs-text);
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--vs-blue);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: normal;
+		font-weight: 500;
+	}
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+	:global(code) {
+		background: #040710;
+		border: 1px solid var(--vs-border);
+		padding: 1px 6px;
+		font-size: 12px;
+		color: var(--vs-mint);
+		font-family: 'IBM Plex Mono', monospace;
+	}
+
+	.callout {
+		margin: 1.5rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+		font-size: 13px;
+	}
+	:global(.callout.amber) {
+		border-color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
+	}
+	:global(.callout.red) {
+		border-color: var(--vs-red);
+		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
+	}
+	:global(.callout.mint) {
+		border-color: var(--vs-mint);
+		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
+	}
+	.callout-label {
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		margin-bottom: 0.4rem;
+		font-weight: 600;
+	}
+	:global(.callout.amber) .callout-label {
+		color: var(--vs-amber);
+	}
+	:global(.callout.red) .callout-label {
+		color: var(--vs-red);
+	}
+	:global(.callout.mint) .callout-label {
+		color: var(--vs-mint);
+	}
+
+	.demo-box {
+		background: var(--vs-surface);
+		border: 1px solid var(--vs-border);
+		margin: 2rem 0;
+	}
+	.demo-header {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--vs-border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.demo-header > span {
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	:global(.demo-badge) {
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid;
+	}
+	:global(.demo-badge.interactive) {
+		color: var(--vs-blue);
+		border-color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+	}
+	:global(.demo-badge.animated) {
+		color: var(--vs-amber);
+		border-color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--vs-border2);
+		color: var(--vs-text);
+		padding: 6px 16px;
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	:global(.btn:hover) {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+	}
+	:global(.btn.active) {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+	}
+	:global(.btn.amber:hover) {
+		border-color: var(--vs-amber);
+		color: var(--vs-amber);
+	}
+	:global(.btn.amber.active) {
+		border-color: var(--vs-amber);
+		color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+	}
+	:global(.btn.mint:hover) {
+		border-color: var(--vs-mint);
+		color: var(--vs-mint);
+	}
+	:global(.btn.mint.active) {
+		border-color: var(--vs-mint);
+		color: var(--vs-mint);
+		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+	}
+	:global(.btn.red:hover) {
+		border-color: var(--vs-red);
+		color: var(--vs-red);
+	}
+	:global(.btn.red.active) {
+		border-color: var(--vs-red);
+		color: var(--vs-red);
+		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1.5rem 0;
+		font-size: 12px;
+	}
+	th {
+		background: var(--vs-raised);
+		color: var(--vs-blue);
+		text-align: left;
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--vs-border);
+		font-weight: 600;
+		letter-spacing: 0.05em;
+	}
+	td {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--vs-border);
+		color: var(--vs-text);
+	}
+	tr:nth-child(even) td {
+		background: color-mix(in srgb, var(--vs-raised) 50%, transparent);
+	}
+
+	.divider {
+		border: none;
+		border-top: 1px solid var(--vs-border);
+		margin: 3rem 0;
+	}
+	.stats-panel {
+		background: #040710;
+		border: 1px solid var(--vs-border);
+		padding: 1rem;
+		font-size: 12px;
+	}
+	.stat-row {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.2rem 0;
+		border-bottom: 1px solid var(--vs-border);
+	}
+	.stat-row:last-child {
+		border-bottom: none;
+	}
+	.stat-label {
+		color: var(--vs-muted);
+	}
+	.stat-val {
+		color: var(--vs-blue);
+		font-weight: 600;
+	}
+
+	.progress-bar-wrap {
+		height: 3px;
+		background: var(--vs-border);
+		width: 100%;
+		margin: 2rem 0 0;
+	}
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--vs-blue);
+		width: 0;
+		transition: width 0.4s ease;
+	}
+
+	.quiz-section {
+		margin: 4rem 0;
+		padding: 2rem;
+		border: 1px solid var(--vs-border);
+		background: var(--vs-surface);
+	}
+	.quiz-header {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-bottom: 0.5rem;
+	}
+	.quiz-sub {
+		font-size: 12px;
+		color: var(--vs-muted);
+		margin-bottom: 2rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	:global(.q-text) {
+		font-size: 13px;
+		color: #fff;
+		margin-bottom: 1rem;
+	}
+	:global(.q-num) {
+		color: var(--vs-amber);
+		margin-right: 0.5rem;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	:global(.option) {
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--vs-border);
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.15s;
+		user-select: none;
+		font-family: 'IBM Plex Mono', monospace;
+	}
+	:global(.option:hover) {
+		border-color: var(--vs-border2);
+		background: var(--vs-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--vs-mint);
+		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+		color: var(--vs-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--vs-red);
+		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+		color: var(--vs-red);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.75rem;
+		min-height: 1.5em;
+		color: var(--vs-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--vs-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--vs-red);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 1.5rem;
+		border: 1px solid var(--vs-border);
+		text-align: center;
+		display: none;
+	}
+	.score-num {
+		font-family: 'Syne', sans-serif;
+		font-size: 36px;
+		font-weight: 800;
+		color: var(--vs-blue);
+	}
+	.score-label {
+		font-size: 12px;
+		color: var(--vs-muted);
+		margin-top: 0.25rem;
+	}
+
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		align-items: stretch;
+		margin-top: 4rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	:global(.prev-link) {
+		font-size: 12px;
+		color: var(--vs-muted);
+		text-decoration: none;
+		border: 1px solid var(--vs-border);
+		padding: 0.75rem 1.25rem;
+		transition: all 0.2s;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	:global(.prev-link:hover) {
+		border-color: var(--vs-red);
+		color: var(--vs-red);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--vs-border);
+		text-decoration: none;
+		transition: all 0.2s;
+		background: var(--vs-surface);
+		flex: 1;
+	}
+	.next-module:hover {
+		border-color: var(--vs-amber);
+	}
+	.next-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	.next-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.25rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--vs-amber);
+	}
+
+	/* ══════════════════════════════
+     MODULE-SPECIFIC COMPONENTS
+  ══════════════════════════════ */
+
+	/* ── COLOUR SYSTEM BUILDER ── */
+	:global(.csb-swatch-row) {
+		display: flex;
+		gap: 0;
+		height: 56px;
+		margin: 0.75rem 0;
+		overflow: hidden;
+		border: 1px solid var(--vs-border);
+	}
+	:global(.csb-swatch) {
+		flex: 1;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		padding-bottom: 6px;
+		font-size: 9px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition: flex 0.3s ease;
+		position: relative;
+	}
+	:global(.csb-swatch.selected) {
+		flex: 2.2;
+	}
+	:global(.csb-swatch-label) {
+		color: rgba(255, 255, 255, 0.6);
+		pointer-events: none;
+	}
+	:global(.csb-role-row) {
+		display: flex;
+		gap: 1px;
+		background: var(--vs-border);
+		margin-top: 2px;
+	}
+	:global(.csb-role-cell) {
+		flex: 1;
+		padding: 0.4rem 0.5rem;
+		font-size: 10px;
+		color: var(--vs-muted);
+		background: var(--vs-raised);
+		text-align: center;
+	}
+	:global(.csb-role-cell.active) {
+		color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 8%, var(--vs-raised));
+	}
+
+	:global(.color-picker-wrap) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.4rem 0;
+	}
+	:global(.color-picker-label) {
+		font-size: 11px;
+		color: var(--vs-muted);
+		min-width: 88px;
+	}
+	:global(.color-picker-swatch) {
+		width: 32px;
+		height: 32px;
+		border: 1px solid var(--vs-border2);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: border-color 0.2s;
+	}
+	:global(.color-picker-swatch:hover) {
+		border-color: var(--vs-blue);
+	}
+	:global(.color-picker-hex) {
+		background: var(--vs-raised);
+		border: 1px solid var(--vs-border2);
+		color: var(--vs-text);
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		padding: 4px 8px;
+		width: 90px;
+		outline: none;
+	}
+	:global(.color-picker-hex:focus) {
+		border-color: var(--vs-blue);
+	}
+	:global(.color-harmony-tag) {
+		font-size: 9px;
+		padding: 2px 8px;
+		border: 1px solid;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		flex-shrink: 0;
+	}
+
+	/* ── TYPOGRAPHY PAIRING LAB ── */
+	:global(.type-role-card) {
+		border: 1px solid var(--vs-border);
+		background: var(--vs-raised);
+		padding: 1rem;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	:global(.type-role-card:hover) {
+		border-color: var(--vs-border2);
+	}
+	:global(.type-role-card.selected) {
+		border-color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 6%, var(--vs-raised));
+	}
+	:global(.type-role-name) {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+		margin-bottom: 0.5rem;
+	}
+	:global(.type-role-card.selected) :global(.type-role-name) {
+		color: var(--vs-blue);
+	}
+	:global(.type-preview) {
+		font-size: 22px;
+		line-height: 1.2;
+		color: #fff;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	:global(.font-option) {
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--vs-border);
+		cursor: pointer;
+		transition: all 0.15s;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.3rem 0;
+	}
+	:global(.font-option:hover) {
+		border-color: var(--vs-border2);
+	}
+	:global(.font-option.selected) {
+		border-color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 8%, transparent);
+	}
+	:global(.font-option-preview) {
+		font-size: 18px;
+		color: #fff;
+		flex-shrink: 0;
+	}
+	:global(.font-option-meta) {
+		font-size: 10px;
+		color: var(--vs-muted);
+	}
+	:global(.font-option-name) {
+		font-size: 12px;
+		color: var(--vs-text);
+	}
+
+	/* ── CONSISTENCY CHECKER ── */
+	:global(.cc-frame-pair) {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1px;
+		background: var(--vs-border);
+	}
+	@media (max-width: 560px) {
+		:global(.cc-frame-pair) {
+			grid-template-columns: 1fr;
+		}
+	}
+	:global(.cc-frame) {
+		aspect-ratio: 16/9;
+		position: relative;
+		overflow: hidden;
+		background: #040710;
+		cursor: pointer;
+		transition: border-color 0.2s;
+		border: 2px solid transparent;
+	}
+	:global(.cc-frame:hover) {
+		border-color: var(--vs-border2);
+	}
+	:global(.cc-frame) canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+	:global(.cc-frame-label) {
+		position: absolute;
+		top: 6px;
+		left: 8px;
+		font-size: 9px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: rgba(255, 255, 255, 0.4);
+	}
+	.cc-score-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 1px;
+		background: var(--vs-border);
+		margin-top: 0.75rem;
+	}
+	.cc-score-cell {
+		background: var(--vs-raised);
+		padding: 0.5rem 0.4rem;
+		text-align: center;
+	}
+	.cc-score-val {
+		font-family: 'Syne', sans-serif;
+		font-size: 17px;
+		font-weight: 700;
+		line-height: 1;
+	}
+	.cc-score-lbl {
+		font-size: 8px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+		margin-top: 3px;
+	}
+
+	/* ── COMPONENT LIBRARY ── */
+	.comp-stage {
+		background: #040710;
+		border: 1px solid var(--vs-border);
+		aspect-ratio: 16/9;
+		position: relative;
+		overflow: hidden;
+	}
+	.comp-stage canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+	.comp-option-row {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin: 0.5rem 0;
+	}
+	.comp-opt {
+		padding: 4px 12px;
+		border: 1px solid var(--vs-border2);
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition: all 0.15s;
+		color: var(--vs-muted);
+		font-family: 'IBM Plex Mono', monospace;
+		background: transparent;
+	}
+	.comp-opt:hover {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+	}
+	.comp-opt.active {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+	}
+	.comp-opt.amber.active {
+		border-color: var(--vs-amber);
+		color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+	}
+
+	/* ── STYLE GUIDE GENERATOR ── */
+	.sg-section {
+		border: 1px solid var(--vs-border);
+		margin-bottom: 1rem;
+		background: var(--vs-raised);
+		overflow: hidden;
+	}
+	.sg-section-header {
+		padding: 0.6rem 1rem;
+		border-bottom: 1px solid var(--vs-border);
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-raised));
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.sg-section-body {
+		padding: 1rem;
+	}
+	.sg-color-strip {
+		display: flex;
+		gap: 0;
+		height: 36px;
+		border: 1px solid var(--vs-border);
+		overflow: hidden;
+		margin-bottom: 0.5rem;
+	}
+	:global(.sg-color-chip) {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 8px;
+		color: rgba(255, 255, 255, 0.5);
+		letter-spacing: 0.06em;
+	}
+	.sg-type-sample {
+		padding: 0.5rem 0;
+		border-bottom: 1px solid var(--vs-border);
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+	}
+	.sg-type-sample:last-child {
+		border-bottom: none;
+	}
+	.sg-type-label {
+		font-size: 9px;
+		color: var(--vs-muted);
+		min-width: 80px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+	.sg-rule-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.3rem 0;
+		border-bottom: 1px solid var(--vs-border);
+		font-size: 11px;
+	}
+	.sg-rule-row:last-child {
+		border-bottom: none;
+	}
+	.sg-rule-icon {
+		width: 20px;
+		text-align: center;
+		flex-shrink: 0;
+	}
+	.sg-rule-text {
+		flex: 1;
+		color: var(--vs-text);
+	}
+	.sg-rule-val {
+		color: var(--vs-blue);
+		font-weight: 600;
+		min-width: 80px;
+		text-align: right;
+	}
+	.sg-export-btn {
+		width: 100%;
+		padding: 0.75rem;
+		background: color-mix(in srgb, var(--vs-blue) 8%, transparent);
+		border: 1px solid var(--vs-blue);
+		color: var(--vs-blue);
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition: all 0.2s;
+		margin-top: 1rem;
+	}
+	.sg-export-btn:hover {
+		background: color-mix(in srgb, var(--vs-blue) 15%, transparent);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
+	}
+</style>

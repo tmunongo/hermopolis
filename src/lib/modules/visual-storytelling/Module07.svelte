@@ -1265,7 +1265,7 @@
 				<canvas
 					id="waveform-canvas"
 					aria-label="Waveform Canvas Demonstration"
-					role="region"
+					role="img"
 					tabindex="0"
 				></canvas>
 
@@ -1614,7 +1614,7 @@
 				</p>
 
 				<div class="cue-palette" id="cue-palette"></div>
-				<canvas id="cue-timeline" aria-label="Cue Timeline Demonstration" role="region" tabindex="0"
+				<canvas id="cue-timeline" aria-label="Cue Timeline Demonstration" role="img" tabindex="0"
 				></canvas>
 
 				<div class="cue-legend" id="cue-legend"></div>
@@ -2053,7 +2053,7 @@
 		margin: 0 auto;
 		padding: 0 2rem 6rem;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -2064,7 +2064,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -2265,11 +2265,11 @@
 		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
 		font-size: 13px;
 	}
-	.callout.amber {
+	:global(.callout.amber) {
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
 	}
-	.callout.blue {
+	:global(.callout.blue) {
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 	}
@@ -2285,13 +2285,13 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.amber .callout-label {
+	:global(.callout.amber .callout-label) {
 		color: var(--vs-amber);
 	}
-	.callout.blue .callout-label {
+	:global(.callout.blue .callout-label) {
 		color: var(--vs-blue);
 	}
-	:global(.callout.red) .callout-label {
+	:global(.callout.red .callout-label) {
 		color: var(--vs-red);
 	}
 
@@ -2313,12 +2313,12 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--vs-mint);
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
@@ -2612,7 +2612,7 @@
 	}
 
 	/* ── AUDIO CHANNEL STACK ── */
-	.channel-track {
+	:global(.channel-track) {
 		position: relative;
 		height: 52px;
 		border: 1px solid var(--vs-border);
@@ -2620,7 +2620,7 @@
 		background: var(--vs-raised);
 		overflow: hidden;
 	}
-	.channel-track-label {
+	:global(.channel-track-label) {
 		position: absolute;
 		left: 0;
 		top: 0;
@@ -2638,14 +2638,14 @@
 		z-index: 2;
 		flex-shrink: 0;
 	}
-	.channel-track-body {
+	:global(.channel-track-body) {
 		position: absolute;
 		left: 80px;
 		right: 0;
 		top: 0;
 		bottom: 0;
 	}
-	.channel-clip {
+	:global(.channel-clip) {
 		position: absolute;
 		top: 4px;
 		bottom: 4px;
@@ -2662,7 +2662,7 @@
 		padding: 0 6px;
 		transition: opacity 0.3s;
 	}
-	.channel-playhead {
+	:global(.channel-playhead) {
 		position: absolute;
 		left: 0;
 		top: 0;
@@ -2691,7 +2691,7 @@
 		position: relative;
 		overflow: hidden;
 	}
-	.vp-word {
+	:global(.vp-word) {
 		display: inline-block;
 		margin: 0 3px;
 		font-family: 'Syne', sans-serif;
@@ -2700,16 +2700,16 @@
 		opacity: 0.18;
 		color: var(--vs-text);
 	}
-	.vp-word.spoken {
+	:global(.vp-word.spoken) {
 		opacity: 1;
 		color: #fff;
 	}
-	.vp-word.active {
+	:global(.vp-word.active) {
 		opacity: 1;
 		color: var(--vs-mint);
 		transform: scale(1.08);
 	}
-	.vp-cursor {
+	:global(.vp-cursor) {
 		display: inline-block;
 		width: 2px;
 		height: 1.1em;
@@ -2755,7 +2755,7 @@
 		flex-wrap: wrap;
 		margin-bottom: 1.25rem;
 	}
-	.cue-chip {
+	:global(.cue-chip) {
 		padding: 5px 12px;
 		border: 1px solid;
 		font-size: 11px;
@@ -2766,10 +2766,10 @@
 		gap: 5px;
 		user-select: none;
 	}
-	.cue-chip.selected {
+	:global(.cue-chip.selected) {
 		opacity: 1;
 	}
-	.cue-chip:not(.selected) {
+	:global(.cue-chip:not(.selected)) {
 		opacity: 0.55;
 	}
 	#cue-timeline {
@@ -2788,12 +2788,12 @@
 		font-size: 10px;
 		color: var(--vs-muted);
 	}
-	.cue-legend-item {
+	:global(.cue-legend-item) {
 		display: flex;
 		align-items: center;
 		gap: 5px;
 	}
-	.cue-legend-dot {
+	:global(.cue-legend-dot) {
 		width: 8px;
 		height: 8px;
 		border-radius: 50%;
@@ -2801,7 +2801,7 @@
 	}
 
 	/* ── PAUSE ARCHITECTURE ── */
-	.pause-sentence {
+	:global(.pause-sentence) {
 		padding: 0.75rem 1rem;
 		border: 1px solid var(--vs-border);
 		margin: 0.4rem 0;
@@ -2811,20 +2811,20 @@
 		position: relative;
 		overflow: hidden;
 	}
-	.pause-sentence:hover {
+	:global(.pause-sentence:hover) {
 		border-color: var(--vs-border2);
 	}
-	.pause-sentence.selected {
+	:global(.pause-sentence.selected) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 6%, var(--vs-raised));
 	}
-	.pause-word-row {
+	:global(.pause-word-row) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
 		margin-top: 8px;
 	}
-	.pw {
+	:global(.pw) {
 		display: inline-block;
 		padding: 2px 7px;
 		font-size: 11px;
@@ -2833,20 +2833,20 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
-	.pw:hover {
+	:global(.pw:hover) {
 		border-color: var(--vs-border2);
 	}
-	.pw.pause-before {
+	:global(.pw.pause-before) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 12%, transparent);
 		color: var(--vs-mint);
 	}
-	.pw.pause-before::before {
+	:global(.pw.pause-before::before) {
 		content: '‖ ';
 		color: var(--vs-mint);
 		font-size: 10px;
 	}
-	.pw.emphasis {
+	:global(.pw.emphasis) {
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 12%, transparent);
 		color: var(--vs-amber);

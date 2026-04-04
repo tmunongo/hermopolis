@@ -2228,11 +2228,11 @@
 		background: color-mix(in srgb, var(--amber) 5%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.green {
+	:global(.callout.green) {
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
 	}
-	.callout.warn {
+	:global(.callout.warn) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
@@ -2240,7 +2240,7 @@
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 5%, var(--surface));
 	}
-	.callout.violet {
+	:global(.callout.violet) {
 		border-color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 5%, var(--surface));
 	}
@@ -2252,16 +2252,16 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.green .callout-label {
+	:global(.callout.green) .callout-label {
 		color: var(--sage);
 	}
-	.callout.warn .callout-label {
+	:global(.callout.warn) .callout-label {
 		color: var(--rose);
 	}
 	:global(.callout.sky) .callout-label {
 		color: var(--sky);
 	}
-	.callout.violet .callout-label {
+	:global(.callout.violet) .callout-label {
 		color: var(--violet);
 	}
 
@@ -2284,12 +2284,12 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--amber);
 		border-color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 10%, transparent);
@@ -2409,7 +2409,7 @@
 	}
 
 	/* LAYOUT */
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -2420,7 +2420,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -2697,7 +2697,7 @@
 		line-height: 1.5;
 		transition: all 0.3s;
 	}
-	.tf-anatomy {
+	:global(.tf-anatomy) {
 		position: absolute;
 		top: 0;
 		left: 0;
@@ -2732,7 +2732,7 @@
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 10%, transparent);
 	}
-	.tf-tag.sage {
+	:global(.tf-tag.sage) {
 		color: var(--sage);
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
@@ -2804,7 +2804,7 @@
 		text-transform: uppercase;
 		pointer-events: none;
 	}
-	.tf-ann-line {
+	:global(.tf-ann-line) {
 		position: absolute;
 		background: rgba(245, 166, 35, 0.25);
 		pointer-events: none;
@@ -3043,19 +3043,19 @@
 		border-color: var(--border2);
 		background: var(--raised);
 	}
-	.audit-opt.correct {
+	:global(.audit-opt.correct) {
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 10%, transparent);
 		color: var(--sage);
 		pointer-events: none;
 	}
-	.audit-opt.wrong {
+	:global(.audit-opt.wrong) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 10%, transparent);
 		color: var(--rose);
 		pointer-events: none;
 	}
-	.audit-opt.disabled {
+	:global(.audit-opt.disabled) {
 		pointer-events: none;
 	}
 	.audit-feedback {
@@ -3064,10 +3064,10 @@
 		color: var(--muted);
 		min-height: 1.2em;
 	}
-	.audit-feedback.ok {
+	:global(.audit-feedback.ok) {
 		color: var(--sage);
 	}
-	.audit-feedback.bad {
+	:global(.audit-feedback.bad) {
 		color: var(--rose);
 	}
 

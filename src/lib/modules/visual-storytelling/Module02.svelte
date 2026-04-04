@@ -1823,7 +1823,7 @@
 		margin: 0 auto;
 		padding: 0 2rem 6rem;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -1834,7 +1834,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -2062,7 +2062,7 @@
 		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
 		font-size: 13px;
 	}
-	.callout.blue {
+	:global(.callout.blue) {
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 	}
@@ -2070,7 +2070,7 @@
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
 	}
@@ -2082,13 +2082,13 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.blue .callout-label {
+	:global(.callout.blue) .callout-label {
 		color: var(--vs-blue);
 	}
 	:global(.callout.red) .callout-label {
 		color: var(--vs-red);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint) .callout-label {
 		color: var(--vs-mint);
 	}
 
@@ -2111,12 +2111,12 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--vs-amber);
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);

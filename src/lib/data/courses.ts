@@ -131,7 +131,7 @@ export const gameDevModules: Module[] = [
 		number: 11,
 		title: 'Audio and Game Feel',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent2',
 		description:
 			'Add sound effects and music, implement screen shake and juice, and polish the player experience.'
@@ -141,7 +141,7 @@ export const gameDevModules: Module[] = [
 		number: 12,
 		title: 'Building a Complete 2D Game',
 		subtitle: 'Capstone Project',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--accent3',
 		description: 'Combine all modules into a complete, playable 2D game from design to final build.'
 	}
@@ -478,7 +478,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 9,
 		title: 'Building a Repeatable Visual Language',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-blue',
 		description:
 			'Develop a consistent style your audience recognizes. Color, fonts, and layout as narrative tools. Reusable graphic systems.'
@@ -488,7 +488,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 10,
 		title: 'End-to-End Faceless Video Production',
 		subtitle: 'Capstone Project',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-amber',
 		description:
 			'Combine narration, images, text, pacing, and motion into a complete 1–2 minute polished, engagement-oriented faceless video.'

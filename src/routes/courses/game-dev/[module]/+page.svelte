@@ -8,6 +8,9 @@
 	import Module07 from '$lib/modules/game-dev/Module07.svelte';
 	import Module08 from '$lib/modules/game-dev/Module08.svelte';
 	import Module09 from '$lib/modules/game-dev/Module09.svelte';
+	import Module10 from '$lib/modules/game-dev/Module10.svelte';
+	import Module11 from '$lib/modules/game-dev/Module11.svelte';
+	import Module12 from '$lib/modules/game-dev/Module12.svelte';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -58,6 +61,12 @@
 		<Module08 />
 	{:else if mod.id === '09'}
 		<Module09 />
+	{:else if mod.id === '10'}
+		<Module10 />
+	{:else if mod.id === '11'}
+		<Module11 />
+	{:else if mod.id === '12'}
+		<Module12 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

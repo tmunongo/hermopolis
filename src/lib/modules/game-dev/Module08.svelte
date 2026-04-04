@@ -2139,15 +2139,15 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 		background: color-mix(in srgb, var(--accent) 5%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.blue {
+	:global(.callout.blue) {
 		border-color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 5%, var(--surface));
 	}
-	.callout.green {
+	:global(.callout.green) {
 		border-color: var(--accent3);
 		background: color-mix(in srgb, var(--accent3) 5%, var(--surface));
 	}
-	.callout.gold {
+	:global(.callout.gold) {
 		border-color: var(--accent4);
 		background: color-mix(in srgb, var(--accent4) 5%, var(--surface));
 	}
@@ -2159,13 +2159,13 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.blue .callout-label {
+	:global(.callout.blue .callout-label) {
 		color: var(--accent2);
 	}
-	.callout.green .callout-label {
+	:global(.callout.green .callout-label) {
 		color: var(--accent3);
 	}
-	.callout.gold .callout-label {
+	:global(.callout.gold .callout-label) {
 		color: var(--accent4);
 	}
 
@@ -2187,17 +2187,17 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.i {
+	:global(.demo-badge.i) {
 		color: var(--accent);
 		border-color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 	}
-	.demo-badge.a {
+	:global(.demo-badge.a) {
 		color: var(--accent3);
 		border-color: var(--accent3);
 		background: color-mix(in srgb, var(--accent3) 10%, transparent);
@@ -2209,36 +2209,36 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 	canvas {
 		display: block;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
 	@media (max-width: 640px) {
-		.two-col {
+		:global(.two-col) {
 			grid-template-columns: 1fr;
 		}
 	}
 
-	.slider-row {
+	:global(.slider-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		margin: 0.5rem 0;
 	}
-	.slider-row label {
+	:global(.slider-row label) {
 		font-size: 11px;
 		min-width: 100px;
 		color: var(--muted);
 	}
-	.slider-row :global(input[type='range']) {
+	:global(.slider-row :global(input[type='range'])) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 3px;
 		background: var(--border2);
 		outline: none;
 	}
-	.slider-row :global(input[type='range']::-webkit-slider-thumb) {
+	:global(.slider-row :global(input[type='range']::-webkit-slider-thumb)) {
 		-webkit-appearance: none;
 		width: 12px;
 		height: 12px;
@@ -2246,7 +2246,7 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 		background: var(--accent);
 		cursor: pointer;
 	}
-	.slider-val {
+	:global(.slider-val) {
 		font-size: 12px;
 		color: var(--accent);
 		min-width: 52px;
@@ -2279,20 +2279,20 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 		color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 10%, transparent);
 	}
-	.btn.g:hover,
-	.btn.g.active {
+	:global(.btn.g:hover),
+	:global(.btn.g.active) {
 		border-color: var(--accent3);
 		color: var(--accent3);
 		background: color-mix(in srgb, var(--accent3) 10%, transparent);
 	}
 
-	.info-panel {
+	:global(.info-panel) {
 		background: var(--code-bg);
 		border: 1px solid var(--border);
 		padding: 0.85rem 1rem;
 		font-size: 12px;
 	}
-	.info-row {
+	:global(.info-row) {
 		display: flex;
 		justify-content: space-between;
 		padding: 0.2rem 0;
@@ -2301,10 +2301,10 @@ dx, dy = dx/length, dy/length   <span class="cm"># diagonal speed = cardinal spe
 	.info-row:last-child {
 		border-bottom: none;
 	}
-	.info-key {
+	:global(.info-key) {
 		color: var(--muted);
 	}
-	.info-val {
+	:global(.info-val) {
 		color: var(--accent3);
 		font-weight: 600;
 	}

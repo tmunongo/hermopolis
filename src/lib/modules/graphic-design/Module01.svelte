@@ -1560,11 +1560,11 @@
 		border-color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 5%, var(--surface));
 	}
-	.callout.green {
+	:global(.callout.green) {
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
 	}
-	.callout.warn {
+	:global(.callout.warn) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
@@ -1579,10 +1579,10 @@
 	.callout.info .callout-label {
 		color: var(--amber);
 	}
-	.callout.green .callout-label {
+	:global(.callout.green) .callout-label {
 		color: var(--sage);
 	}
-	.callout.warn .callout-label {
+	:global(.callout.warn) .callout-label {
 		color: var(--rose);
 	}
 
@@ -1605,12 +1605,12 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--sky);
 		border-color: var(--sky);
 		background: color-mix(in srgb, var(--sky) 10%, transparent);
@@ -1694,13 +1694,13 @@
 	}
 
 	/* ── TWO-COL ── */
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
 	@media (max-width: 640px) {
-		.two-col {
+		:global(.two-col) {
 			grid-template-columns: 1fr;
 		}
 	}

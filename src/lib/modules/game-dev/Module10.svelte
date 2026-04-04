@@ -1,0 +1,2884 @@
+<script>
+	/* eslint-disable @typescript-eslint/no-unused-vars, no-undef, svelte/prefer-svelte-reactivity */
+	import { onMount } from 'svelte';
+
+	let actions = new Proxy(
+		{},
+		{
+			get: (target, prop) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args) => {};
+				if (prop in target) return target[prop];
+				return (..._args) => {};
+			}
+		}
+	);
+
+	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
+		/* ══════════════════════════════════════════════════
+   SCENE GRAPH DEMO
+══════════════════════════════════════════════════ */
+		const SG_NODES = [
+			{
+				id: 'root',
+				name: 'root',
+				icon: '🌐',
+				type: 'Node',
+				parent: null,
+				localX: 0,
+				localY: 0,
+				localRot: 0,
+				children: ['body', 'shadow']
+			},
+			{
+				id: 'body',
+				name: 'body',
+				icon: '🎮',
+				type: 'Sprite',
+				parent: 'root',
+				localX: 0,
+				localY: 0,
+				localRot: 0,
+				children: ['head', 'arm_r', 'arm_l']
+			},
+			{
+				id: 'head',
+				name: 'head',
+				icon: '👤',
+				type: 'Sprite',
+				parent: 'body',
+				localX: 0,
+				localY: -36,
+				localRot: 0,
+				children: ['hat']
+			},
+			{
+				id: 'hat',
+				name: 'hat',
+				icon: '🎩',
+				type: 'Sprite',
+				parent: 'head',
+				localX: 0,
+				localY: -14,
+				localRot: 0,
+				children: []
+			},
+			{
+				id: 'arm_r',
+				name: 'arm_right',
+				icon: '💪',
+				type: 'Sprite',
+				parent: 'body',
+				localX: 18,
+				localY: -10,
+				localRot: 0,
+				children: ['weapon']
+			},
+			{
+				id: 'weapon',
+				name: 'sword',
+				icon: '⚔️',
+				type: 'Sprite',
+				parent: 'arm_r',
+				localX: 20,
+				localY: -8,
+				localRot: 0,
+				children: []
+			},
+			{
+				id: 'arm_l',
+				name: 'arm_left',
+				icon: '💪',
+				type: 'Sprite',
+				parent: 'body',
+				localX: -18,
+				localY: -10,
+				localRot: 0,
+				children: []
+			},
+			{
+				id: 'shadow',
+				name: 'shadow',
+				icon: '⬛',
+				type: 'Shape',
+				parent: 'root',
+				localX: 0,
+				localY: 20,
+				localRot: 0,
+				children: []
+			}
+		];
+		const nodeMap = {};
+		SG_NODES.forEach((n) => (nodeMap[n.id] = n));
+		let selectedNode = 'root';
+
+		function getSGAngles() {
+			return {
+				root: (parseInt(document.getElementById('sg-root-rot').value) * Math.PI) / 180,
+				body: (parseInt(document.getElementById('sg-body-rot').value) * Math.PI) / 180,
+				arm_r: (parseInt(document.getElementById('sg-arm-rot').value) * Math.PI) / 180
+			};
+		}
+
+		function computeWorldTransform(nodeId, angles, parentWorld) {
+			const n = nodeMap[nodeId];
+			const localAngle = angles[nodeId] || 0;
+			const pw = parentWorld || { x: 0, y: 0, rot: 0 };
+			const cosP = Math.cos(pw.rot),
+				sinP = Math.sin(pw.rot);
+			const wx = pw.x + cosP * n.localX - sinP * n.localY;
+			const wy = pw.y + sinP * n.localX + cosP * n.localY;
+			return { x: wx, y: wy, rot: pw.rot + localAngle };
+		}
+
+		function getAllWorldTransforms() {
+			const angles = getSGAngles();
+			const worlds = {};
+			function traverse(id, parentWorld) {
+				worlds[id] = computeWorldTransform(id, angles, parentWorld);
+				nodeMap[id].children.forEach((cid) => traverse(cid, worlds[id]));
+			}
+			traverse('root', { x: 0, y: 0, rot: 0 });
+			return worlds;
+		}
+
+		const sgC = document.getElementById('sg-canvas');
+		const sgX = sgC.getContext('2d');
+
+		function drawSG() {
+			const W = sgC.width,
+				H = sgC.height;
+			const cx = W / 2,
+				cy = H / 2 + 20;
+			sgX.clearRect(0, 0, W, H);
+			sgX.fillStyle = '#03030c';
+			sgX.fillRect(0, 0, W, H);
+			const grid = 40;
+			sgX.strokeStyle = '#10102a';
+			sgX.lineWidth = 1;
+			for (let x = 0; x < W; x += grid) {
+				sgX.beginPath();
+				sgX.moveTo(x, 0);
+				sgX.lineTo(x, H);
+				sgX.stroke();
+			}
+			for (let y = 0; y < H; y += grid) {
+				sgX.beginPath();
+				sgX.moveTo(0, y);
+				sgX.lineTo(W, y);
+				sgX.stroke();
+			}
+
+			const worlds = getAllWorldTransforms();
+			const colors = {
+				root: '#7c3aed',
+				body: '#06b6d4',
+				head: '#a78bfa',
+				hat: '#ec4899',
+				arm_r: '#f59e0b',
+				weapon: '#f97316',
+				arm_l: '#f59e0b',
+				shadow: '#2e2e60'
+			};
+
+			// Draw connections
+			SG_NODES.forEach((n) => {
+				n.children.forEach((cid) => {
+					const pw = worlds[n.id],
+						cw = worlds[cid];
+					sgX.beginPath();
+					sgX.moveTo(cx + pw.x, cy + pw.y);
+					sgX.lineTo(cx + cw.x, cy + cw.y);
+					sgX.strokeStyle = '#18183a';
+					sgX.lineWidth = 1.5;
+					sgX.stroke();
+				});
+			});
+
+			// Draw nodes
+			SG_NODES.forEach((n) => {
+				const wt = worlds[n.id];
+				const px = cx + wt.x,
+					py = cy + wt.y;
+				const isSel = n.id === selectedNode;
+				const r = isSel ? 9 : 6;
+				sgX.beginPath();
+				sgX.arc(px, py, r, 0, Math.PI * 2);
+				sgX.fillStyle = (colors[n.id] || '#7c3aed') + (isSel ? '' : '80');
+				sgX.fill();
+				if (isSel) {
+					sgX.strokeStyle = '#fff';
+					sgX.lineWidth = 1.5;
+					sgX.stroke();
+				}
+				sgX.font = '10px IBM Plex Mono';
+				sgX.fillStyle = '#fff';
+				sgX.textAlign = 'left';
+				sgX.fillText(n.name, px + 11, py + 4);
+				// Local axes
+				const c = Math.cos(wt.rot),
+					s = Math.sin(wt.rot),
+					al = 20;
+				sgX.beginPath();
+				sgX.moveTo(px, py);
+				sgX.lineTo(px + c * al, py + s * al);
+				sgX.strokeStyle = '#ef4444';
+				sgX.lineWidth = 1;
+				sgX.stroke();
+				sgX.beginPath();
+				sgX.moveTo(px, py);
+				sgX.lineTo(px - s * al, py + c * al);
+				sgX.strokeStyle = '#22c55e';
+				sgX.lineWidth = 1;
+				sgX.stroke();
+			});
+		}
+
+		function buildSGTree() {
+			const container = document.getElementById('scene-tree');
+			function renderNode(id, depth) {
+				const n = nodeMap[id];
+				const div = document.createElement('div');
+				div.className = 'tree-node';
+				const row = document.createElement('div');
+				row.className = 'node-row' + (id === selectedNode ? ' selected' : '');
+				row.id = 'tree-' + id;
+				row.style.paddingLeft = depth * 16 + 'px';
+				row.innerHTML = `<span class="node-icon">${n.icon}</span><span class="node-name">${n.name}</span><span class="node-type">[${n.type}]</span>`;
+				row.onclick = () => selectSGNode(id);
+				div.appendChild(row);
+				n.children.forEach((cid) => div.appendChild(renderNode(cid, depth + 1)));
+				return div;
+			}
+			container.innerHTML = '';
+			container.appendChild(renderNode('root', 0));
+		}
+
+		function selectSGNode(id) {
+			selectedNode = id;
+			document.querySelectorAll('.node-row').forEach((r) => r.classList.remove('selected'));
+			const el = document.getElementById('tree-' + id);
+			if (el) el.classList.add('selected');
+			const n = nodeMap[id];
+			const worlds = getAllWorldTransforms();
+			const wt = worlds[id];
+			const angles = getSGAngles();
+			const la = ((angles[id] || 0) * 180) / Math.PI;
+			document.getElementById('node-detail').innerHTML =
+				`<strong style="color:var(--accentL)">${n.name}</strong> [${n.type}]<br>` +
+				`local: x=${n.localX}, y=${n.localY}, rot=${la.toFixed(0)}°<br>` +
+				`world: x=${wt.x.toFixed(1)}, y=${wt.y.toFixed(1)}, rot=${((wt.rot * 180) / Math.PI).toFixed(1)}°<br>` +
+				`parent: <span style="color:var(--accent2)">${n.parent || 'none'}</span> &nbsp; children: <span style="color:var(--accent2)">[${n.children.join(', ') || '—'}]</span>`;
+			drawSG();
+		}
+
+		['sg-root-rot', 'sg-body-rot', 'sg-arm-rot'].forEach((id) => {
+			document.getElementById(id).addEventListener('input', (e) => {
+				document.getElementById(id + '-val').textContent = e.target.value + '°';
+				buildSGTree();
+				selectSGNode(selectedNode);
+			});
+		});
+		buildSGTree();
+		drawSG();
+
+		/* ══════════════════════════════════════════════════
+   ECS TABLE
+══════════════════════════════════════════════════ */
+		const ECS_ENTITIES = [
+			{
+				id: 0,
+				name: 'Player',
+				comps: { Position: true, Velocity: true, Sprite: true, Health: true, Input: true }
+			},
+			{
+				id: 1,
+				name: 'Enemy_A',
+				comps: { Position: true, Velocity: true, Sprite: true, Health: true, AI: true }
+			},
+			{
+				id: 2,
+				name: 'Enemy_B',
+				comps: { Position: true, Velocity: true, Sprite: true, Health: true, AI: true }
+			},
+			{ id: 3, name: 'Coin_1', comps: { Position: true, Sprite: true, Collectible: true } },
+			{ id: 4, name: 'Coin_2', comps: { Position: true, Sprite: true, Collectible: true } },
+			{ id: 5, name: 'Platform', comps: { Position: true, Collider: true } },
+			{ id: 6, name: 'Background', comps: { Position: true, Sprite: true } },
+			{ id: 7, name: 'Camera', comps: { Position: true, Velocity: true, Camera: true } }
+		];
+		const ALL_COMPS = [
+			'Position',
+			'Velocity',
+			'Sprite',
+			'Health',
+			'Input',
+			'AI',
+			'Collider',
+			'Collectible',
+			'Camera'
+		];
+		let ecsQuery = [];
+
+		function setECSQuery(comps, btn) {
+			ecsQuery = comps;
+			document
+				.querySelectorAll('#ecs-table-container ~ div ~ div .btn, .demo-box .btn')
+				.forEach((b) => {
+					if (
+						[
+							'Query: movement_system',
+							'Query: render_system',
+							'Query: health_system',
+							'Clear query'
+						].includes(b.textContent)
+					)
+						b.classList.remove('active');
+				});
+			btn.classList.add('active');
+			buildECSTable();
+		}
+
+		function buildECSTable() {
+			const cols = ['Entity', ...ALL_COMPS];
+			const numCols = cols.length;
+			const container = document.getElementById('ecs-table-container');
+			let html = `<div class="ecs-table"><div class="ecs-header-row" style="grid-template-columns:repeat(${numCols},1fr);">`;
+			cols.forEach(
+				(c) =>
+					(html += `<div class="ecs-cell" style="color:var(--accentL);font-weight:600;font-size:10px;letter-spacing:.05em;">${c}</div>`)
+			);
+			html += '</div>';
+
+			let matchCount = 0;
+			ECS_ENTITIES.forEach((e) => {
+				const matches = ecsQuery.length === 0 || ecsQuery.every((c) => e.comps[c]);
+				if (matches && ecsQuery.length > 0) matchCount++;
+				html += `<div class="ecs-row ${matches && ecsQuery.length > 0 ? 'selected' : ''}" style="grid-template-columns:repeat(${numCols},1fr);">`;
+				html += `<div class="ecs-cell entity-col">${e.name}</div>`;
+				ALL_COMPS.forEach((c) => {
+					const has = e.comps[c];
+					html += `<div class="ecs-cell ${has ? 'has-comp' : 'no-comp'}">${has ? '✓' : '·'}</div>`;
+				});
+				html += '</div>';
+			});
+			html += '</div>';
+			container.innerHTML = html;
+
+			const resEl = document.getElementById('ecs-query-result');
+			if (ecsQuery.length === 0) {
+				resEl.innerHTML = 'No query active — all 8 entities shown.';
+			} else {
+				const names = ECS_ENTITIES.filter((e) => ecsQuery.every((c) => e.comps[c])).map(
+					(e) => e.name
+				);
+				resEl.innerHTML = `Query <span style="color:var(--accentL)">[${ecsQuery.join(', ')}]</span> → processes <span style="color:var(--accent2)">${matchCount}</span> entities: <span style="color:var(--accent2)">[${names.join(', ')}]</span>`;
+			}
+		}
+		buildECSTable();
+
+		/* ══════════════════════════════════════════════════
+   UPDATE ORDER STAGES
+══════════════════════════════════════════════════ */
+		const stageDetails = [
+			`<strong style="color:var(--accentL)">Begin Frame</strong> — Sample the clock. Compute delta_time = now − last_frame. Cap at MAX_DT. Drain the OS event queue into raw event lists. Clear per-frame sets (just_pressed, just_released, scroll_delta). This must happen first so every subsequent stage sees consistent, current data.`,
+			`<strong style="color:var(--accentL)">Input</strong> — Process raw events into the structured InputState (held, just_pressed, just_released) and MouseState. Must complete before Pre-Update so that game scripts read this frame's input, not last frame's.`,
+			`<strong style="color:var(--accentL)">Pre-Update (Game Scripts)</strong> — Player controllers, enemy AI, and game logic run here. They read current input and set intent: desired direction, action flags, force requests. They do NOT directly move objects — they set velocities or accumulate forces for the physics step.`,
+			`<strong style="color:var(--accentL)">Physics</strong> — The physics subsystem reads accumulated forces and velocities, runs integration, detects collisions, and resolves them. Positions are final after this step. Running physics before game scripts read final positions ensures scripts see where objects actually ended up, not where they intended to go.`,
+			`<strong style="color:var(--accentL)">Post-Update</strong> — Camera follow runs here, reading physics-resolved positions. Sprite animation timers advance using dt. Any logic that depends on final post-physics positions runs now — e.g. updating health bars to track an enemy's exact position.`,
+			`<strong style="color:var(--accentL)">Update Transforms</strong> — Scene graph world transforms are recomputed top-down. This must happen after physics (positions are final) and before rendering (GPU needs correct transforms). If transforms updated before physics, rendering would lag one frame behind physics.`,
+			`<strong style="color:var(--accentL)">Render</strong> — Issue GPU draw calls in depth order. Upload per-frame uniforms (time, transform matrices). Swap front/back framebuffers. The GPU may still be executing commands while the CPU begins the next frame's Begin Frame.`,
+			`<strong style="color:var(--accentL)">End Frame</strong> — Process the deferred destroy queue: entities marked for deletion are now safe to remove because all systems have finished reading them. Flush any pending audio requests, log writes, or network sends. Sleep to cap FPS.`
+		];
+		function showStage(i, el) {
+			document.querySelectorAll('.up-stage').forEach((s) => s.classList.remove('active'));
+			el.classList.add('active');
+			document.getElementById('up-detail').innerHTML = stageDetails[i];
+		}
+
+		/* ══════════════════════════════════════════════════
+   RESOURCE MANAGER SIM
+══════════════════════════════════════════════════ */
+		const ASSETS = [
+			{ name: 'player.png', size: 64, type: 'texture' },
+			{ name: 'tileset.png', size: 256, type: 'texture' },
+			{ name: 'enemy.png', size: 48, type: 'texture' },
+			{ name: 'ui_atlas.png', size: 128, type: 'texture' },
+			{ name: 'bg.png', size: 512, type: 'texture' },
+			{ name: 'jump.wav', size: 32, type: 'audio' },
+			{ name: 'music.ogg', size: 2048, type: 'audio' },
+			{ name: 'main.vert', size: 4, type: 'shader' },
+			{ name: 'sprite.frag', size: 6, type: 'shader' }
+		];
+		const resourceCache = new Map();
+		const resLog = [];
+		let totalMem = 0;
+
+		function buildAssetButtons() {
+			const el = document.getElementById('asset-buttons');
+			el.innerHTML =
+				ASSETS.map(
+					(a) =>
+						`<button class="btn" id="rbtn-${a.name.replace(/\W/g, '_')}" onclick="loadAsset('${a.name}')">${a.name}</button>`
+				).join('') + `<button class="btn p" onclick="clearCache()">Clear cache</button>`;
+		}
+
+		function loadAsset(name) {
+			const asset = ASSETS.find((a) => a.name === name);
+			if (!asset) return;
+			const btnId = 'rbtn-' + name.replace(/\W/g, '_');
+			const btn = document.getElementById(btnId);
+			if (resourceCache.has(name)) {
+				resLog.unshift(
+					`<span style="color:var(--accentL)">[CACHE HIT]</span> ${name} — already loaded, no GPU upload`
+				);
+				btn.classList.add('active');
+			} else {
+				resourceCache.set(name, asset);
+				totalMem += asset.size;
+				resLog.unshift(
+					`<span style="color:var(--accent2)">[LOAD]</span> ${name} (${asset.size}KB) → uploaded to GPU`
+				);
+				btn.classList.add('c');
+			}
+			if (resLog.length > 20) resLog.pop();
+			updateResUI();
+		}
+
+		function clearCache() {
+			resLog.unshift(
+				`<span style="color:var(--accent4)">[CLEAR]</span> Cache cleared — ${resourceCache.size} assets released`
+			);
+			resourceCache.clear();
+			totalMem = 0;
+			document.querySelectorAll('[id^=rbtn-]').forEach((b) => {
+				b.classList.remove('active', 'c');
+			});
+			updateResUI();
+		}
+
+		function updateResUI() {
+			const logEl = document.getElementById('res-log');
+			logEl.innerHTML = resLog
+				.map((l) => `<div style="padding:1px 0;border-bottom:1px solid #18183a;">${l}</div>`)
+				.join('');
+			const cacheEl = document.getElementById('asset-cache');
+			cacheEl.innerHTML =
+				resourceCache.size === 0
+					? '<div style="color:var(--muted);font-size:12px;">Empty</div>'
+					: [...resourceCache.values()]
+							.map(
+								(a) =>
+									`<div class="info-row"><span class="info-key">${a.name}</span><span class="info-val">${a.size}KB</span></div>`
+							)
+							.join('');
+			const MAX_MEM = 4096;
+			const pct = Math.min(100, (totalMem / MAX_MEM) * 100);
+			const barsEl = document.getElementById('resource-bars');
+			barsEl.innerHTML =
+				`<div class="resource-label">GPU memory used: ${totalMem}KB / ${MAX_MEM}KB</div>` +
+				`<div class="resource-bar"><div class="resource-fill res-loaded" style="width:${pct}%">${pct > 8 ? Math.round(pct) + '%' : ''}</div></div>` +
+				`<div class="resource-label" style="margin-top:.5rem;">Cached assets: ${resourceCache.size} / ${ASSETS.length}</div>` +
+				`<div class="resource-bar"><div class="resource-fill res-loaded" style="width:${(resourceCache.size / ASSETS.length) * 100}%;background:var(--accentL);">${resourceCache.size > 0 ? resourceCache.size : ''}</div></div>`;
+		}
+		buildAssetButtons();
+		updateResUI();
+
+		/* ══════════════════════════════════════════════════
+   SCENE MANAGER SIM
+══════════════════════════════════════════════════ */
+		const SCENES = [
+			{
+				name: 'MainMenu',
+				color: '#7c3aed',
+				desc: 'Title screen · Load logo + menu assets',
+				bg: '#0c0818'
+			},
+			{
+				name: 'Gameplay',
+				color: '#06b6d4',
+				desc: 'Main game loop · All gameplay systems active',
+				bg: '#030c10'
+			},
+			{
+				name: 'Inventory',
+				color: '#f59e0b',
+				desc: 'Pause + inventory overlay · Game paused',
+				bg: '#100b03'
+			},
+			{
+				name: 'GameOver',
+				color: '#ec4899',
+				desc: 'End screen · Show score, play death animation',
+				bg: '#10030a'
+			}
+		];
+		let currentScene = 'Gameplay',
+			prevScene = null,
+			sceneT = 0;
+		const sceneC = document.getElementById('scene-canvas');
+		const sceneX = sceneC.getContext('2d');
+		let sceneLogs = [];
+
+		function buildScenePills() {
+			const el = document.getElementById('scene-pills');
+			el.innerHTML = SCENES.map(
+				(s) =>
+					`<div class="scene-pill ${s.name === currentScene ? 'current' : ''}" id="spill-${s.name}" onclick="gotoScene('${s.name}')">
+       <div class="dot"></div>${s.name}
+     </div>`
+			).join('');
+		}
+
+		function gotoScene(name) {
+			if (name === currentScene) return;
+			const from = SCENES.find((s) => s.name === currentScene);
+			const to = SCENES.find((s) => s.name === name);
+			sceneLogs.unshift(`on_exit(${currentScene}) → on_enter(${name})`);
+			if (sceneLogs.length > 6) sceneLogs.pop();
+			prevScene = currentScene;
+			currentScene = name;
+			sceneT = 0;
+			buildScenePills();
+			document.getElementById('scene-log').textContent = sceneLogs[0];
+		}
+
+		function drawSceneManager() {
+			const W = sceneC.width,
+				H = sceneC.height;
+			const sc = SCENES.find((s) => s.name === currentScene);
+			sceneT = Math.min(sceneT + 0.025, 1);
+			const ease = sceneT * sceneT * (3 - 2 * sceneT);
+			sceneX.clearRect(0, 0, W, H);
+			sceneX.fillStyle = sc.bg;
+			sceneX.fillRect(0, 0, W, H);
+
+			// Scene content
+			sceneX.globalAlpha = ease;
+			sceneX.font = 'bold 28px Syne,sans-serif';
+			sceneX.fillStyle = sc.color;
+			sceneX.textAlign = 'center';
+			sceneX.fillText(sc.name, W / 2, H / 2 - 16);
+			sceneX.font = '12px IBM Plex Mono';
+			sceneX.fillStyle = 'rgba(255,255,255,0.5)';
+			sceneX.fillText(sc.desc, W / 2, H / 2 + 16);
+			sceneX.globalAlpha = 1;
+
+			// Scene pills preview
+			SCENES.forEach((s, i) => {
+				const x = 20 + i * 180,
+					y = H - 32;
+				sceneX.fillStyle = s.name === currentScene ? s.color : '#18183a';
+				sceneX.fillRect(x, y, 160, 22);
+				sceneX.strokeStyle = s.color;
+				sceneX.lineWidth = 1;
+				sceneX.strokeRect(x, y, 160, 22);
+				sceneX.font = '10px IBM Plex Mono';
+				sceneX.fillStyle = s.name === currentScene ? '#000' : '#3a3870';
+				sceneX.textAlign = 'center';
+				sceneX.fillText(s.name, x + 80, y + 15);
+			});
+
+			// Transition indicator
+			if (sceneT < 1) {
+				sceneX.fillStyle = `rgba(0,0,0,${1 - ease})`;
+				sceneX.fillRect(0, 0, W, H);
+			}
+			requestAnimationFrame(drawSceneManager);
+		}
+		buildScenePills();
+		drawSceneManager();
+
+		/* ══════════════════════════════════════════════════
+   MINI ENGINE
+══════════════════════════════════════════════════ */
+		const EC = document.getElementById('engine-canvas');
+		const EX = EC.getContext('2d');
+		let engRunning = true,
+			engFrame = 0,
+			engLastT = performance.now(),
+			engCacheHits = 0;
+		let pendingDestroy = [];
+
+		// Simple ECS world
+		const engWorld = { components: {}, nextId: 0 };
+		function engCreate() {
+			const id = engWorld.nextId++;
+			return id;
+		}
+		function engAdd(id, type, data) {
+			(engWorld.components[type] = engWorld.components[type] || {})[id] = data;
+			return data;
+		}
+		function engGet(id, type) {
+			return (engWorld.components[type] || {})[id];
+		}
+		function engQuery(...types) {
+			const tables = types.map((t) => engWorld.components[t] || {});
+			const smallest = tables.reduce((a, b) =>
+				Object.keys(a).length <= Object.keys(b).length ? a : b
+			);
+			const results = [];
+			for (const id in smallest) {
+				const comps = tables.map((t) => t[id]);
+				if (comps.every(Boolean)) results.push([+id, ...comps]);
+			}
+			return results;
+		}
+		function engDestroy(id) {
+			for (const t in engWorld.components) delete engWorld.components[t][id];
+		}
+
+		const PIPELINE_STAGES = [
+			'Begin Frame',
+			'Input',
+			'Pre-Update',
+			'Physics',
+			'Post-Update',
+			'Transforms',
+			'Render',
+			'End Frame'
+		];
+		let currentPipelineStage = 0;
+
+		function spawnEntity(type) {
+			const id = engCreate();
+			const x = 50 + Math.random() * 380,
+				y = 40 + Math.random() * 60;
+			const colors = { mover: '#a78bfa', bouncer: '#06b6d4', orbiter: '#ec4899' };
+			engAdd(id, 'Position', { x, y });
+			engAdd(id, 'Velocity', { vx: (Math.random() - 0.5) * 120, vy: 0 });
+			engAdd(id, 'Render', { color: colors[type] || '#fff', r: 10, trail: [] });
+			engAdd(id, 'Type', { t: type, age: 0, orbitAngle: Math.random() * Math.PI * 2 });
+			if (type === 'bouncer') engAdd(id, 'Physics', { restitution: 0.8 });
+			if (type === 'orbiter')
+				engAdd(id, 'Orbiter', { radius: 60 + Math.random() * 40, speed: 0.5 + Math.random() });
+		}
+
+		function resetEngine() {
+			engWorld.components = {};
+			engWorld.nextId = 0;
+			engFrame = 0;
+			pendingDestroy = [];
+			engCacheHits = 0;
+			spawnEntity('mover');
+			spawnEntity('bouncer');
+			spawnEntity('orbiter');
+			spawnEntity('mover');
+		}
+
+		function runEngine() {
+			if (!engRunning) return;
+			const now = performance.now(),
+				dt = Math.min((now - engLastT) / 1000, 0.05);
+			engLastT = now;
+			engFrame++;
+			const gravity = parseInt(document.getElementById('eng-gravity').value);
+			document.getElementById('eng-gravity-val').textContent = gravity;
+			const W = EC.width,
+				H = EC.height;
+			const stages = [
+				'Begin Frame',
+				'Input',
+				'Pre-Update',
+				'Physics',
+				'Post-Update',
+				'Transforms',
+				'Render',
+				'End Frame'
+			];
+			currentPipelineStage = Math.floor(engFrame * 0.5) % 8;
+
+			// Physics system
+			for (const [id, pos, vel, phys] of engQuery('Position', 'Velocity', 'Physics')) {
+				vel.vy += gravity * dt;
+				pos.x += vel.vx * dt;
+				pos.y += vel.vy * dt;
+				if (pos.y > H - 30) {
+					pos.y = H - 30;
+					vel.vy = -Math.abs(vel.vy) * phys.restitution;
+					vel.vx *= 0.98;
+				}
+				if (pos.x < 10) {
+					pos.x = 10;
+					vel.vx = Math.abs(vel.vx) * 0.8;
+				}
+				if (pos.x > W - 10) {
+					pos.x = W - 10;
+					vel.vx = -Math.abs(vel.vx) * 0.8;
+				}
+			}
+
+			// Mover system
+			for (const [id, pos, vel, type] of engQuery('Position', 'Velocity', 'Type')) {
+				if (type.t === 'mover') {
+					pos.x += vel.vx * dt;
+					pos.y += vel.vy * dt;
+					vel.vy += gravity * 0.3 * dt;
+					if (pos.x < 0 || pos.x > W) vel.vx *= -1;
+					if (pos.y > H - 20) {
+						pos.y = H - 20;
+						vel.vy = -Math.abs(vel.vy) * 0.5;
+					}
+				}
+				if (type.t === 'orbiter') {
+					const orb = engGet(id, 'Orbiter');
+					if (orb) {
+						type.orbitAngle += orb.speed * dt;
+						pos.x = W / 2 + Math.cos(type.orbitAngle) * orb.radius;
+						pos.y = H / 2 + Math.sin(type.orbitAngle) * orb.radius * 0.5;
+						engCacheHits++;
+					}
+				}
+				type.age += dt;
+				if (type.t !== 'orbiter' && type.age > 12) pendingDestroy.push(id);
+			}
+
+			// Render
+			EX.clearRect(0, 0, W, H);
+			EX.fillStyle = '#03030c';
+			EX.fillRect(0, 0, W, H);
+			EX.fillStyle = '#0c0a18';
+			EX.fillRect(0, H - 30, W, 30);
+			EX.strokeStyle = '#18183a';
+			EX.lineWidth = 1;
+			EX.beginPath();
+			EX.moveTo(0, H - 30);
+			EX.lineTo(W, H - 30);
+			EX.stroke();
+
+			// Orbit path
+			for (const [id, pos, orb] of engQuery('Position', 'Orbiter')) {
+				EX.beginPath();
+				EX.ellipse(W / 2, H / 2, orb.radius, orb.radius * 0.5, 0, 0, Math.PI * 2);
+				EX.strokeStyle = '#18183a';
+				EX.lineWidth = 1;
+				EX.stroke();
+			}
+
+			// Render system
+			for (const [id, pos, rend, type] of engQuery('Position', 'Render', 'Type')) {
+				rend.trail.push({ x: pos.x, y: pos.y });
+				if (rend.trail.length > 20) rend.trail.shift();
+				if (rend.trail.length > 1) {
+					EX.beginPath();
+					EX.moveTo(rend.trail[0].x, rend.trail[0].y);
+					rend.trail.forEach((p) => EX.lineTo(p.x, p.y));
+					EX.strokeStyle = rend.color + '30';
+					EX.lineWidth = 2;
+					EX.stroke();
+				}
+				const lifeAlpha = Math.min(1, Math.min(type.age * 2, Math.max(0, (12 - type.age) * 0.5)));
+				EX.globalAlpha = lifeAlpha;
+				EX.beginPath();
+				EX.arc(pos.x, pos.y, rend.r, 0, Math.PI * 2);
+				EX.fillStyle = rend.color + '40';
+				EX.fill();
+				EX.strokeStyle = rend.color;
+				EX.lineWidth = 2;
+				EX.stroke();
+				EX.font = '9px IBM Plex Mono';
+				EX.fillStyle = rend.color + '80';
+				EX.textAlign = 'center';
+				EX.fillText(`#${id}`, pos.x, pos.y + rend.r + 12);
+				EX.globalAlpha = 1;
+			}
+
+			// End frame: process destroys
+			pendingDestroy.forEach((id) => engDestroy(id));
+			pendingDestroy = [];
+
+			// Stats
+			const entCount = new Set(Object.values(engWorld.components).flatMap((t) => Object.keys(t)))
+				.size;
+			document.getElementById('eng-entities').textContent = entCount;
+			document.getElementById('eng-frame').textContent = engFrame;
+			document.getElementById('eng-dt').textContent = (dt * 1000).toFixed(1) + 'ms';
+			document.getElementById('eng-cache').textContent = engCacheHits;
+			document.getElementById('eng-destroy').textContent = pendingDestroy.length;
+
+			// Pipeline vis
+			const pv = document.getElementById('pipeline-vis');
+			pv.innerHTML = PIPELINE_STAGES.map((s, i) => {
+				const active = i === currentPipelineStage;
+				return `<div style="display:flex;align-items:center;gap:.5rem;padding:2px 6px;font-size:11px;background:${active ? 'color-mix(in srgb,var(--accentL) 15%,var(--raised))' : 'var(--raised)'};border:1px solid ${active ? 'var(--accentL)' : 'var(--border)'};">
+      <span style="font-size:9px;color:${active ? 'var(--accentL)' : 'var(--muted)'};min-width:14px;">${i + 1}</span>
+      <span style="color:${active ? '#fff' : 'var(--muted)'};">${s}</span>
+      ${active ? '<span style="margin-left:auto;font-size:9px;color:var(--accentL);">▶ running</span>' : ''}
+    </div>`;
+			}).join('');
+
+			requestAnimationFrame(runEngine);
+		}
+
+		function toggleEngine() {
+			engRunning = !engRunning;
+			document.getElementById('eng-play-btn').textContent = engRunning ? '⏸ Pause' : '▶ Play';
+			if (engRunning) runEngine();
+		}
+		resetEngine();
+		runEngine();
+
+		/* ══════════════════════════════════════════════════
+   ASSESSMENT
+══════════════════════════════════════════════════ */
+		const assessData = [
+			{
+				title: 'Update Order: Camera',
+				q: 'A camera follow script runs in Pre-Update (stage 3), before physics (stage 4). The character moves and resolves collisions in physics. What is the bug?',
+				options: [
+					'No bug — the camera reads the intended position, which is close enough',
+					'The camera follows where the character was trying to go, not where they actually ended up. The character is pushed back by a wall in physics, but the camera already moved toward the pre-physics position. This creates a one-frame position mismatch — the camera leads ahead of the character when hitting walls.',
+					'The camera moves too slowly because it runs before physics accumulates velocity',
+					'Physics will overwrite the camera transform, causing a crash'
+				],
+				correct: 1,
+				explanation:
+					'Camera follow must run in Post-Update (stage 5), after physics has fully resolved positions. Only then does the camera know where the character actually ended up — not just where they intended to go. Running before physics causes the camera to track the pre-collision position every frame the character is pressed against a surface.'
+			},
+			{
+				title: 'ECS Query Performance',
+				q: `System A queries [Position, Velocity] — 1000 entities match.
+System B queries [Position, Velocity, Health, AI, Weapon] — 8 entities match.
+Which system is slower, and why?`,
+				options: [
+					'System B — more component types to check means more work per entity',
+					"System A — it iterates all 1000 matching entities vs System B's 8",
+					'Both are equal — ECS queries have constant time complexity',
+					'System B — 5 component lookups per entity is slower than 2'
+				],
+				correct: 1,
+				explanation:
+					'System A iterates 1000 entities × 2 component lookups each = 2000 operations. System B iterates only 8 entities × 5 lookups = 40 operations. The bottleneck is the count of entities processed, not the number of component types in the query. A well-implemented ECS starts from the smallest component table to minimise the iteration set — which is why System B is fast despite its longer query.'
+			},
+			{
+				title: 'Resource Cache Behaviour',
+				q: `The same texture path "enemy.png" is loaded three times during a game session.
+How many GPU upload operations happen, and why?`,
+				options: [
+					'3 uploads — each load call always triggers a fresh GPU upload',
+					'1 upload — the first call uploads to GPU and caches; subsequent calls return the cached handle',
+					'2 uploads — the cache stores one copy, and the second call triggers a verification upload',
+					'0 uploads — the OS automatically deduplicates GPU resources'
+				],
+				correct: 1,
+				explanation:
+					'A correct resource manager caches the GPU texture handle (an integer ID) after the first upload. The second and third calls find the path in the cache dictionary and return the existing handle immediately — no bytes transferred, no GPU allocation. This is the entire purpose of the cache: prevent redundant uploads that would waste PCIe bandwidth and GPU memory.'
+			},
+			{
+				title: 'Scene Graph vs ECS',
+				q: `You are building a bullet-hell game with 2000 simultaneously active projectiles, each needing Position, Velocity, and Sprite components. Which architecture performs better and why?`,
+				options: [
+					'Scene graph — the parent-child hierarchy lets you batch all bullets under one root node',
+					'ECS — 2000 entities iterated as flat arrays is cache-friendly; a scene graph traverses 2000 heterogeneous Node objects scattered across memory',
+					'Scene graph — the dirty-flag optimisation means only moved bullets are processed',
+					"Both are equivalent — Python's garbage collector handles the memory difference"
+				],
+				correct: 1,
+				explanation:
+					'ECS stores each component type in a contiguous array: all 2000 Position structs adjacent in memory, all 2000 Velocity structs adjacent. The movement system iterates two tight arrays — predictable memory access the CPU prefetcher handles efficiently. A scene graph stores each Node as a separate heap allocation with all its fields; iterating 2000 nodes means 2000 pointer dereferences to scattered memory locations, causing many cache misses. At 2000 entities the difference is measurable; at 10,000 it is significant.'
+			},
+			{
+				title: 'Deferred Destruction',
+				q: `During the Physics stage (4), a bullet component marks an enemy for destruction after detecting a hit.
+Why is it incorrect to destroy the entity immediately at that point?`,
+				options: [
+					'Physics cannot access the entity table — only the Render stage can delete entities',
+					'Post-Update (stage 5), Transform Update (6), and Render (7) may still hold references to that entity and attempt to read its components, causing use-after-free bugs or null dereference errors. Immediate destruction within a frame is unsafe.',
+					'The entity can be destroyed immediately as long as it is removed from all component tables',
+					'Deferred destruction only applies to audio resources, not game entities'
+				],
+				correct: 1,
+				explanation:
+					'Multiple systems execute after Physics in the same frame: post-update scripts, transform propagation, and the render system. All may query the entity\'s position or sprite component. If the entity is destroyed mid-frame, those queries silently return None or a dangling reference. The safe pattern is to add the entity ID to a "pending_destroy" list and only call destroy() at End Frame (stage 8), after every other system has finished.'
+			}
+		];
+
+		let assessAnswered = 0,
+			assessCorrect = 0;
+		function buildAssess() {
+			const c = document.getElementById('assess-container');
+			c.innerHTML = '';
+			assessData.forEach((p, pi) => {
+				const div = document.createElement('div');
+				div.className = 'diagram-q';
+				div.innerHTML =
+					`<div class="dq-num">Question ${pi + 1} · ${p.title}</div>` +
+					`<div class="dq-q">${p.q.replace(/\n/g, '<br>')}</div>` +
+					`<div class="dq-options" id="dq-opts-${pi}">${p.options.map((o, oi) => `<div class="dq-option" onclick="assessAns(${pi},${oi})" id="dq-opt-${pi}-${oi}">${o}</div>`).join('')}</div>` +
+					`<div class="dq-feedback" id="dq-fb-${pi}"></div>`;
+				c.appendChild(div);
+			});
+		}
+		function assessAns(pi, oi) {
+			const p = assessData[pi];
+			document
+				.querySelectorAll(`#dq-opts-${pi} .dq-option`)
+				.forEach((o) => o.classList.add('disabled'));
+			const fb = document.getElementById(`dq-fb-${pi}`);
+			if (oi === p.correct) {
+				document.getElementById(`dq-opt-${pi}-${oi}`).classList.add('correct');
+				fb.textContent = '✓ ' + p.explanation;
+				fb.className = 'dq-feedback ok';
+				assessCorrect++;
+			} else {
+				document.getElementById(`dq-opt-${pi}-${oi}`).classList.add('wrong');
+				document.getElementById(`dq-opt-${pi}-${p.correct}`).classList.add('correct');
+				fb.textContent = '✗ ' + p.explanation;
+				fb.className = 'dq-feedback bad';
+			}
+			assessAnswered++;
+			if (assessAnswered === assessData.length) {
+				const s = document.getElementById('assess-score');
+				s.style.display = 'block';
+				document.getElementById('assess-score-num').textContent =
+					`${assessCorrect}/${assessData.length}`;
+				s.style.borderColor =
+					assessCorrect === assessData.length
+						? 'var(--accentL)'
+						: assessCorrect >= 3
+							? 'var(--accent2)'
+							: 'var(--accent4)';
+			}
+		}
+		buildAssess();
+
+		_addWinListener('scroll', () => {
+			const _rp = document.getElementById('reading-progress');
+			if (_rp) {
+				_rp.style.width =
+					Math.min(
+						100,
+						(window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100
+					) + '%';
+				_rp.setAttribute('aria-valuenow', String(Math.round(parseFloat(_rp.style.width) || 0)));
+			}
+		});
+
+		if (typeof getSGAngles === 'function') actions.getSGAngles = getSGAngles;
+		if (typeof computeWorldTransform === 'function')
+			actions.computeWorldTransform = computeWorldTransform;
+		if (typeof getAllWorldTransforms === 'function')
+			actions.getAllWorldTransforms = getAllWorldTransforms;
+		if (typeof traverse === 'function') actions.traverse = traverse;
+		if (typeof drawSG === 'function') actions.drawSG = drawSG;
+		if (typeof buildSGTree === 'function') actions.buildSGTree = buildSGTree;
+		if (typeof renderNode === 'function') actions.renderNode = renderNode;
+		if (typeof selectSGNode === 'function') actions.selectSGNode = selectSGNode;
+		if (typeof setECSQuery === 'function') actions.setECSQuery = setECSQuery;
+		if (typeof buildECSTable === 'function') actions.buildECSTable = buildECSTable;
+		if (typeof showStage === 'function') actions.showStage = showStage;
+		if (typeof buildAssetButtons === 'function') actions.buildAssetButtons = buildAssetButtons;
+		if (typeof loadAsset === 'function') actions.loadAsset = loadAsset;
+		if (typeof clearCache === 'function') actions.clearCache = clearCache;
+		if (typeof updateResUI === 'function') actions.updateResUI = updateResUI;
+		if (typeof buildScenePills === 'function') actions.buildScenePills = buildScenePills;
+		if (typeof gotoScene === 'function') actions.gotoScene = gotoScene;
+		if (typeof drawSceneManager === 'function') actions.drawSceneManager = drawSceneManager;
+		if (typeof engCreate === 'function') actions.engCreate = engCreate;
+		if (typeof engAdd === 'function') actions.engAdd = engAdd;
+		if (typeof engGet === 'function') actions.engGet = engGet;
+		if (typeof engQuery === 'function') actions.engQuery = engQuery;
+		if (typeof engDestroy === 'function') actions.engDestroy = engDestroy;
+		if (typeof spawnEntity === 'function') actions.spawnEntity = spawnEntity;
+		if (typeof resetEngine === 'function') actions.resetEngine = resetEngine;
+		if (typeof runEngine === 'function') actions.runEngine = runEngine;
+		if (typeof toggleEngine === 'function') actions.toggleEngine = toggleEngine;
+		if (typeof buildAssess === 'function') actions.buildAssess = buildAssess;
+		if (typeof assessAns === 'function') actions.assessAns = assessAns;
+
+		return () => {
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
+		};
+	});
+</script>
+
+<div class="page-wrapper">
+	<header class="course-header">
+		<div>
+			<div class="course-label">Game Development Fundamentals</div>
+			<div class="course-title">From Pixels to Play</div>
+		</div>
+		<div style="font-size: 11px; color: var(--muted); text-align: right">Module 10 of 12</div>
+	</header>
+
+	<div class="module-hero">
+		<div class="module-number">10</div>
+		<div class="module-tag">Module 10 · Theory + Practice</div>
+		<h1 class="module-title">Engine Architecture<br /><span>Fundamentals</span></h1>
+		<div class="progress-bar-wrap">
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+				aria-valuenow="0"
+			></div>
+		</div>
+	</div>
+
+	<nav class="toc">
+		<div class="toc-label">Contents</div>
+		<ul class="toc-list">
+			<li><a href="#objectives">Objectives</a></li>
+			<li><a href="#scene-graphs">Scene Graphs</a></li>
+			<li><a href="#ecs">Entity-Component-System</a></li>
+			<li><a href="#comparison">Scene Graph vs ECS</a></li>
+			<li><a href="#update-order">Update Order</a></li>
+			<li><a href="#resources">Resource Management</a></li>
+			<li><a href="#practical">Practical: Mini-Engine</a></li>
+			<li><a href="#assessment">Assessment</a></li>
+		</ul>
+	</nav>
+
+	<section id="objectives" class="objectives">
+		<div class="objectives-label">Learning Objectives</div>
+		<ul>
+			<li>Explain the scene graph pattern and how transforms cascade through it</li>
+			<li>Describe the Entity-Component-System (ECS) architecture and its advantages</li>
+			<li>Choose the right architecture for a given game's complexity</li>
+			<li>Define correct subsystem update order and explain why it matters</li>
+			<li>Implement a resource loader and scene manager</li>
+		</ul>
+	</section>
+
+	<!-- ══ 10.01 SCENE GRAPHS ══ -->
+	<section id="scene-graphs" class="section">
+		<div class="section-header">
+			<span class="section-num">10.01</span>
+			<h2 class="section-title">Scene Graphs</h2>
+		</div>
+
+		<p>
+			A <strong>scene graph</strong> organises all objects in a game as a tree. Each node has a local
+			transform (position, rotation, scale) relative to its parent. The world transform of any node is
+			computed by multiplying all local transforms from the root down to that node.
+		</p>
+		<p>
+			This hierarchy makes intuitive operations trivial: attach a sword to a character's hand, and
+			the sword automatically inherits the hand's every movement. Move the character's root node and
+			the entire skeleton — every attachment included — follows without any additional code.
+		</p>
+
+		<pre><code
+				><span class="kw">class</span> <span class="fn">Node</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, name, local_transform=<span
+					class="kw">None</span
+				>):
+        self.name      = name
+        self.local_t   = local_transform <span class="kw">or</span> <span class="fn">Transform</span
+				>()
+        self.world_t   = <span class="fn">Transform</span>()    <span class="cm"
+					># computed each frame</span
+				>
+        self.parent    = <span class="kw">None</span>
+        self.children  = []
+        self.components= []              <span class="cm"># sprites, colliders, etc.</span>
+
+    <span class="kw">def</span> <span class="fn">add_child</span>(self, child):
+        child.parent = self
+        self.children.<span class="fn">append</span>(child)
+        <span class="kw">return</span> child
+
+    <span class="kw">def</span> <span class="fn">update_transforms</span>(self, parent_world=<span
+					class="kw">None</span
+				>):
+        parent_world = parent_world <span class="kw">or</span> <span class="fn">identity</span>()
+        self.world_t = parent_world @ self.local_t   <span class="cm"># Module 3 matrix math</span>
+        <span class="kw">for</span> child <span class="kw">in</span> self.children:
+            child.<span class="fn">update_transforms</span>(self.world_t)
+
+    <span class="kw">def</span> <span class="fn">render</span>(self, renderer):
+        <span class="kw">for</span> comp <span class="kw">in</span> self.components:
+            comp.<span class="fn">render</span>(renderer, self.world_t)
+        <span class="kw">for</span> child <span class="kw">in</span> self.children:
+            child.<span class="fn">render</span>(renderer)<span class="lang-tag">python</span></code
+			></pre>
+
+		<!-- SCENE GRAPH EXPLORER -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<div class="demo-header-left">Interactive · Scene Graph Explorer</div>
+				<span class="demo-badge i">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+					Click any node to inspect its local and world transforms. Drag the root slider — all
+					descendants update instantly.
+				</p>
+				<div class="two-col" style="align-items: start">
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.5rem;
+									"
+						>
+							Scene tree
+						</div>
+						<div id="scene-tree"></div>
+						<div style="margin-top: 1.25rem">
+							<div style="font-size: 10px; color: var(--muted); margin-bottom: 0.4rem">
+								Root rotation (drag affects all children)
+							</div>
+							<div class="slider-row">
+								<label for="sg-root-rot">root.rotation</label>
+								<input type="range" id="sg-root-rot" min="-180" max="180" value="0" />
+								<span class="slider-val" id="sg-root-rot-val">0°</span>
+							</div>
+							<div class="slider-row">
+								<label for="sg-body-rot">body.rotation</label>
+								<input type="range" id="sg-body-rot" min="-90" max="90" value="0" />
+								<span class="slider-val" id="sg-body-rot-val">0°</span>
+							</div>
+							<div class="slider-row">
+								<label for="sg-arm-rot">arm.rotation</label>
+								<input type="range" id="sg-arm-rot" min="-180" max="180" value="-45" />
+								<span class="slider-val" id="sg-arm-rot-val">-45°</span>
+							</div>
+						</div>
+					</div>
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.5rem;
+									"
+						>
+							Viewport
+						</div>
+						<canvas
+							id="sg-canvas"
+							width="360"
+							height="320"
+							style="width: 100%; border: 1px solid var(--border2); background: #03030c"
+							aria-label="Sg Canvas Demonstration"
+							role="application"
+							tabindex="0"
+						></canvas>
+						<div class="node-detail" id="node-detail" style="margin-top: 0.5rem">
+							Click a node to see its transforms.
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="callout cyan">
+			<div class="callout-label">Dirty Flag Optimisation</div>
+			Recomputing world transforms for every node every frame is wasteful if most nodes haven't moved.
+			The<em>dirty flag</em> pattern marks a node's world transform as stale only when its local transform
+			changes. Only stale nodes (and their descendants) are recomputed. Large static scenes — rooms, terrain
+			— benefit enormously from this.
+		</div>
+	</section>
+
+	<!-- ══ 10.02 ECS ══ -->
+	<section id="ecs" class="section">
+		<div class="section-header">
+			<span class="section-num">10.02</span>
+			<h2 class="section-title">Entity-Component-System (ECS)</h2>
+		</div>
+
+		<p>
+			ECS is an architectural pattern that separates <em>identity</em> (Entity),
+			<em>data</em> (Component), and <em>behaviour</em> (System). An <em>entity</em> is just an
+			integer ID. A <em>component</em> is a plain data struct with no methods. A
+			<em>system</em> is a function that operates on all entities that have a specific set of components.
+		</p>
+		<p>
+			The key insight: instead of a single <code>GameObject</code> with many optional fields, you have
+			a table of component data, queried by type. Systems iterate those tables rather than traversing
+			a tree of heterogeneous objects. This makes iteration predictable, cache-friendly, and parallelisable.
+		</p>
+
+		<pre><code
+				><span class="cm"># Components — pure data, no methods</span>
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field
+<span class="kw">from</span> typing <span class="kw">import</span> Dict, List, Any
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="fn">Position</span>:  x: <span class="fn">float</span
+				> = <span class="num">0</span>; y: <span class="fn">float</span> = <span class="num">0</span
+				>
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="fn">Velocity</span>:  vx: <span class="fn">float</span
+				> = <span class="num">0</span>; vy: <span class="fn">float</span> = <span class="num"
+					>0</span
+				>
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="fn">Sprite</span>:    texture: <span class="fn">str</span
+				> = <span class="str">''</span>; frame: <span class="fn">int</span> = <span class="num"
+					>0</span
+				>
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="fn">Health</span>:    hp: <span class="fn">int</span
+				> = <span class="num">100</span>; max_hp: <span class="fn">int</span> = <span class="num"
+					>100</span
+				>
+
+<span class="cm"># World — stores component tables indexed by entity ID</span>
+<span class="kw">class</span> <span class="fn">World</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self._next_id   = <span class="num">0</span>
+        self._components: Dict[type, Dict[int, Any]] = &#123;&#125;
+
+    <span class="kw">def</span> <span class="fn">create_entity</span>(self) -> int:
+        eid = self._next_id; self._next_id += <span class="num">1</span>; <span class="kw"
+					>return</span
+				> eid
+
+    <span class="kw">def</span> <span class="fn">add</span>(self, eid: int, component):
+        t = <span class="fn">type</span>(component)
+        self._components.<span class="fn">setdefault</span>(t, &#123;&#125;)[eid] = component
+
+    <span class="kw">def</span> <span class="fn">get</span>(self, eid: int, comp_type):
+        <span class="kw">return</span> self._components.<span class="fn">get</span
+				>(comp_type, &#123;&#125;).<span class="fn">get</span>(eid)
+
+    <span class="kw">def</span> <span class="fn">query</span>(self, *comp_types):
+        <span class="cm"># Yield (eid, comp1, comp2, ...) for all entities with all types</span>
+        tables  = [self._components.<span class="fn">get</span>(t, &#123;&#125;) <span class="kw"
+					>for</span
+				> t <span class="kw">in</span> comp_types]
+        primary = <span class="fn">min</span>(tables, key=<span class="fn">len</span>)
+        <span class="kw">for</span> eid <span class="kw">in</span> primary:
+            comps = [t.<span class="fn">get</span>(eid) <span class="kw">for</span> t <span
+					class="kw">in</span
+				> tables]
+            <span class="kw">if</span> <span class="fn">all</span>(c <span class="kw">is not</span
+				> <span class="kw">None</span> <span class="kw">for</span> c <span class="kw">in</span
+				> comps):
+                <span class="kw">yield</span> (eid, *comps)
+
+<span class="cm"># Systems — pure functions that transform components</span>
+<span class="kw">def</span> <span class="fn">movement_system</span>(world: World, dt: <span
+					class="fn">float</span
+				>):
+    <span class="kw">for</span> eid, pos, vel <span class="kw">in</span> world.<span class="fn"
+					>query</span
+				>(Position, Velocity):
+        pos.x += vel.vx * dt
+        pos.y += vel.vy * dt
+
+<span class="kw">def</span> <span class="fn">render_system</span>(world: World, renderer):
+    <span class="kw">for</span> eid, pos, spr <span class="kw">in</span> world.<span class="fn"
+					>query</span
+				>(Position, Sprite):
+        renderer.<span class="fn">draw_sprite</span>(spr.texture, pos.x, pos.y, spr.frame)<span
+					class="lang-tag">python</span
+				></code
+			></pre>
+
+		<!-- ECS TABLE VISUALIZER -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<div class="demo-header-left">Interactive · ECS Component Table</div>
+				<span class="demo-badge i">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+					Each row is an entity. Columns are component types. A system queries for a specific set of
+					columns — only rows where all queried columns are present are processed.
+				</p>
+				<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem">
+					<button
+						class="btn active"
+						onclick={(e) => actions.setECSQuery(['Position', 'Velocity'], e.currentTarget)}
+						id="q-mov"
+					>
+						Query: movement_system
+					</button>
+					<button
+						class="btn"
+						onclick={(e) => actions.setECSQuery(['Position', 'Sprite'], e.currentTarget)}
+						id="q-rend"
+					>
+						Query: render_system
+					</button>
+					<button
+						class="btn"
+						onclick={(e) => actions.setECSQuery(['Position', 'Health'], e.currentTarget)}
+						id="q-health"
+					>
+						Query: health_system
+					</button>
+					<button class="btn" onclick={(e) => actions.setECSQuery([], e.currentTarget)} id="q-none"
+						>Clear query</button
+					>
+				</div>
+				<div id="ecs-table-container"></div>
+				<div
+					style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								background: var(--code-bg);
+								border: 1px solid var(--border);
+								font-size: 12px;
+							"
+					id="ecs-query-result"
+				>
+					Select a query above to see which entities are processed.
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ══ 10.03 COMPARISON ══ -->
+	<section id="comparison" class="section">
+		<div class="section-header">
+			<span class="section-num">10.03</span>
+			<h2 class="section-title">Scene Graph vs ECS: When to Use Which</h2>
+		</div>
+
+		<p>
+			These are not competing ideals — they solve different problems. Many modern engines combine
+			them: a scene graph organises spatial hierarchy and editor-friendly object relationships,
+			while ECS handles gameplay logic and high-volume simulation. Understanding the trade-offs lets
+			you choose appropriately.
+		</p>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Property</th>
+					<th>Scene Graph</th>
+					<th>ECS</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Mental model</td>
+					<td>Objects in a hierarchy</td>
+					<td>Data tables + functions</td>
+				</tr>
+				<tr>
+					<td>Transform inheritance</td>
+					<td>Built-in, natural</td>
+					<td>Requires explicit parent component</td>
+				</tr>
+				<tr>
+					<td>Adding behaviour</td>
+					<td>Subclass or attach component</td>
+					<td>Add a component, write a system</td>
+				</tr>
+				<tr>
+					<td>Cache performance</td>
+					<td>Object fields scattered in RAM</td>
+					<td>Component arrays are contiguous</td>
+				</tr>
+				<tr>
+					<td>1000+ entities</td>
+					<td>Slower — traverses full tree</td>
+					<td>Fast — tight loops over arrays</td>
+				</tr>
+				<tr>
+					<td>Editor tooling</td>
+					<td>Natural tree view</td>
+					<td>Requires special tooling</td>
+				</tr>
+				<tr>
+					<td>Best for</td>
+					<td>2D games, jam projects, UI</td>
+					<td>Simulations, large worlds, bullets</td>
+				</tr>
+				<tr>
+					<td>Examples</td>
+					<td>Godot (default), Unity (legacy)</td>
+					<td>Unity DOTS, Bevy, Flecs</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div class="callout yellow">
+			<div class="callout-label">For This Course</div>
+			Our mini-engine uses a<em>hybrid</em>: a scene graph for spatial organisation (from Module 3),
+			with each node carrying a flat list of components. Systems iterate nodes that have a specific
+			component type. This is the pattern used by Godot, Unity's MonoBehaviour model, and most indie
+			engines — simple enough to reason about, capable enough for a full 2D game.
+		</div>
+	</section>
+
+	<!-- ══ 10.04 UPDATE ORDER ══ -->
+	<section id="update-order" class="section">
+		<div class="section-header">
+			<span class="section-num">10.04</span>
+			<h2 class="section-title">Update Order and Subsystems</h2>
+		</div>
+
+		<p>
+			The order in which engine subsystems run each frame is not arbitrary. A wrong order introduces
+			one-frame latency, physics-render desync, or use-after-destroy crashes. Each subsystem reads
+			outputs from previous ones and must complete before the next one begins.
+		</p>
+
+		<!-- UPDATE ORDER DIAGRAM -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<div class="demo-header-left">Interactive · Subsystem Update Order</div>
+				<span class="demo-badge i">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1.25rem">
+					Click any stage to see why it must run at that position in the pipeline.
+				</p>
+				<div class="update-pipeline" id="update-pipeline">
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(0, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(0, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">1</div>
+						<div class="up-name">
+							<div class="up-name-main">Begin Frame</div>
+							<div class="up-name-sub">clock · events</div>
+						</div>
+						<div class="up-desc">Measure dt, drain OS event queue, clear per-frame state.</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accent2); border-color: var(--accent2)"
+								>ENGINE</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(1, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(1, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">2</div>
+						<div class="up-name">
+							<div class="up-name-main">Input</div>
+							<div class="up-name-sub">keyboard · mouse</div>
+						</div>
+						<div class="up-desc">Update held/pressed/released sets from raw events.</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accent2); border-color: var(--accent2)"
+								>ENGINE</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(2, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(2, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">3</div>
+						<div class="up-name">
+							<div class="up-name-main">Pre-Update</div>
+							<div class="up-name-sub">scripts · AI</div>
+						</div>
+						<div class="up-desc">
+							Game logic reads input, sets intent (desired velocity, actions).
+						</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accentL); border-color: var(--accentL)"
+								>GAME</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(3, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(3, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">4</div>
+						<div class="up-name">
+							<div class="up-name-main">Physics</div>
+							<div class="up-name-sub">integrate · collide</div>
+						</div>
+						<div class="up-desc">
+							Apply forces, integrate velocity, detect and resolve collisions.
+						</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accent2); border-color: var(--accent2)"
+								>ENGINE</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(4, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(4, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">5</div>
+						<div class="up-name">
+							<div class="up-name-main">Post-Update</div>
+							<div class="up-name-sub">cameras · animations</div>
+						</div>
+						<div class="up-desc">
+							Camera follows resolved positions. Advance animation timers using dt.
+						</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accentL); border-color: var(--accentL)"
+								>GAME</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(5, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(5, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">6</div>
+						<div class="up-name">
+							<div class="up-name-main">Update Transforms</div>
+							<div class="up-name-sub">scene graph</div>
+						</div>
+						<div class="up-desc">
+							Propagate local → world transforms top-down through scene tree.
+						</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accent2); border-color: var(--accent2)"
+								>ENGINE</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(6, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(6, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">7</div>
+						<div class="up-name">
+							<div class="up-name-main">Render</div>
+							<div class="up-name-sub">draw calls · GPU</div>
+						</div>
+						<div class="up-desc">Sort drawables by depth. Issue GPU commands. Swap buffers.</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accent2); border-color: var(--accent2)"
+								>ENGINE</span
+							>
+						</div>
+					</div>
+					<div
+						class="up-stage"
+						onclick={(e) => actions.showStage(7, e.currentTarget)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.showStage(7, e.currentTarget);
+							}
+						}}
+					>
+						<div class="up-num">8</div>
+						<div class="up-name">
+							<div class="up-name-main">End Frame</div>
+							<div class="up-name-sub">cleanup · GC</div>
+						</div>
+						<div class="up-desc">Destroy queued entities, flush logs, sleep to cap FPS.</div>
+						<div class="up-badge">
+							<span class="up-tag" style="color: var(--accent2); border-color: var(--accent2)"
+								>ENGINE</span
+							>
+						</div>
+					</div>
+				</div>
+				<div class="up-detail" id="up-detail">
+					Select a stage to understand why its position matters.
+				</div>
+			</div>
+		</div>
+
+		<div class="callout pink">
+			<div class="callout-label">Destroy-on-Frame-End</div>
+			Never destroy (remove) entities immediately when requested during the update step. Code later in
+			the same frame may still hold a reference and try to read from the destroyed object. Queue all destruction
+			requests and process them at End Frame, after all systems have finished. This single pattern eliminates
+			an entire class of use-after-free bugs.
+		</div>
+
+		<pre><code
+				><span class="kw">class</span> <span class="fn">Engine</span>:
+    <span class="kw">def</span> <span class="fn">run_frame</span>(self):
+        <span class="cm"># 1–2: Time + input</span>
+        dt = self.<span class="fn">measure_dt</span>()
+        self.input.<span class="fn">begin_frame</span>()
+        self.<span class="fn">process_events</span>()
+
+        <span class="cm"># 3: Pre-update (game scripts)</span>
+        <span class="kw">for</span> system <span class="kw">in</span> self.pre_update_systems:
+            system.<span class="fn">update</span>(self.world, dt, self.input)
+
+        <span class="cm"># 4: Physics (fixed or variable)</span>
+        self.physics.<span class="fn">step</span>(self.world, dt)
+
+        <span class="cm"># 5: Post-update (cameras, animations)</span>
+        <span class="kw">for</span> system <span class="kw">in</span> self.post_update_systems:
+            system.<span class="fn">update</span>(self.world, dt)
+
+        <span class="cm"># 6: Update scene graph transforms</span>
+        self.scene_root.<span class="fn">update_transforms</span>()
+
+        <span class="cm"># 7: Render</span>
+        self.renderer.<span class="fn">render_frame</span>(self.world, self.camera)
+
+        <span class="cm"># 8: Deferred cleanup</span>
+        self.world.<span class="fn">flush_destroyed</span>()<span class="lang-tag">python</span
+				></code
+			></pre>
+	</section>
+
+	<!-- ══ 10.05 RESOURCES ══ -->
+	<section id="resources" class="section">
+		<div class="section-header">
+			<span class="section-num">10.05</span>
+			<h2 class="section-title">Resource Loading and Memory</h2>
+		</div>
+
+		<p>
+			A <strong>resource manager</strong> centralises asset loading, caches assets to prevent duplicate
+			GPU uploads, and tracks memory usage. Every texture, audio clip, and shader should pass through
+			the resource manager — never loaded inline in game logic.
+		</p>
+
+		<pre><code
+				><span class="kw">class</span> <span class="fn">ResourceManager</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, ctx, base_path=<span
+					class="str">'assets/'</span
+				>):
+        self.ctx       = ctx
+        self.base_path = base_path
+        self._cache    = &#123;&#125;          <span class="cm"># path → loaded resource</span>
+        self._pending  = []          <span class="cm"># async load queue</span>
+
+    <span class="kw">def</span> <span class="fn">load_texture</span>(self, path: str):
+        <span class="kw">if</span> path <span class="kw">in</span> self._cache:
+            <span class="kw">return</span> self._cache[path]   <span class="cm"
+					># cached — no GPU upload needed</span
+				>
+
+        <span class="kw">from</span> PIL <span class="kw">import</span> Image
+        img = Image.<span class="fn">open</span>(self.base_path + path).<span class="fn"
+					>convert</span
+				>(<span class="str">'RGBA'</span>)
+        img = img.<span class="fn">transpose</span>(Image.FLIP_TOP_BOTTOM)
+        tex = self.ctx.<span class="fn">texture</span>(img.size, <span class="num">4</span
+				>, img.<span class="fn">tobytes</span>())
+        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._cache[path] = tex
+        <span class="kw">return</span> tex
+
+    <span class="kw">def</span> <span class="fn">unload</span>(self, path: str):
+        <span class="kw">if</span> path <span class="kw">in</span> self._cache:
+            self._cache[path].<span class="fn">release</span>()   <span class="cm"
+					># free GPU memory</span
+				>
+            <span class="kw">del</span> self._cache[path]
+
+    <span class="kw">def</span> <span class="fn">memory_stats</span>(self):
+        <span class="kw">return</span> &#123;<span class="str">'loaded'</span>: <span class="fn"
+					>len</span
+				>(self._cache),
+                <span class="str">'paths'</span>:  <span class="fn">list</span>(self._cache.<span
+					class="fn">keys</span
+				>())&#125;<span class="lang-tag">python</span></code
+			></pre>
+
+		<!-- RESOURCE MANAGER DEMO -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<div class="demo-header-left">Interactive · Resource Manager Simulator</div>
+				<span class="demo-badge i">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+					Simulate loading and unloading assets. Watch the cache fill, prevent duplicates, and track
+					memory.
+				</p>
+				<div
+					style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem"
+					id="asset-buttons"
+				></div>
+				<div id="resource-bars" style="margin-bottom: 1rem"></div>
+				<div class="two-col">
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.4rem;
+									"
+						>
+							Asset cache
+						</div>
+						<div id="asset-cache" class="info-panel"></div>
+					</div>
+					<div>
+						<div
+							style="
+										font-size: 10px;
+										letter-spacing: 0.15em;
+										text-transform: uppercase;
+										color: var(--muted);
+										margin-bottom: 0.4rem;
+									"
+						>
+							Load log
+						</div>
+						<div
+							id="res-log"
+							style="
+										background: var(--code-bg);
+										border: 1px solid var(--border);
+										height: 140px;
+										overflow-y: auto;
+										font-size: 11px;
+										padding: 0.5rem;
+									"
+						></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- SCENE MANAGER DEMO -->
+		<div style="margin: 2rem 0">
+			<div
+				style="
+							font-size: 10px;
+							letter-spacing: 0.2em;
+							text-transform: uppercase;
+							color: var(--accent3);
+							margin-bottom: 0.75rem;
+						"
+			>
+				Scene Manager
+			</div>
+			<p>
+				A scene manager handles transitions between states — menus, gameplay, cutscenes. Each scene
+				defines its own init, update, and teardown. The manager ensures clean transitions: old
+				resources released, new ones loaded.
+			</p>
+			<pre><code
+					><span class="kw">class</span> <span class="fn">SceneManager</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self._scenes  = &#123;&#125;     <span class="cm"># name → scene class</span>
+        self._current = <span class="kw">None</span>
+        self._pending = <span class="kw">None</span>  <span class="cm"
+						># change requested this frame</span
+					>
+
+    <span class="kw">def</span> <span class="fn">register</span>(self, name, scene_class):
+        self._scenes[name] = scene_class
+
+    <span class="kw">def</span> <span class="fn">go_to</span>(self, name, **kwargs):
+        self._pending = (name, kwargs)   <span class="cm"># defer to end of frame</span>
+
+    <span class="kw">def</span> <span class="fn">end_frame_transition</span>(self, resources):
+        <span class="kw">if</span> self._pending <span class="kw">is None</span>: <span class="kw"
+						>return</span
+					>
+        name, kwargs = self._pending;  self._pending = <span class="kw">None</span>
+
+        <span class="kw">if</span> self._current:
+            self._current.<span class="fn">on_exit</span>(resources)   <span class="cm"
+						># teardown current</span
+					>
+
+        self._current = self._scenes[name](**kwargs)
+        self._current.<span class="fn">on_enter</span>(resources)     <span class="cm"
+						># setup new scene</span
+					>
+
+    <span class="kw">def</span> <span class="fn">update</span>(self, dt, inp):
+        <span class="kw">if</span> self._current: self._current.<span class="fn">update</span
+					>(dt, inp)<span class="lang-tag">python</span></code
+				></pre>
+		</div>
+
+		<!-- SCENE MANAGER DEMO -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<div class="demo-header-left">Interactive · Scene Manager Simulator</div>
+				<span class="demo-badge i">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--muted); margin-bottom: 1rem">
+					Click a scene to trigger a transition. Watch on_exit / on_enter fire and resources swap.
+				</p>
+				<div
+					style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem"
+					id="scene-pills"
+				></div>
+				<canvas
+					id="scene-canvas"
+					width="860"
+					height="200"
+					style="width: 100%; border: 1px solid var(--border2); background: #03030c"
+					aria-label="Scene Canvas Demonstration"
+					role="application"
+					tabindex="0"
+				></canvas>
+				<div
+					style="font-size: 11px; color: var(--muted); margin-top: 0.5rem; min-height: 1.4em"
+					id="scene-log"
+				></div>
+			</div>
+		</div>
+	</section>
+
+	<hr class="divider" />
+
+	<!-- ══ 10.06 PRACTICAL ══ -->
+	<section id="practical" class="section">
+		<div class="section-header">
+			<span class="section-num">10.06</span>
+			<h2 class="section-title">Practical: Wiring the Mini-Engine</h2>
+		</div>
+
+		<p>
+			The demo below runs a toy mini-engine implementing every concept from this module: a scene
+			graph with transform propagation, a world with ECS-style component queries, the correct
+			8-stage update order, a resource cache, and a scene manager. Spawn entities, switch scenes,
+			and inspect the frame pipeline in real time.
+		</p>
+
+		<div class="demo-box">
+			<div class="demo-header">
+				<div class="demo-header-left">Animated · Mini-Engine Runtime</div>
+				<span class="demo-badge a">LIVE ENGINE</span>
+			</div>
+			<div class="demo-body">
+				<div
+					style="
+								display: flex;
+								gap: 0.5rem;
+								flex-wrap: wrap;
+								margin-bottom: 1rem;
+								align-items: center;
+							"
+				>
+					<button class="btn c active" id="eng-play-btn" onclick={(e) => actions.toggleEngine()}>
+						⏸ Pause
+					</button>
+					<button class="btn" onclick={(e) => actions.resetEngine()}>↺ Reset</button>
+					<button class="btn" onclick={(e) => actions.spawnEntity('mover')}>+ Mover</button>
+					<button class="btn" onclick={(e) => actions.spawnEntity('bouncer')}>+ Bouncer</button>
+					<button class="btn p" onclick={(e) => actions.spawnEntity('orbiter')}>+ Orbiter</button>
+					<div class="slider-row" style="flex: 1; min-width: 160px">
+						<label for="eng-gravity">Gravity</label>
+						<input type="range" id="eng-gravity" min="0" max="800" value="200" />
+						<span class="slider-val" id="eng-gravity-val">200</span>
+					</div>
+				</div>
+				<div class="two-col" style="align-items: start">
+					<canvas
+						id="engine-canvas"
+						width="480"
+						height="360"
+						style="width: 100%"
+						aria-label="Engine Canvas Demonstration"
+						role="application"
+						tabindex="0"
+					></canvas>
+					<div style="display: flex; flex-direction: column; gap: 0.75rem">
+						<div>
+							<div
+								style="
+											font-size: 10px;
+											letter-spacing: 0.15em;
+											text-transform: uppercase;
+											color: var(--muted);
+											margin-bottom: 0.4rem;
+										"
+							>
+								Frame pipeline (current stage)
+							</div>
+							<div id="pipeline-vis" style="display: flex; flex-direction: column; gap: 2px"></div>
+						</div>
+						<div class="info-panel" id="eng-stats">
+							<div class="info-row">
+								<span class="info-key">entities</span><span class="info-val" id="eng-entities"
+									>0</span
+								>
+							</div>
+							<div class="info-row">
+								<span class="info-key">frame</span><span class="info-val" id="eng-frame">0</span>
+							</div>
+							<div class="info-row">
+								<span class="info-key">dt</span><span class="info-val" id="eng-dt">0ms</span>
+							</div>
+							<div class="info-row">
+								<span class="info-key">scene</span><span class="info-val" id="eng-scene"
+									>gameplay</span
+								>
+							</div>
+							<div class="info-row">
+								<span class="info-key">cache hits</span><span class="info-val" id="eng-cache"
+									>0</span
+								>
+							</div>
+							<div class="info-row">
+								<span class="info-key">pending destroy</span><span class="info-val" id="eng-destroy"
+									>0</span
+								>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<hr class="divider" />
+
+	<!-- ASSESSMENT -->
+	<section id="assessment" class="assess-section">
+		<div class="assess-header">Assessment · Architecture Decisions</div>
+		<div class="assess-sub">
+			Analyse a process diagram or scenario and identify the correct update order or architectural
+			choice.
+		</div>
+		<div id="assess-container"></div>
+		<div class="assess-score" id="assess-score">
+			<div class="assess-score-num" id="assess-score-num">0/5</div>
+			<div style="font-size: 12px; color: var(--muted); margin-top: 0.25rem">
+				Module 10 complete. Proceed to Module 11 when ready.
+			</div>
+		</div>
+	</section>
+
+	<div class="nav-links">
+		<a href="." class="prev-link">← 09 · Collisions and Simple Physics</a>
+		<a class="next-module" href=".">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">11 · Building a Complete 2D Game</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</div>
+</div>
+
+<style>
+	.page-wrapper {
+		background: var(--bg);
+		color: var(--text);
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 14px;
+		line-height: 1.8;
+	}
+
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 6rem;
+	}
+
+	.course-header {
+		border-bottom: 1px solid var(--border);
+		padding: 2rem 0 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.course-label {
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.course-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 13px;
+		color: var(--muted);
+		font-weight: 400;
+	}
+
+	.module-hero {
+		padding: 5rem 0 3.5rem;
+		border-bottom: 1px solid var(--border);
+		position: relative;
+		overflow: hidden;
+	}
+	.module-number {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(80px, 15vw, 140px);
+		font-weight: 800;
+		line-height: 1;
+		color: transparent;
+		-webkit-text-stroke: 1px var(--border2);
+		position: absolute;
+		right: -10px;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none;
+		user-select: none;
+	}
+	.module-tag {
+		display: inline-block;
+		font-size: 10px;
+		letter-spacing: 0.25em;
+		text-transform: uppercase;
+		color: var(--accentL);
+		border: 1px solid var(--accentL);
+		padding: 3px 10px;
+		margin-bottom: 1.5rem;
+	}
+	.module-title {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(28px, 5vw, 48px);
+		font-weight: 800;
+		line-height: 1.1;
+		color: #fff;
+		max-width: 680px;
+	}
+	.module-title span {
+		color: var(--accentL);
+	}
+
+	.toc {
+		margin: 3rem 0;
+		padding: 1.5rem;
+		border: 1px solid var(--border);
+		background: var(--surface);
+	}
+	.toc-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+		margin-bottom: 1rem;
+	}
+	.toc-list {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.toc-list a {
+		font-size: 12px;
+		color: var(--muted);
+		text-decoration: none;
+		border: 1px solid var(--border);
+		padding: 4px 10px;
+		transition: all 0.15s;
+	}
+	.toc-list a:hover {
+		color: var(--accentL);
+		border-color: var(--accentL);
+	}
+
+	.objectives {
+		margin: 2.5rem 0;
+		padding: 1.5rem 2rem;
+		border-left: 2px solid var(--accentL);
+		background: var(--surface);
+	}
+	.objectives-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--accentL);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.2rem 0;
+		padding-left: 1.2rem;
+		position: relative;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--accent2);
+	}
+
+	.section {
+		margin: 4rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border);
+	}
+	.section-num {
+		font-size: 11px;
+		color: var(--accent2);
+		letter-spacing: 0.1em;
+		font-weight: 600;
+	}
+	.section-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 22px;
+		font-weight: 700;
+		color: #fff;
+	}
+
+	p {
+		margin-bottom: 1.2rem;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--accentL);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: normal;
+		font-weight: 500;
+	}
+
+	:global(pre) {
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		padding: 1.5rem;
+		overflow-x: auto;
+		margin: 1.5rem 0;
+		font-size: 13px;
+		line-height: 1.6;
+		position: relative;
+	}
+	:global(pre) :global(.lang-tag) {
+		position: absolute;
+		top: 8px;
+		right: 12px;
+		font-size: 10px;
+		color: var(--muted);
+		letter-spacing: 0.1em;
+	}
+	:global(.kw) {
+		color: #c084fc;
+	}
+	:global(.fn) {
+		color: #67e8f9;
+	}
+	:global(.str) {
+		color: #fde68a;
+	}
+	:global(.cm) {
+		color: #252560;
+	}
+	:global(.num) {
+		color: #f9a8d4;
+	}
+	.ty {
+		color: var(--accentL);
+	}
+	:global(code) {
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		padding: 1px 6px;
+		font-size: 12px;
+		color: var(--accentL);
+	}
+
+	.callout {
+		margin: 1.5rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--accentL);
+		background: color-mix(in srgb, var(--accentL) 6%, var(--surface));
+		font-size: 13px;
+	}
+	:global(.callout.cyan) {
+		border-color: var(--accent2);
+		background: color-mix(in srgb, var(--accent2) 6%, var(--surface));
+	}
+	.callout.yellow {
+		border-color: var(--accent3);
+		background: color-mix(in srgb, var(--accent3) 6%, var(--surface));
+	}
+	:global(.callout.pink) {
+		border-color: var(--accent4);
+		background: color-mix(in srgb, var(--accent4) 6%, var(--surface));
+	}
+	.callout-label {
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--accentL);
+		margin-bottom: 0.4rem;
+		font-weight: 600;
+	}
+	:global(.callout.cyan) .callout-label {
+		color: var(--accent2);
+	}
+	.callout.yellow .callout-label {
+		color: var(--accent3);
+	}
+	:global(.callout.pink) .callout-label {
+		color: var(--accent4);
+	}
+
+	.demo-box {
+		background: var(--surface);
+		border: 1px solid var(--border);
+		margin: 2rem 0;
+	}
+	.demo-header {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.demo-header-left {
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.demo-badge {
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid;
+	}
+	:global(.demo-badge.i) {
+		color: var(--accentL);
+		border-color: var(--accentL);
+		background: color-mix(in srgb, var(--accentL) 10%, transparent);
+	}
+	:global(.demo-badge.a) {
+		color: var(--accent2);
+		border-color: var(--accent2);
+		background: color-mix(in srgb, var(--accent2) 10%, transparent);
+	}
+	.demo-badge.b {
+		color: var(--accent3);
+		border-color: var(--accent3);
+		background: color-mix(in srgb, var(--accent3) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+
+	canvas {
+		display: block;
+	}
+	:global(.two-col) {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+	}
+	:global(.three-col) {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 640px) {
+		:global(.two-col),
+		:global(.three-col) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	:global(.slider-row) {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.5rem 0;
+	}
+	:global(.slider-row) label {
+		font-size: 11px;
+		min-width: 100px;
+		color: var(--muted);
+	}
+	:global(.slider-row) :global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 3px;
+		background: var(--border2);
+		outline: none;
+	}
+	:global(.slider-row) :global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--accentL);
+		cursor: pointer;
+	}
+	:global(.slider-val) {
+		font-size: 12px;
+		color: var(--accentL);
+		min-width: 44px;
+		text-align: right;
+		font-weight: 600;
+	}
+
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--border2);
+		color: var(--text);
+		padding: 6px 14px;
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	:global(.btn:hover) {
+		border-color: var(--accentL);
+		color: var(--accentL);
+	}
+	:global(.btn.active) {
+		border-color: var(--accentL);
+		color: var(--accentL);
+		background: color-mix(in srgb, var(--accentL) 10%, transparent);
+	}
+	.btn.c:hover,
+	.btn.c.active {
+		border-color: var(--accent2);
+		color: var(--accent2);
+		background: color-mix(in srgb, var(--accent2) 10%, transparent);
+	}
+	.btn.y:hover,
+	.btn.y.active {
+		border-color: var(--accent3);
+		color: var(--accent3);
+		background: color-mix(in srgb, var(--accent3) 10%, transparent);
+	}
+	.btn.p:hover,
+	.btn.p.active {
+		border-color: var(--accent4);
+		color: var(--accent4);
+		background: color-mix(in srgb, var(--accent4) 10%, transparent);
+	}
+
+	:global(.info-panel) {
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		padding: 0.85rem 1rem;
+		font-size: 12px;
+	}
+	:global(.info-row) {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.2rem 0;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+	}
+	.info-row:last-child {
+		border-bottom: none;
+	}
+	:global(.info-key) {
+		color: var(--muted);
+	}
+	:global(.info-val) {
+		color: var(--accent2);
+		font-weight: 600;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1.5rem 0;
+		font-size: 12px;
+	}
+	th {
+		background: var(--raised);
+		color: var(--accentL);
+		text-align: left;
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--border);
+		font-weight: 600;
+		letter-spacing: 0.05em;
+	}
+	td {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--border);
+		color: var(--text);
+	}
+	tr:nth-child(even) td {
+		background: color-mix(in srgb, var(--raised) 50%, transparent);
+	}
+
+	hr.divider {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 3rem 0;
+	}
+
+	/* SCENE GRAPH TREE */
+	.tree-node {
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+	}
+	.tree-node .node-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 3px 0;
+		cursor: pointer;
+		transition: background 0.12s;
+		border-radius: 2px;
+	}
+	.tree-node .node-row:hover {
+		background: color-mix(in srgb, var(--accentL) 8%, transparent);
+	}
+	.tree-node .node-row.selected {
+		background: color-mix(in srgb, var(--accentL) 15%, transparent);
+	}
+	.tree-indent {
+		width: 18px;
+		height: 1px;
+		border-bottom: 1px dashed var(--border2);
+	}
+	.tree-vert {
+		width: 1px;
+		background: var(--border2);
+		align-self: stretch;
+		margin: 0 9px;
+	}
+	.node-icon {
+		font-size: 14px;
+	}
+	.node-name {
+		color: var(--accentL);
+	}
+	.node-type {
+		font-size: 10px;
+		color: var(--muted);
+		margin-left: 4px;
+	}
+	.node-detail {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		font-size: 12px;
+		min-height: 48px;
+	}
+
+	/* ECS table viz */
+	.ecs-table {
+		border: 1px solid var(--border);
+		overflow: hidden;
+	}
+	.ecs-header-row {
+		display: grid;
+		background: var(--raised);
+		border-bottom: 1px solid var(--border);
+	}
+	.ecs-row {
+		display: grid;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+		transition: background 0.1s;
+		cursor: pointer;
+	}
+	.ecs-row:last-child {
+		border-bottom: none;
+	}
+	.ecs-row:hover {
+		background: color-mix(in srgb, var(--accentL) 6%, var(--surface));
+	}
+	.ecs-row.selected {
+		background: color-mix(in srgb, var(--accentL) 12%, var(--surface));
+	}
+	.ecs-cell {
+		padding: 0.4rem 0.75rem;
+		font-size: 11px;
+		border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	}
+	.ecs-cell:last-child {
+		border-right: none;
+	}
+	.ecs-cell.has-comp {
+		color: var(--accent2);
+	}
+	.ecs-cell.no-comp {
+		color: var(--muted);
+	}
+	.ecs-cell.entity-col {
+		color: var(--accentL);
+		font-weight: 600;
+	}
+
+	/* Update order diagram */
+	.update-pipeline {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.up-stage {
+		display: grid;
+		grid-template-columns: 28px 160px 1fr 80px;
+		border: 1px solid var(--border);
+		transition: background 0.12s;
+		cursor: pointer;
+	}
+	.up-stage:hover,
+	.up-stage.active {
+		background: color-mix(in srgb, var(--accentL) 7%, var(--surface));
+	}
+	.up-stage.active {
+		border-color: var(--accentL);
+	}
+	.up-num {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		color: var(--muted);
+		border-right: 1px solid var(--border);
+	}
+	.up-name {
+		padding: 0.6rem 0.75rem;
+		border-right: 1px solid var(--border);
+	}
+	.up-name-main {
+		font-size: 12px;
+		font-weight: 600;
+		color: #fff;
+	}
+	.up-name-sub {
+		font-size: 10px;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.up-desc {
+		padding: 0.6rem 0.75rem;
+		font-size: 12px;
+		color: var(--muted);
+		display: flex;
+		align-items: center;
+	}
+	.up-badge {
+		padding: 0.6rem 0.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.up-tag {
+		font-size: 9px;
+		padding: 2px 6px;
+		border: 1px solid;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+	.up-stage.active .up-num {
+		color: var(--accentL);
+	}
+	.up-stage.active .up-name-main {
+		color: var(--accentL);
+	}
+	.up-stage.active .up-desc {
+		color: var(--text);
+	}
+	.up-detail {
+		margin-top: 0;
+		padding: 1rem 1.25rem;
+		border: 1px solid var(--border2);
+		border-top: none;
+		background: color-mix(in srgb, var(--accentL) 4%, var(--surface));
+		font-size: 12px;
+		min-height: 48px;
+		color: var(--muted);
+	}
+
+	/* Resource manager */
+	.resource-bar {
+		height: 20px;
+		background: var(--border);
+		position: relative;
+		overflow: hidden;
+		margin: 4px 0;
+	}
+	.resource-fill {
+		height: 100%;
+		position: absolute;
+		left: 0;
+		top: 0;
+		transition: width 0.3s;
+		display: flex;
+		align-items: center;
+		padding-left: 6px;
+		font-size: 10px;
+		font-weight: 600;
+	}
+	.resource-label {
+		font-size: 11px;
+		color: var(--muted);
+		margin-bottom: 2px;
+	}
+	.res-loaded {
+		background: var(--accent2);
+		color: #000;
+	}
+	.res-pending {
+		background: var(--accent3);
+		color: #000;
+	}
+	.res-error {
+		background: var(--accent4);
+		color: #fff;
+	}
+
+	/* Scene manager */
+	.scene-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 4px 12px;
+		border: 1px solid var(--border2);
+		font-size: 11px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	.scene-pill:hover {
+		border-color: var(--accentL);
+		color: var(--accentL);
+	}
+	.scene-pill.current {
+		border-color: var(--accent2);
+		color: var(--accent2);
+		background: color-mix(in srgb, var(--accent2) 10%, transparent);
+	}
+	.scene-pill .dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: currentColor;
+	}
+
+	/* Mini-engine canvas */
+	#engine-canvas {
+		border: 1px solid var(--border2);
+		background: #03030c;
+		cursor: crosshair;
+		touch-action: none;
+	}
+
+	/* Assessment */
+	.assess-section {
+		margin: 4rem 0;
+		padding: 2rem;
+		border: 1px solid var(--border);
+		background: var(--surface);
+	}
+	.assess-header {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-bottom: 0.25rem;
+	}
+	.assess-sub {
+		font-size: 12px;
+		color: var(--muted);
+		margin-bottom: 2rem;
+	}
+	.diagram-q {
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		padding: 1.5rem;
+		margin: 1.5rem 0;
+	}
+	.dq-num {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--accent3);
+		margin-bottom: 0.75rem;
+	}
+	.dq-q {
+		font-size: 13px;
+		color: #fff;
+		margin-bottom: 1rem;
+	}
+	.dq-options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.dq-option {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.15s;
+		font-family: 'IBM Plex Mono', monospace;
+		user-select: none;
+	}
+	.dq-option:hover {
+		border-color: var(--border2);
+		background: var(--raised);
+	}
+	.dq-option.correct {
+		border-color: var(--accent2);
+		background: color-mix(in srgb, var(--accent2) 10%, transparent);
+		color: var(--accent2);
+	}
+	.dq-option.wrong {
+		border-color: var(--accent4);
+		background: color-mix(in srgb, var(--accent4) 10%, transparent);
+		color: var(--accent4);
+	}
+	.dq-option.disabled {
+		pointer-events: none;
+	}
+	.dq-feedback {
+		font-size: 12px;
+		margin-top: 0.75rem;
+		min-height: 1.4em;
+		color: var(--muted);
+	}
+	.dq-feedback.ok {
+		color: var(--accent2);
+	}
+	.dq-feedback.bad {
+		color: var(--accent4);
+	}
+	.assess-score {
+		margin-top: 2rem;
+		padding: 1.5rem;
+		border: 1px solid var(--border);
+		text-align: center;
+		display: none;
+	}
+	.assess-score-num {
+		font-family: 'Syne', sans-serif;
+		font-size: 36px;
+		font-weight: 800;
+		color: var(--accentL);
+	}
+
+	.progress-bar-wrap {
+		height: 3px;
+		background: var(--border);
+		width: 100%;
+		margin: 2rem 0 0;
+	}
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--accentL);
+		width: 0;
+		transition: width 0.4s ease;
+	}
+
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 4rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	:global(.prev-link) {
+		font-size: 12px;
+		color: var(--muted);
+		text-decoration: none;
+		border: 1px solid var(--border);
+		padding: 0.75rem 1.25rem;
+		transition: all 0.2s;
+	}
+	:global(.prev-link:hover) {
+		border-color: var(--accent3);
+		color: var(--accent3);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		gap: 2rem;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--border);
+		text-decoration: none;
+		transition: all 0.2s;
+		background: var(--surface);
+	}
+	.next-module:hover {
+		border-color: var(--accent2);
+	}
+	.next-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.next-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.25rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--accent2);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
+	}
+</style>

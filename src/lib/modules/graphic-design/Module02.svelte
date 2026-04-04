@@ -2212,7 +2212,7 @@
 		background: color-mix(in srgb, var(--violet) 5%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.green {
+	:global(.callout.green) {
 		border-color: var(--sage);
 		background: color-mix(in srgb, var(--sage) 5%, var(--surface));
 	}
@@ -2220,7 +2220,7 @@
 		border-color: var(--amber);
 		background: color-mix(in srgb, var(--amber) 5%, var(--surface));
 	}
-	.callout.warn {
+	:global(.callout.warn) {
 		border-color: var(--rose);
 		background: color-mix(in srgb, var(--rose) 5%, var(--surface));
 	}
@@ -2236,13 +2236,13 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.green .callout-label {
+	:global(.callout.green) .callout-label {
 		color: var(--sage);
 	}
 	.callout.info .callout-label {
 		color: var(--amber);
 	}
-	.callout.warn .callout-label {
+	:global(.callout.warn) .callout-label {
 		color: var(--rose);
 	}
 	:global(.callout.sky) .callout-label {
@@ -2268,12 +2268,12 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--violet);
 		border-color: var(--violet);
 		background: color-mix(in srgb, var(--violet) 10%, transparent);
@@ -2379,13 +2379,13 @@
 	}
 
 	/* LAYOUT HELPERS */
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
 	@media (max-width: 640px) {
-		.two-col {
+		:global(.two-col) {
 			grid-template-columns: 1fr;
 		}
 	}
@@ -2631,7 +2631,7 @@
 		min-height: 60px;
 		color: var(--text);
 	}
-	.ep-info strong {
+	:global(.ep-info strong) {
 		color: var(--violet);
 	}
 
@@ -2665,12 +2665,12 @@
 		background: var(--violet);
 		transition: width 0.3s;
 	}
-	.rot-score-label {
+	:global(.rot-score-label) {
 		font-size: 11px;
 		color: var(--muted);
 		margin-top: 0.4rem;
 	}
-	.rot-score-label span {
+	:global(.rot-score-label) span {
 		color: var(--violet);
 		font-weight: 600;
 	}

@@ -2471,7 +2471,7 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 		background: color-mix(in srgb, var(--accent) 5%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.orange {
+	:global(.callout.orange) {
 		border-color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 5%, var(--surface));
 	}
@@ -2491,7 +2491,7 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.orange .callout-label {
+	:global(.callout.orange .callout-label) {
 		color: var(--accent2);
 	}
 	.callout.purple .callout-label {
@@ -2519,17 +2519,17 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.i {
+	:global(.demo-badge.i) {
 		color: var(--accent);
 		border-color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 	}
-	.demo-badge.a {
+	:global(.demo-badge.a) {
 		color: var(--accent2);
 		border-color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 10%, transparent);
@@ -2541,36 +2541,36 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 	canvas {
 		display: block;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
 	@media (max-width: 640px) {
-		.two-col {
+		:global(.two-col) {
 			grid-template-columns: 1fr;
 		}
 	}
 
-	.slider-row {
+	:global(.slider-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		margin: 0.5rem 0;
 	}
-	.slider-row label {
+	:global(.slider-row label) {
 		font-size: 11px;
 		min-width: 110px;
 		color: var(--muted);
 	}
-	.slider-row :global(input[type='range']) {
+	:global(.slider-row :global(input[type='range'])) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 3px;
 		background: var(--border2);
 		outline: none;
 	}
-	.slider-row :global(input[type='range']::-webkit-slider-thumb) {
+	:global(.slider-row :global(input[type='range']::-webkit-slider-thumb)) {
 		-webkit-appearance: none;
 		width: 12px;
 		height: 12px;
@@ -2578,7 +2578,7 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 		background: var(--accent);
 		cursor: pointer;
 	}
-	.slider-val {
+	:global(.slider-val) {
 		font-size: 12px;
 		color: var(--accent);
 		min-width: 52px;
@@ -2605,8 +2605,8 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 		color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 	}
-	.btn.o:hover,
-	.btn.o.active {
+	:global(.btn.o:hover),
+	:global(.btn.o.active) {
 		border-color: var(--accent2);
 		color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 10%, transparent);
@@ -2618,13 +2618,13 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 		background: color-mix(in srgb, var(--accent3) 10%, transparent);
 	}
 
-	.info-panel {
+	:global(.info-panel) {
 		background: var(--code-bg);
 		border: 1px solid var(--border);
 		padding: 0.85rem 1rem;
 		font-size: 12px;
 	}
-	.info-row {
+	:global(.info-row) {
 		display: flex;
 		justify-content: space-between;
 		padding: 0.2rem 0;
@@ -2633,10 +2633,10 @@ body.x  += body.vx * dt    <span class="cm"># then use NEW velocity</span><span 
 	.info-row:last-child {
 		border-bottom: none;
 	}
-	.info-key {
+	:global(.info-key) {
 		color: var(--muted);
 	}
-	.info-val {
+	:global(.info-val) {
 		color: var(--accent);
 		font-weight: 600;
 	}

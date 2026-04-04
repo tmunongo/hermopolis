@@ -1504,7 +1504,7 @@
 				</div>
 
 				<div class="frame-canvas-wrap" style="max-width: 100%">
-					<canvas id="comp-canvas" aria-label="Comp Canvas Demonstration" role="region" tabindex="0"
+					<canvas id="comp-canvas" aria-label="Comp Canvas Demonstration" role="img" tabindex="0"
 					></canvas>
 				</div>
 
@@ -1621,7 +1621,7 @@
 					<canvas
 						id="balance-canvas"
 						aria-label="Balance Canvas Demonstration"
-						role="region"
+						role="img"
 						tabindex="0"
 					></canvas>
 				</div>
@@ -2003,7 +2003,7 @@
 				</div>
 
 				<div class="frame-canvas-wrap" style="max-width: 560px; margin: 0 auto">
-					<canvas id="mh-canvas" aria-label="Mh Canvas Demonstration" role="region" tabindex="0"
+					<canvas id="mh-canvas" aria-label="Mh Canvas Demonstration" role="img" tabindex="0"
 					></canvas>
 				</div>
 
@@ -2406,7 +2406,7 @@
 		margin: 0 auto;
 		padding: 0 2rem 6rem;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
@@ -2417,7 +2417,7 @@
 		gap: 1rem;
 	}
 	@media (max-width: 640px) {
-		.two-col,
+		:global(.two-col),
 		:global(.three-col) {
 			grid-template-columns: 1fr;
 		}
@@ -2618,7 +2618,7 @@
 		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
 		font-size: 13px;
 	}
-	.callout.amber {
+	:global(.callout.amber) {
 		border-color: var(--vs-amber);
 		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
 	}
@@ -2626,7 +2626,7 @@
 		border-color: var(--vs-red);
 		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--vs-mint);
 		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
 	}
@@ -2638,13 +2638,13 @@
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.amber .callout-label {
+	:global(.callout.amber .callout-label) {
 		color: var(--vs-amber);
 	}
-	:global(.callout.red) .callout-label {
+	:global(.callout.red .callout-label) {
 		color: var(--vs-red);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint .callout-label) {
 		color: var(--vs-mint);
 	}
 
@@ -2666,12 +2666,12 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.interactive {
+	:global(.demo-badge.interactive) {
 		color: var(--vs-blue);
 		border-color: var(--vs-blue);
 		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
@@ -3112,20 +3112,20 @@
 			grid-template-columns: 1fr;
 		}
 	}
-	.framing-cell {
+	:global(.framing-cell) {
 		background: var(--vs-raised);
 		cursor: pointer;
 		transition: all 0.2s;
 		border: 2px solid transparent;
 		position: relative;
 	}
-	.framing-cell:hover {
+	:global(.framing-cell:hover) {
 		border-color: var(--vs-border2);
 	}
-	.framing-cell.selected {
+	:global(.framing-cell.selected) {
 		border-color: var(--vs-blue);
 	}
-	.framing-cell-label {
+	:global(.framing-cell-label) {
 		position: absolute;
 		bottom: 0;
 		left: 0;
@@ -3139,10 +3139,10 @@
 		text-align: center;
 		transition: color 0.2s;
 	}
-	.framing-cell.selected .framing-cell-label {
+	:global(.framing-cell.selected .framing-cell-label) {
 		color: var(--vs-blue);
 	}
-	.framing-detail {
+	:global(.framing-detail) {
 		margin-top: 0.75rem;
 		padding: 0.75rem 1rem;
 		border-left: 2px solid var(--vs-blue);
@@ -3152,7 +3152,7 @@
 		line-height: 1.7;
 		min-height: 56px;
 	}
-	.framing-detail strong {
+	:global(.framing-detail strong) {
 		color: var(--vs-blue);
 	}
 
@@ -3186,7 +3186,7 @@
 		text-transform: uppercase;
 		color: var(--vs-muted);
 	}
-	.iso-element {
+	:global(.iso-element) {
 		position: absolute;
 		display: flex;
 		align-items: center;
@@ -3225,7 +3225,7 @@
 			grid-template-columns: 1fr;
 		}
 	}
-	.lline-cell {
+	:global(.lline-cell) {
 		aspect-ratio: 16/9;
 		position: relative;
 		background: #040710;
@@ -3234,13 +3234,13 @@
 		border: 2px solid transparent;
 		overflow: hidden;
 	}
-	.lline-cell:hover {
+	:global(.lline-cell:hover) {
 		border-color: var(--vs-border2);
 	}
-	.lline-cell.selected {
+	:global(.lline-cell.selected) {
 		border-color: var(--vs-blue);
 	}
-	.lline-label {
+	:global(.lline-label) {
 		position: absolute;
 		bottom: 0;
 		left: 0;
@@ -3253,10 +3253,10 @@
 		text-align: center;
 		color: var(--vs-muted);
 	}
-	.lline-cell.selected .lline-label {
+	:global(.lline-cell.selected .lline-label) {
 		color: var(--vs-blue);
 	}
-	.llines-detail {
+	:global(.llines-detail) {
 		margin-top: 0.75rem;
 		padding: 0.75rem 1rem;
 		border-left: 2px solid var(--vs-blue);
@@ -3266,7 +3266,7 @@
 		line-height: 1.7;
 		min-height: 52px;
 	}
-	.llines-detail strong {
+	:global(.llines-detail strong) {
 		color: var(--vs-blue);
 	}
 

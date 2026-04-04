@@ -2386,11 +2386,11 @@ angle = <span class="num">0.0</span>
 		background: color-mix(in srgb, var(--accent) 6%, var(--surface));
 		font-size: 13px;
 	}
-	.callout.gold {
+	:global(.callout.gold) {
 		border-color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 6%, var(--surface));
 	}
-	.callout.green {
+	:global(.callout.green) {
 		border-color: var(--accent3);
 		background: color-mix(in srgb, var(--accent3) 6%, var(--surface));
 	}
@@ -2406,13 +2406,13 @@ angle = <span class="num">0.0</span>
 		margin-bottom: 0.4rem;
 		font-weight: 600;
 	}
-	.callout.gold .callout-label {
+	:global(.callout.gold .callout-label) {
 		color: var(--accent2);
 	}
-	.callout.green .callout-label {
+	:global(.callout.green .callout-label) {
 		color: var(--accent3);
 	}
-	:global(.callout.pink) .callout-label {
+	:global(.callout.pink .callout-label) {
 		color: var(--accent4);
 	}
 
@@ -2434,17 +2434,17 @@ angle = <span class="num">0.0</span>
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-size: 10px;
 		padding: 2px 8px;
 		border: 1px solid;
 	}
-	.demo-badge.i {
+	:global(.demo-badge.i) {
 		color: var(--accent);
 		border-color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 	}
-	.demo-badge.a {
+	:global(.demo-badge.a) {
 		color: var(--accent2);
 		border-color: var(--accent2);
 		background: color-mix(in srgb, var(--accent2) 10%, transparent);
@@ -2456,36 +2456,36 @@ angle = <span class="num">0.0</span>
 	canvas {
 		display: block;
 	}
-	.two-col {
+	:global(.two-col) {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
 	}
 	@media (max-width: 640px) {
-		.two-col {
+		:global(.two-col) {
 			grid-template-columns: 1fr;
 		}
 	}
 
-	.slider-row {
+	:global(.slider-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		margin: 0.5rem 0;
 	}
-	.slider-row label {
+	:global(.slider-row label) {
 		font-size: 11px;
 		min-width: 80px;
 		color: var(--muted);
 	}
-	.slider-row :global(input[type='range']) {
+	:global(.slider-row :global(input[type='range'])) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 3px;
 		background: var(--border2);
 		outline: none;
 	}
-	.slider-row :global(input[type='range']::-webkit-slider-thumb) {
+	:global(.slider-row :global(input[type='range']::-webkit-slider-thumb)) {
 		-webkit-appearance: none;
 		width: 12px;
 		height: 12px;
@@ -2493,7 +2493,7 @@ angle = <span class="num">0.0</span>
 		background: var(--accent);
 		cursor: pointer;
 	}
-	.slider-val {
+	:global(.slider-val) {
 		font-size: 12px;
 		color: var(--accent);
 		min-width: 44px;
@@ -2520,8 +2520,8 @@ angle = <span class="num">0.0</span>
 		color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 	}
-	.btn.g:hover,
-	.btn.g.active {
+	:global(.btn.g:hover),
+	:global(.btn.g.active) {
 		border-color: var(--accent3);
 		color: var(--accent3);
 		background: color-mix(in srgb, var(--accent3) 10%, transparent);
@@ -2590,13 +2590,13 @@ angle = <span class="num">0.0</span>
 		display: flex;
 		align-items: center;
 	}
-	:global(.gpu-stage.active) .gpu-stage-num {
+	:global(.gpu-stage.active .gpu-stage-num) {
 		color: var(--accent);
 	}
-	:global(.gpu-stage.active) .gpu-stage-name {
+	:global(.gpu-stage.active .gpu-stage-name) {
 		color: var(--accent);
 	}
-	:global(.gpu-stage.active) .gpu-stage-desc {
+	:global(.gpu-stage.active .gpu-stage-desc) {
 		color: var(--text);
 	}
 	.gpu-stage-badge {
@@ -2639,7 +2639,7 @@ angle = <span class="num">0.0</span>
 		cursor: default;
 		min-width: 32px;
 	}
-	:global(.buffer-cell) span {
+	:global(.buffer-cell span) {
 		font-size: 8px;
 		color: var(--muted);
 		margin-top: 2px;

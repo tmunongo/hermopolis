@@ -2236,7 +2236,7 @@
 		background: color-mix(in srgb, var(--anim-lavender) 5%, var(--anim-surface));
 		font-size: 13.5px;
 	}
-	.callout.gold {
+	:global(.callout.gold) {
 		border-color: var(--anim-gold);
 		background: color-mix(in srgb, var(--anim-gold) 5%, var(--anim-surface));
 	}
@@ -2244,7 +2244,7 @@
 		border-color: var(--anim-coral);
 		background: color-mix(in srgb, var(--anim-coral) 5%, var(--anim-surface));
 	}
-	.callout.mint {
+	:global(.callout.mint) {
 		border-color: var(--anim-mint);
 		background: color-mix(in srgb, var(--anim-mint) 5%, var(--anim-surface));
 	}
@@ -2259,13 +2259,13 @@
 	.callout .callout-label {
 		color: var(--anim-lavender);
 	}
-	.callout.gold .callout-label {
+	:global(.callout.gold) .callout-label {
 		color: var(--anim-gold);
 	}
 	.callout.coral .callout-label {
 		color: var(--anim-coral);
 	}
-	.callout.mint .callout-label {
+	:global(.callout.mint) .callout-label {
 		color: var(--anim-mint);
 	}
 
@@ -2289,7 +2289,7 @@
 		text-transform: uppercase;
 		color: var(--anim-muted);
 	}
-	.demo-badge {
+	:global(.demo-badge) {
 		font-family: var(--ff-mono);
 		font-size: 10px;
 		padding: 2px 8px;
@@ -2337,7 +2337,7 @@
 		min-width: 52px;
 	}
 
-	input[type='range'] {
+	:global(input[type='range']) {
 		flex: 1;
 		-webkit-appearance: none;
 		height: 2px;
@@ -2345,7 +2345,7 @@
 		outline: none;
 		min-width: 100px;
 	}
-	input[type='range']::-webkit-slider-thumb {
+	:global(input[type='range']::-webkit-slider-thumb) {
 		-webkit-appearance: none;
 		width: 14px;
 		height: 14px;
@@ -2361,7 +2361,7 @@
 		background: var(--anim-mint);
 	}
 
-	.btn {
+	:global(.btn) {
 		background: transparent;
 		border: 1px solid var(--anim-border2);
 		color: var(--anim-text);
@@ -2372,7 +2372,7 @@
 		transition: all 0.15s;
 		letter-spacing: 0.05em;
 	}
-	.btn:hover {
+	:global(.btn:hover) {
 		border-color: var(--anim-gold);
 		color: var(--anim-gold);
 	}
@@ -2398,7 +2398,7 @@
 		background: color-mix(in srgb, var(--anim-mint) 12%, transparent);
 	}
 
-	.btn-row {
+	:global(.btn-row) {
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
@@ -2562,7 +2562,7 @@
 	.quiz-body {
 		padding: 1.75rem;
 	}
-	.question {
+	:global(.question) {
 		margin: 2rem 0;
 	}
 	.question:first-child {
