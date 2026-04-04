@@ -1,0 +1,2936 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 6 — Motion Graphics for Narrative Support</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--vs-bg: #050810;
+				--vs-surface: #080d18;
+				--vs-raised: #0d1322;
+				--vs-border: #14202e;
+				--vs-border2: #1e2d40;
+				--vs-blue: #4aafff;
+				--vs-amber: #f5b94a;
+				--vs-red: #ff4f68;
+				--vs-mint: #3dd9a4;
+				--vs-text: #b8c8de;
+				--vs-muted: #405068;
+				--vs-dim: #182033;
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				background: var(--vs-bg);
+				color: var(--vs-text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--vs-bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--vs-border2);
+				border-radius: 3px;
+			}
+
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			.three-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 1rem;
+			}
+			@media (max-width: 640px) {
+				.two-col,
+				.three-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.course-header {
+				border-bottom: 1px solid var(--vs-border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--vs-muted);
+				font-weight: 400;
+			}
+
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--vs-border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-hero::before {
+				content: '';
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				background: repeating-linear-gradient(
+					0deg,
+					transparent,
+					transparent 2px,
+					rgba(245, 185, 74, 0.013) 2px,
+					rgba(245, 185, 74, 0.013) 4px
+				);
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--vs-border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--vs-amber);
+				border: 1px solid var(--vs-amber);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 600px;
+			}
+			.module-title span {
+				color: var(--vs-amber);
+			}
+
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--vs-border);
+				background: var(--vs-surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--vs-muted);
+				text-decoration: none;
+				border: 1px solid var(--vs-border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--vs-amber);
+				border-color: var(--vs-amber);
+			}
+
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--vs-amber);
+				background: var(--vs-surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-amber);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--vs-blue);
+			}
+
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--vs-blue);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+				color: var(--vs-text);
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--vs-amber);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+			code {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--vs-mint);
+				font-family: 'IBM Plex Mono', monospace;
+			}
+
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
+				font-size: 13px;
+			}
+			.callout.blue {
+				border-color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+			}
+			.callout.red {
+				border-color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
+			}
+			.callout.mint {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--vs-amber);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.blue .callout-label {
+				color: var(--vs-blue);
+			}
+			.callout.red .callout-label {
+				color: var(--vs-red);
+			}
+			.callout.mint .callout-label {
+				color: var(--vs-mint);
+			}
+
+			.demo-box {
+				background: var(--vs-surface);
+				border: 1px solid var(--vs-border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--vs-border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header > span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.interactive {
+				color: var(--vs-amber);
+				border-color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.demo-badge.animated {
+				color: var(--vs-blue);
+				border-color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			.btn {
+				background: transparent;
+				border: 1px solid var(--vs-border2);
+				color: var(--vs-text);
+				padding: 6px 16px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+			}
+			.btn.active {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.btn.blue:hover {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+			}
+			.btn.blue.active {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+			}
+			.btn.mint:hover {
+				border-color: var(--vs-mint);
+				color: var(--vs-mint);
+			}
+			.btn.mint.active {
+				border-color: var(--vs-mint);
+				color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+			}
+			.btn.red:hover {
+				border-color: var(--vs-red);
+				color: var(--vs-red);
+			}
+			.btn.red.active {
+				border-color: var(--vs-red);
+				color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+			}
+			.btn-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-bottom: 1.25rem;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--vs-raised);
+				color: var(--vs-amber);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--vs-border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--vs-border);
+				color: var(--vs-text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--vs-raised) 50%, transparent);
+			}
+
+			.divider {
+				border: none;
+				border-top: 1px solid var(--vs-border);
+				margin: 3rem 0;
+			}
+			.stats-panel {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1rem;
+				font-size: 12px;
+			}
+			.stat-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.2rem 0;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.stat-row:last-child {
+				border-bottom: none;
+			}
+			.stat-label {
+				color: var(--vs-muted);
+			}
+			.stat-val {
+				color: var(--vs-amber);
+				font-weight: 600;
+			}
+
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--vs-border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--vs-amber);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--vs-border);
+				background: var(--vs-surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.5rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--vs-muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--vs-blue);
+				margin-right: 0.5rem;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--vs-border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--vs-border2);
+				background: var(--vs-raised);
+			}
+			.option.correct {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+				color: var(--vs-mint);
+			}
+			.option.wrong {
+				border-color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+				color: var(--vs-red);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--vs-muted);
+			}
+			.feedback.ok {
+				color: var(--vs-mint);
+			}
+			.feedback.bad {
+				color: var(--vs-red);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--vs-border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--vs-amber);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--vs-muted);
+				margin-top: 0.25rem;
+			}
+
+			.nav-links {
+				display: flex;
+				justify-content: space-between;
+				align-items: stretch;
+				margin-top: 4rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+			.prev-link {
+				font-size: 12px;
+				color: var(--vs-muted);
+				text-decoration: none;
+				border: 1px solid var(--vs-border);
+				padding: 0.75rem 1.25rem;
+				transition: all 0.2s;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			.prev-link:hover {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+			}
+			.next-module {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--vs-border);
+				text-decoration: none;
+				transition: all 0.2s;
+				background: var(--vs-surface);
+				flex: 1;
+			}
+			.next-module:hover {
+				border-color: var(--vs-amber);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--vs-amber);
+			}
+
+			/* ════════════════════════════════
+     MODULE-SPECIFIC COMPONENTS
+  ════════════════════════════════ */
+
+			/* Shared stage */
+			.motion-stage {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				position: relative;
+				overflow: hidden;
+			}
+
+			/* ── FUNCTION THEATER ── */
+			.func-theater {
+				aspect-ratio: 16/9;
+				max-width: 100%;
+			}
+			.func-theater canvas {
+				display: block;
+				width: 100%;
+				height: 100%;
+			}
+
+			/* Function tabs */
+			.func-tabs {
+				display: flex;
+				border: 1px solid var(--vs-border);
+				overflow: hidden;
+			}
+			.func-tab {
+				flex: 1;
+				padding: 0.6rem 0.5rem;
+				text-align: center;
+				font-size: 10px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				cursor: pointer;
+				border-right: 1px solid var(--vs-border);
+				color: var(--vs-muted);
+				transition: all 0.15s;
+				background: var(--vs-raised);
+			}
+			.func-tab:last-child {
+				border-right: none;
+			}
+			.func-tab.active {
+				background: color-mix(in srgb, var(--vs-amber) 12%, var(--vs-raised));
+				color: var(--vs-amber);
+			}
+			.func-detail {
+				padding: 0.75rem 1rem;
+				font-size: 12px;
+				color: var(--vs-text);
+				line-height: 1.7;
+				border-top: 1px solid var(--vs-border);
+				min-height: 52px;
+			}
+			.func-detail strong {
+				color: var(--vs-amber);
+			}
+
+			/* ── OVERUSE DETECTOR ── */
+			.overuse-frame {
+				aspect-ratio: 16/9;
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				position: relative;
+				overflow: hidden;
+				cursor: pointer;
+			}
+			.overuse-element {
+				position: absolute;
+				pointer-events: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.overuse-score {
+				display: flex;
+				gap: 1rem;
+				margin-top: 0.75rem;
+				flex-wrap: wrap;
+			}
+			.overuse-chip {
+				border: 1px solid;
+				padding: 4px 12px;
+				font-size: 11px;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			.overuse-meter-row {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				margin: 0.3rem 0;
+			}
+			.overuse-meter-label {
+				font-size: 10px;
+				color: var(--vs-muted);
+				min-width: 100px;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+			}
+			.overuse-meter-bar {
+				flex: 1;
+				height: 5px;
+				background: var(--vs-border);
+				border-radius: 3px;
+				overflow: hidden;
+			}
+			.overuse-meter-fill {
+				height: 100%;
+				border-radius: 3px;
+				transition: width 0.5s ease;
+			}
+			.overuse-verdict {
+				margin-top: 1rem;
+				padding: 0.75rem 1rem;
+				border-left: 2px solid var(--vs-border2);
+				font-size: 12px;
+				color: var(--vs-text);
+				line-height: 1.7;
+				background: var(--vs-raised);
+				min-height: 40px;
+			}
+
+			/* ── MOTION TIMING GRID ── */
+			.timing-grid {
+				display: grid;
+				grid-template-columns: repeat(12, 1fr);
+				gap: 2px;
+				margin: 1rem 0;
+			}
+			.timing-cell {
+				aspect-ratio: 1;
+				border: 1px solid var(--vs-border);
+				cursor: pointer;
+				transition: all 0.15s;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 8px;
+				position: relative;
+			}
+			.timing-cell.active-narr {
+				background: color-mix(in srgb, var(--vs-blue) 25%, transparent);
+				border-color: var(--vs-blue);
+			}
+			.timing-cell.active-text {
+				background: color-mix(in srgb, var(--vs-amber) 25%, transparent);
+				border-color: var(--vs-amber);
+			}
+			.timing-cell.active-motion {
+				background: color-mix(in srgb, var(--vs-red) 25%, transparent);
+				border-color: var(--vs-red);
+			}
+			.timing-cell.active-all {
+				background: color-mix(in srgb, var(--vs-mint) 20%, transparent);
+				border-color: var(--vs-mint);
+			}
+			.timing-row-label {
+				font-size: 9px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				margin-bottom: 3px;
+				margin-top: 8px;
+			}
+
+			/* ── ATTENTION FLOW CANVAS ── */
+			#attn-canvas {
+				display: block;
+				width: 100%;
+				border: 1px solid var(--vs-border);
+				background: #040710;
+				cursor: crosshair;
+			}
+
+			/* ── MOTION COST CALCULATOR ── */
+			.motion-cost-item {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				padding: 0.5rem 0;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.motion-cost-item:last-child {
+				border-bottom: none;
+			}
+			.mci-icon {
+				font-size: 18px;
+				flex-shrink: 0;
+				width: 28px;
+				text-align: center;
+			}
+			.mci-label {
+				flex: 1;
+				font-size: 12px;
+				color: var(--vs-text);
+			}
+			.mci-toggle {
+				cursor: pointer;
+				border: 1px solid var(--vs-border2);
+				padding: 3px 10px;
+				font-size: 10px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				transition: all 0.15s;
+				font-family: 'IBM Plex Mono', monospace;
+				background: transparent;
+			}
+			.mci-toggle.on {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.mci-cost {
+				min-width: 40px;
+				text-align: right;
+				font-size: 12px;
+				font-weight: 600;
+			}
+
+			/* ── NARRATION SYNC STRIP ── */
+			.sync-strip {
+				position: relative;
+				height: 48px;
+				background: var(--vs-raised);
+				border: 1px solid var(--vs-border);
+				overflow: hidden;
+				margin: 0.5rem 0;
+			}
+			.sync-strip-label {
+				position: absolute;
+				left: 8px;
+				top: 50%;
+				transform: translateY(-50%);
+				font-size: 10px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				z-index: 2;
+			}
+			.sync-strip-events {
+				position: absolute;
+				left: 80px;
+				right: 0;
+				top: 8px;
+				bottom: 8px;
+			}
+			.sync-event {
+				position: absolute;
+				height: 100%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 9px;
+				font-weight: 600;
+				letter-spacing: 0.06em;
+				border-radius: 1px;
+				overflow: hidden;
+				white-space: nowrap;
+				transition: all 0.3s ease;
+			}
+			.sync-playhead {
+				position: absolute;
+				left: 80px;
+				top: 0;
+				bottom: 0;
+				width: 2px;
+				background: #fff;
+				opacity: 0;
+				transition: left 0.05s linear;
+				box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+				z-index: 3;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<header class="course-header">
+				<div>
+					<div class="course-label">Visual Storytelling for Faceless Video</div>
+					<div class="course-title">Narrative, Pacing &amp; Visual Communication</div>
+				</div>
+				<div style="font-size: 11px; color: var(--vs-muted); text-align: right">
+					Module 06 of 10
+				</div>
+			</header>
+
+			<div class="module-hero">
+				<div class="module-number">06</div>
+				<div class="module-tag">Module 06 · Theory + Practice</div>
+				<h1 class="module-title">Motion Graphics<br /><span>for Narrative Support</span></h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#functional-motion">Functional Motion</a></li>
+					<li><a href="#three-functions">Reveal, Highlight, Transform</a></li>
+					<li><a href="#overuse">Overuse &amp; Cognitive Overload</a></li>
+					<li><a href="#attention">Directing Attention</a></li>
+					<li><a href="#timing">Motion Timing &amp; Narration</a></li>
+					<li><a href="#cost">The Motion Cost Model</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+				</ul>
+			</nav>
+
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Distinguish functional motion — motion that communicates — from decorative motion</li>
+					<li>Apply the three primary motion functions: reveal, highlight, and transform</li>
+					<li>Recognise and correct overuse of motion that produces cognitive overload</li>
+					<li>
+						Use motion to direct viewer attention to a specific frame element at a specific moment
+					</li>
+					<li>Synchronise motion events with narration beats for maximum communicative impact</li>
+				</ul>
+			</section>
+
+			<!-- ═══ SECTION 1: FUNCTIONAL MOTION ═══ -->
+			<section id="functional-motion" class="section">
+				<div class="section-header">
+					<span class="section-num">06.01</span>
+					<h2 class="section-title">Functional Motion</h2>
+				</div>
+
+				<p>
+					Motion in video design operates on a spectrum between two extremes. At one end is
+					<em>decorative motion</em> — movement applied to elements because animation software makes
+					it easy, because it looks "professional," or because a static frame feels unfinished. At
+					the other end is <em>functional motion</em> — movement that communicates something the
+					static frame could not. Every motion decision should be evaluated against this spectrum
+					before it is executed.
+				</p>
+				<p>
+					The distinction is not about complexity or subtlety. A simple fade-in can be functional if
+					its timing aligns with the narration beat that introduces the element. A complex kinetic
+					typography sequence can be purely decorative if the movement adds no information that the
+					words and narration do not already contain. The question is never "is this animation
+					good?" but "is this animation <strong>doing something</strong>?"
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">The Functional Test</div>
+					Before animating any element, ask: if this element appeared instantly — no animation at
+					all — would the viewer lose any information or understanding? If the answer is no, the
+					animation is decorative. If the answer is yes — because the motion reveals something,
+					emphasises something, or shows a transformation — the animation is functional.
+				</div>
+
+				<p>
+					Functional motion falls into three categories based on what it communicates.
+					<strong>Reveal</strong> uses motion to introduce information progressively, aligning each
+					element's appearance with the moment in the narration where it is introduced.
+					<strong>Highlight</strong> uses motion to direct the viewer's eye to a specific element at
+					a specific moment — drawing attention rather than providing new information.
+					<strong>Transform</strong> uses motion to show a state change — how something moves from
+					one condition to another, making process visible that would otherwise require description
+					alone.
+				</p>
+
+				<!-- DEMO: Functional Motion Theater -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Functional Motion Theater</span>
+						<span class="demo-badge animated">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Select a motion function and press Play to see it in action on the canvas below. Each
+							function communicates something different — observe what information is added by the
+							motion itself.
+						</p>
+
+						<div class="func-tabs" id="func-tabs">
+							<div class="func-tab active" onclick="selectFunc('reveal')">Reveal</div>
+							<div class="func-tab" onclick="selectFunc('highlight')">Highlight</div>
+							<div class="func-tab" onclick="selectFunc('transform')">Transform</div>
+							<div class="func-tab" onclick="selectFunc('decorative')">Decorative ✕</div>
+						</div>
+
+						<div class="motion-stage func-theater" style="margin-top: 0">
+							<canvas id="func-canvas"></canvas>
+						</div>
+
+						<div class="func-detail" id="func-detail"></div>
+
+						<div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap">
+							<button class="btn active" onclick="playFunc()" id="func-play">▶ Play</button>
+							<button class="btn" onclick="resetFunc()">↺ Reset</button>
+							<div
+								id="func-progress-wrap"
+								style="flex: 1; display: flex; align-items: center; gap: 0.75rem; min-width: 120px"
+							>
+								<div style="flex: 1; height: 3px; background: var(--vs-border); overflow: hidden">
+									<div
+										id="func-progress-fill"
+										style="height: 100%; background: var(--vs-amber); width: 0%; transition: none"
+									></div>
+								</div>
+								<span
+									id="func-time"
+									style="font-size: 11px; color: var(--vs-muted); min-width: 36px"
+									>0.0s</span
+								>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══ SECTION 2: THE THREE FUNCTIONS ═══ -->
+			<section id="three-functions" class="section">
+				<div class="section-header">
+					<span class="section-num">06.02</span>
+					<h2 class="section-title">Reveal, Highlight, Transform: In Detail</h2>
+				</div>
+
+				<p>
+					Each of the three functional motion categories has a distinct communicative purpose, a
+					distinct visual vocabulary, and a distinct set of failure modes. Understanding all three
+					at this level allows you to select the right motion type before you open any animation
+					software — which is where the creative and technical decisions separate.
+				</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Function</th>
+							<th>What It Communicates</th>
+							<th>Typical Duration</th>
+							<th>Key Failure Mode</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Reveal</td>
+							<td>
+								Sequence and priority — this element belongs here, at this moment in the argument
+							</td>
+							<td>150–400ms per element</td>
+							<td>
+								Too many reveals in rapid succession — the sequence loses meaning when everything
+								arrives fast
+							</td>
+						</tr>
+						<tr>
+							<td>Highlight</td>
+							<td>Attention — look at this specific element right now, not the others</td>
+							<td>200–500ms onset; sustained until narration moves on</td>
+							<td>
+								Persistent highlighting — if everything is highlighted in sequence, the emphasis is
+								cumulative and loses force
+							</td>
+						</tr>
+						<tr>
+							<td>Transform</td>
+							<td>
+								Process — this is how state A becomes state B; the change itself is the content
+							</td>
+							<td>400ms–2s depending on complexity</td>
+							<td>
+								Too fast to follow — a transformation that completes before the viewer can track it
+								communicates nothing
+							</td>
+						</tr>
+						<tr>
+							<td>Decorative</td>
+							<td>Nothing — adds visual complexity without communicative content</td>
+							<td>Any</td>
+							<td>Everything — it consumes attention without producing understanding</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<p>
+					The three functions can be combined within a single motion sequence, but they should not
+					be used simultaneously on the same element. An element that is revealing
+					<em>and</em> being highlighted <em>and</em> transforming at the same time is doing too
+					much — the viewer cannot identify which function is primary and processes the animation as
+					visual noise rather than communication.
+				</p>
+
+				<div class="callout blue">
+					<div class="callout-label">Sequence, Then Layer</div>
+					The rule for combining functions is temporal separation. Reveal first — bring the element
+					into the frame. Then, at the moment the narration references a specific aspect of it,
+					highlight it. If a state change occurs, run the transform only after the element is both
+					revealed and referenced. Each function occupies its own beat.
+				</div>
+			</section>
+
+			<!-- ═══ SECTION 3: OVERUSE & COGNITIVE OVERLOAD ═══ -->
+			<section id="overuse" class="section">
+				<div class="section-header">
+					<span class="section-num">06.03</span>
+					<h2 class="section-title">Overuse of Motion &amp; Cognitive Overload</h2>
+				</div>
+
+				<p>
+					Motion overuse is the most common motion design failure in self-produced video. It does
+					not come from using animation badly — it comes from using it everywhere. Because each
+					individual animation seems justified in isolation, the creator adds them all. The
+					cumulative result is a frame where everything is moving, nothing is still, and the
+					viewer's motion-detection system is permanently activated — processing motion rather than
+					meaning.
+				</p>
+				<p>
+					The cognitive model for motion overuse mirrors the cognitive load model from Module 1:
+					there is a finite budget of attention available per second. Every animated element
+					consumes some of that budget. When the total motion load exceeds the budget, comprehension
+					drops — not gradually, but sharply. The viewer is still watching, but they are no longer
+					understanding.
+				</p>
+
+				<!-- DEMO: Overuse Detector -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Motion Overuse Detector</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Toggle individual motion elements on and off to build up a frame. The load meters show
+							how each addition affects the cognitive cost. Watch for the overload threshold.
+						</p>
+
+						<div id="overuse-controls" style="margin-bottom: 1.25rem"></div>
+
+						<div class="overuse-frame" id="overuse-frame">
+							<canvas
+								id="overuse-canvas"
+								style="display: block; width: 100%; height: 100%"
+							></canvas>
+						</div>
+
+						<div style="margin-top: 1rem" id="overuse-meters"></div>
+						<div class="overuse-verdict" id="overuse-verdict"></div>
+					</div>
+				</div>
+
+				<p>
+					The corrective habit is to start from zero animation and add motion only when it earns its
+					place — not to start from maximum animation and try to reduce. Reduction is
+					psychologically harder because each animation has a reason to exist. Addition is easier
+					because each new motion must justify itself against the cost it adds to the frame.
+				</p>
+
+				<div class="callout red">
+					<div class="callout-label">The Zero-Based Motion Rule</div>
+					Begin every frame with no animation. Add motion only when you can complete the sentence:
+					"This element moves because it needs to show ___." If the blank can only be filled with
+					"it looks better" or "it feels more dynamic," the motion is decorative and should be
+					removed.
+				</div>
+			</section>
+
+			<!-- ═══ SECTION 4: DIRECTING ATTENTION ═══ -->
+			<section id="attention" class="section">
+				<div class="section-header">
+					<span class="section-num">06.04</span>
+					<h2 class="section-title">Directing Attention with Motion</h2>
+				</div>
+
+				<p>
+					The most practically useful motion skill in faceless video is precise attention direction:
+					using a single, brief motion to route the viewer's eye to a specific element at the exact
+					moment the narration references it. This replaces verbal instructions like "as you can see
+					in the diagram" — the motion does the pointing, more efficiently and without consuming
+					narration space.
+				</p>
+				<p>
+					Attention-directing motion should be <em>minimal</em> and <em>brief</em>. The goal is a
+					nudge, not a spectacle. A 200ms pulse — a brief increase in brightness or size — is
+					sufficient to redirect attention from anywhere in the frame to the targeted element. A
+					300ms underline appearing beneath a term is sufficient to say "this is the important
+					word." Longer or more elaborate attention direction draws attention to the motion itself
+					rather than to the target.
+				</p>
+
+				<!-- DEMO: Attention Direction Lab -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Attention Direction Lab</span>
+						<span class="demo-badge animated">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							A diagram with multiple elements is displayed. Click any element to trigger an
+							attention-directing motion — observe how different techniques redirect the eye with
+							different levels of disruption to the overall frame.
+						</p>
+
+						<div class="btn-row" id="attn-mode-btns">
+							<button class="btn active" onclick="setAttnMode('pulse')">Pulse</button>
+							<button class="btn" onclick="setAttnMode('underline')">Underline</button>
+							<button class="btn" onclick="setAttnMode('outline')">Outline Ring</button>
+							<button class="btn amber" onclick="setAttnMode('arrow')">Arrow</button>
+							<button class="btn red" onclick="setAttnMode('shake')">Shake ✕</button>
+						</div>
+
+						<canvas id="attn-canvas" height="280"></canvas>
+
+						<div
+							id="attn-desc"
+							style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 44px;
+							"
+						></div>
+					</div>
+				</div>
+
+				<p>
+					Attention direction also has a spatial component: the motion should originate from or
+					arrive at the target, not pass through the frame randomly. An arrow that enters from
+					outside the frame and points to the target is directing attention. An arrow that was
+					already visible in the frame and simply activates is highlighting. Both are valid — but
+					they communicate different things about the relationship between the viewer and the
+					content.
+				</p>
+			</section>
+
+			<!-- ═══ SECTION 5: MOTION TIMING & NARRATION ═══ -->
+			<section id="timing" class="section">
+				<div class="section-header">
+					<span class="section-num">06.05</span>
+					<h2 class="section-title">Motion Timing &amp; Narration Synchronisation</h2>
+				</div>
+
+				<p>
+					The timing of a motion event relative to the narration is as important as the motion
+					itself. Motion that arrives too early — before the narration has introduced the concept —
+					draws attention to an element the viewer has no context to interpret. Motion that arrives
+					too late — after the narration has already moved past the concept — creates a dissonance
+					between what is being said and what is moving. Only motion aligned with the precise
+					narration beat produces the compound effect of visual and verbal reinforcement.
+				</p>
+				<p>
+					The principle is:
+					<strong
+						>motion should arrive at or within 200ms of the spoken word it corresponds to</strong
+					>. Within that window, the brain integrates the visual and audio signals as a single
+					event. Outside that window, they are processed as separate — and the reinforcement effect
+					is lost entirely. This window is narrow enough that rough timing, produced by dragging
+					keyframes by eye, is usually insufficient. Precise frame-level placement is required.
+				</p>
+
+				<!-- DEMO: Narration Sync Builder -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Narration Sync Planner</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1rem">
+							A 10-second narration sequence is shown below. Assign motion events to each beat by
+							clicking the grid cells. Each row is a different channel. The analyser flags sync
+							conflicts and overloaded beats.
+						</p>
+
+						<div
+							style="
+								padding: 0.75rem 1rem;
+								background: #040710;
+								border: 1px solid var(--vs-border);
+								margin-bottom: 1.25rem;
+								font-size: 12px;
+								border-left: 2px solid var(--vs-amber);
+							"
+						>
+							<div
+								style="
+									font-size: 10px;
+									color: var(--vs-amber);
+									letter-spacing: 0.12em;
+									text-transform: uppercase;
+									margin-bottom: 0.4rem;
+								"
+							>
+								Narration script (10 seconds)
+							</div>
+							<div style="color: #fff; line-height: 1.8">
+								<span id="nb-0" style="padding: 1px 3px; border-radius: 2px"
+									>"The <strong style="color: var(--vs-amber)">feedback loop</strong></span
+								>
+								<span id="nb-1" style="padding: 1px 3px; border-radius: 2px">
+									begins with a <strong style="color: var(--vs-amber)">single action</strong></span
+								>
+								<span id="nb-2" style="padding: 1px 3px; border-radius: 2px">
+									— which triggers an <strong style="color: var(--vs-amber)">effect</strong></span
+								>
+								<span id="nb-3" style="padding: 1px 3px; border-radius: 2px">
+									— that loops back</span
+								>
+								<span id="nb-4" style="padding: 1px 3px; border-radius: 2px">
+									to <strong style="color: var(--vs-amber)">amplify</strong> the original."</span
+								>
+							</div>
+						</div>
+
+						<!-- Sync grid rows -->
+						<div id="sync-rows"></div>
+						<div
+							style="
+								display: flex;
+								justify-content: space-between;
+								font-size: 9px;
+								color: var(--vs-muted);
+								padding: 0 0 0 80px;
+								margin-top: 2px;
+							"
+						>
+							<span>0s</span><span>2s</span><span>4s</span><span>6s</span><span>8s</span
+							><span>10s</span>
+						</div>
+
+						<div
+							style="
+								margin-top: 1rem;
+								display: flex;
+								gap: 0.5rem;
+								flex-wrap: wrap;
+								align-items: center;
+							"
+						>
+							<button class="btn mint" onclick="playSyncDemo()" id="sync-play-btn">▶ Play</button>
+							<button class="btn" onclick="stopSyncDemo()">■ Stop</button>
+							<button class="btn" onclick="clearSyncGrid()">Clear</button>
+							<button class="btn active" onclick="loadSyncPreset('good')">Load: Good Sync</button>
+							<button class="btn red" onclick="loadSyncPreset('bad')">Load: Bad Sync</button>
+						</div>
+
+						<div
+							id="sync-analysis"
+							style="
+								margin-top: 1rem;
+								padding: 0.75rem 1rem;
+								border: 1px solid var(--vs-border);
+								background: #040710;
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								min-height: 44px;
+							"
+						></div>
+					</div>
+				</div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Timing</th>
+							<th>Name</th>
+							<th>Effect</th>
+							<th>Use</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Motion before word (−200 to 0ms)</td>
+							<td>Anticipatory</td>
+							<td>Primes the eye; viewer is looking at the element when the word arrives</td>
+							<td>For important reveals where you want maximum compound impact</td>
+						</tr>
+						<tr>
+							<td>Motion at word (0 to +200ms)</td>
+							<td>Synchronised</td>
+							<td>Visual and verbal arrive as a single event — strongest reinforcement</td>
+							<td>Default for all functional motion</td>
+						</tr>
+						<tr>
+							<td>Motion after word (+200 to +600ms)</td>
+							<td>Confirmatory</td>
+							<td>Reinforces rather than introduces — the verbal lands first, visual confirms</td>
+							<td>For data or facts where verbal precision is primary</td>
+						</tr>
+						<tr>
+							<td>Motion after word (+600ms+)</td>
+							<td>Disconnected</td>
+							<td>
+								Viewer has mentally filed the concept before the visual arrives; no reinforcement
+							</td>
+							<td>Avoid — breaks the integration window</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- ═══ SECTION 6: MOTION COST MODEL ═══ -->
+			<section id="cost" class="section">
+				<div class="section-header">
+					<span class="section-num">06.06</span>
+					<h2 class="section-title">The Motion Cost Model</h2>
+				</div>
+
+				<p>
+					Every motion element carries a cost in viewer attention. The cost is not uniform — it
+					depends on the motion's speed, coverage area, contrast change, and duration. A slow fade
+					costs less than a fast fly-in. A small pulse costs less than a full-frame transition. A
+					brief highlight costs less than a persistent animation loop. Understanding this cost
+					structure allows you to budget motion deliberately rather than discovering the overload
+					threshold by accident.
+				</p>
+
+				<!-- DEMO: Motion Cost Calculator -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Motion Cost Calculator</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Toggle the motion elements present in a given frame. The total cost bar shows how
+							close you are to the cognitive overload threshold. The breakdown shows each element's
+							individual cost.
+						</p>
+
+						<div id="mcc-items"></div>
+
+						<div style="margin-top: 1.25rem">
+							<div
+								style="
+									display: flex;
+									justify-content: space-between;
+									font-size: 11px;
+									margin-bottom: 5px;
+								"
+							>
+								<span style="color: var(--vs-muted)">Total motion cost</span>
+								<span id="mcc-total-val" style="font-weight: 600"></span>
+							</div>
+							<div
+								style="
+									height: 10px;
+									background: var(--vs-border);
+									border-radius: 5px;
+									overflow: hidden;
+									position: relative;
+								"
+							>
+								<div
+									id="mcc-total-fill"
+									style="
+										height: 100%;
+										border-radius: 5px;
+										transition:
+											width 0.4s ease,
+											background 0.3s;
+									"
+								></div>
+								<!-- Threshold marker at 70% -->
+								<div
+									style="
+										position: absolute;
+										top: 0;
+										bottom: 0;
+										left: 70%;
+										width: 2px;
+										background: #ff4f68;
+										opacity: 0.6;
+									"
+								></div>
+							</div>
+							<div
+								style="
+									display: flex;
+									justify-content: space-between;
+									font-size: 9px;
+									color: var(--vs-muted);
+									margin-top: 3px;
+								"
+							>
+								<span>0</span><span style="color: #ff4f6888">← overload threshold</span
+								><span>100</span>
+							</div>
+						</div>
+						<div
+							id="mcc-verdict"
+							style="
+								margin-top: 1rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 40px;
+							"
+						></div>
+					</div>
+				</div>
+
+				<p>
+					The cost model has one important asymmetry:
+					<em>motion cost is additive but value is not</em>. Adding a second animated element does
+					not double the communicative value — but it does approximately double the cognitive cost.
+					This is why the first motion in a frame can be highly effective while the fifth motion in
+					the same frame, even if individually well-designed, contributes almost nothing — the
+					viewer's attention is already exhausted.
+				</p>
+			</section>
+
+			<!-- PRACTICAL -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">06.07</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<div class="callout">
+					<div class="callout-label">Exercise A · Over-Animated Clip Critique</div>
+					Find a self-produced educational video that uses heavy motion graphics — kinetic
+					typography, animated charts, constant reveals. Watch it once at full attention. Then watch
+					a 60-second segment again and count every individual motion event. Categorise each as
+					Reveal, Highlight, Transform, or Decorative. Calculate the percentage that is decorative.
+					Write one sentence per decorative motion explaining what information was lost by removing
+					it — if you cannot write that sentence, the motion was unnecessary.
+				</div>
+
+				<div class="callout amber">
+					<div class="callout-label">Exercise B · Motion Timing Strip</div>
+					Take a 20–30 second narration script and create a timing strip: a horizontal timeline with
+					the narration transcribed above, and rows below for each motion event you plan. Draw each
+					motion event as a bar with start and end times, aligned to the word in the narration it
+					corresponds to. Every motion event should be traceable to a specific word or phrase. Any
+					motion event that cannot be aligned to a specific word should be evaluated for removal.
+				</div>
+
+				<div class="callout blue">
+					<div class="callout-label">Exercise C · Rebuild with Function Only</div>
+					Take any video sequence — your own or a reference — and rebuild the motion layer from zero
+					using only functional motion. Start with no animation. Add one motion element at a time,
+					only when you can articulate its function using the Reveal / Highlight / Transform
+					vocabulary. Stop when adding the next element would tip the total cost past the threshold.
+					Compare the rebuilt version to the original. The rebuilt version will almost always feel
+					cleaner, even if it has significantly less motion.
+				</div>
+
+				<div style="margin-top: 2rem">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.15em;
+							text-transform: uppercase;
+							color: var(--vs-muted);
+							margin-bottom: 1rem;
+						"
+					>
+						Key terms from this module
+					</div>
+					<div class="two-col">
+						<div class="stats-panel">
+							<div class="stat-row">
+								<span class="stat-label">Functional motion</span
+								><span class="stat-val">communicates something</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Decorative motion</span
+								><span class="stat-val">visual complexity only</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Reveal</span
+								><span class="stat-val">sequence + priority</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Highlight</span
+								><span class="stat-val">attention direction</span>
+							</div>
+						</div>
+						<div class="stats-panel">
+							<div class="stat-row">
+								<span class="stat-label">Transform</span
+								><span class="stat-val">state change visible</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Sync window</span
+								><span class="stat-val">±200ms of spoken word</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Motion cost</span
+								><span class="stat-val">additive; value is not</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Zero-based rule</span
+								><span class="stat-val">start with no motion</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module 06 — Check Your Understanding</div>
+				<div class="quiz-sub">4 questions · No time limit</div>
+
+				<div class="question" id="q1">
+					<div class="q-text">
+						<span class="q-num">01.</span>A creator animates their logo with a complex
+						spin-and-bounce entrance every time it appears on screen. The logo's content does not
+						change. Which category does this motion fall into, and why?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q1', this, false)">
+							Highlight — the animation is drawing attention to the brand element
+						</div>
+						<div class="option" onclick="answer('q1', this, false)">
+							Reveal — each appearance introduces the logo to viewers who may have missed it
+						</div>
+						<div class="option" onclick="answer('q1', this, true)">
+							Decorative — the motion adds no information; if the logo appeared instantly the viewer
+							would lose nothing, so the animation is purely visual embellishment
+						</div>
+						<div class="option" onclick="answer('q1', this, false)">
+							Transform — the logo is transitioning from an off-screen state to an on-screen state
+						</div>
+					</div>
+					<div class="feedback" id="fb-q1"></div>
+				</div>
+
+				<div class="question" id="q2">
+					<div class="q-text">
+						<span class="q-num">02.</span>A diagram has five labelled nodes. The narration
+						introduces each node in sequence over 20 seconds. The creator reveals all five nodes
+						simultaneously at the start and highlights them one by one as the narration proceeds.
+						What is the primary problem with this approach?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q2', this, false)">
+							The highlighting is decorative because the nodes are already visible when highlighted
+						</div>
+						<div class="option" onclick="answer('q2', this, true)">
+							All five nodes are revealed before the viewer has context for any of them — the reveal
+							function is lost because the elements arrive before the narration has given the viewer
+							a reason to interpret each one. The viewer must hold all five in working memory
+							without guidance on which is currently relevant.
+						</div>
+						<div class="option" onclick="answer('q2', this, false)">
+							The diagram is too complex for a 20-second segment regardless of animation approach
+						</div>
+						<div class="option" onclick="answer('q2', this, false)">
+							Highlighting is the wrong function — the nodes should transform instead
+						</div>
+					</div>
+					<div class="feedback" id="fb-q2"></div>
+				</div>
+
+				<div class="question" id="q3">
+					<div class="q-text">
+						<span class="q-num">03.</span>What is the integration window for synchronising a motion
+						event with narration to achieve the compound reinforcement effect?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q3', this, false)">
+							Within 1 second of the spoken word — close enough to associate
+						</div>
+						<div class="option" onclick="answer('q3', this, true)">
+							Within ±200ms of the spoken word — the brain integrates visual and audio signals as a
+							single event only within this narrow window; outside it, they are processed separately
+							and the reinforcement is lost
+						</div>
+						<div class="option" onclick="answer('q3', this, false)">
+							Within the same sentence — as long as both occur within the same breath of narration
+						</div>
+						<div class="option" onclick="answer('q3', this, false)">
+							Simultaneously — the motion must start at exactly the same frame as the word
+						</div>
+					</div>
+					<div class="feedback" id="fb-q3"></div>
+				</div>
+
+				<div class="question" id="q4">
+					<div class="q-text">
+						<span class="q-num">04.</span>Why does the fifth animated element in a frame contribute
+						less communicative value than the first, even if it is individually well-designed?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q4', this, false)">
+							Viewers habituate to animation styles after the fourth or fifth use in the same video
+						</div>
+						<div class="option" onclick="answer('q4', this, false)">
+							The fifth element is visually crowded by the first four and cannot be perceived
+							clearly
+						</div>
+						<div class="option" onclick="answer('q4', this, true)">
+							Motion cost is additive but communicative value is not — the first few motion events
+							consume most of the available attention budget; by the fifth, the budget is nearly
+							exhausted and the motion is processed as visual noise rather than meaning
+						</div>
+						<div class="option" onclick="answer('q4', this, false)">
+							Rendering performance degrades with multiple simultaneous animations, reducing visual
+							quality
+						</div>
+					</div>
+					<div class="feedback" id="fb-q4"></div>
+				</div>
+
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-display">—</div>
+					<div class="score-label">questions correct out of 4</div>
+				</div>
+			</section>
+
+			<div class="nav-links">
+				<a href="./05" class="prev-link">← Module 05: Composition &amp; Visual Hierarchy</a>
+				<a href="./07" class="next-module">
+					<div>
+						<div class="next-label">Next Module</div>
+						<div class="next-title">Audio as a Narrative Anchor</div>
+					</div>
+					<div class="next-arrow">→</div>
+				</a>
+			</div>
+		</div>
+
+		<script>
+			/* ── READING PROGRESS ── */
+			window.addEventListener('scroll', () => {
+				const el = document.getElementById('reading-progress');
+				const d = document.documentElement.scrollHeight - window.innerHeight;
+				if (d > 0) el.style.width = Math.min(100, (window.scrollY / d) * 100) + '%';
+			});
+
+			/* ════════════════════════════════════════════
+   FUNCTIONAL MOTION THEATER
+════════════════════════════════════════════ */
+			const funcDetails = {
+				reveal:
+					'<strong>Reveal</strong> — Each element enters the frame precisely when the narration introduces it. The viewer\'s eye follows the sequence: nothing arrives before its context exists. The motion communicates "this is the order in which these things matter." A viewer watching a well-timed reveal sequence never needs to search the frame — each element is placed in their attention by the motion itself.',
+				highlight:
+					'<strong>Highlight</strong> — All elements are already in the frame. A brief motion — a pulse, an underline, a colour shift — routes the eye to the currently referenced element. The motion communicates "look at this specific thing right now." The un-highlighted elements do not disappear; they recede. This is the correct use of motion when the content is a diagram that must be read as a whole before individual elements are discussed.',
+				transform:
+					'<strong>Transform</strong> — An element changes state in a way the static frame cannot show. A bar grows. A node connects to another. A flow arrow draws itself along a path. The motion communicates the change itself — the viewer does not infer the process from a before and after; they watch it happen. This is the highest-value motion function because it makes the invisible visible.',
+				decorative:
+					'<strong>Decorative ✕</strong> — Motion applied without communicative purpose. The element spins, bounces, and kinetically arrives — but the information it contains was available from the moment it finished moving. The viewer watched the motion but learned nothing from it that they would not have learned from a static appearance. Every frame-second consumed by this animation is a frame-second not used for content.'
+			};
+
+			let funcMode = 'reveal';
+			let funcAnimId = null;
+			let funcPhase = 0;
+			let funcStartTime = null;
+
+			const FUNC_DUR = 3.5; // seconds
+
+			function selectFunc(mode) {
+				funcMode = mode;
+				document.querySelectorAll('.func-tab').forEach((t, i) => {
+					t.classList.toggle(
+						'active',
+						['reveal', 'highlight', 'transform', 'decorative'][i] === mode
+					);
+				});
+				document.getElementById('func-detail').innerHTML = funcDetails[mode];
+				resetFunc();
+			}
+
+			function resetFunc() {
+				if (funcAnimId) cancelAnimationFrame(funcAnimId);
+				funcAnimId = null;
+				funcPhase = 0;
+				funcStartTime = null;
+				document.getElementById('func-progress-fill').style.width = '0%';
+				document.getElementById('func-time').textContent = '0.0s';
+				document.getElementById('func-play').textContent = '▶ Play';
+				drawFuncFrame(0);
+			}
+
+			function playFunc() {
+				if (funcAnimId) {
+					resetFunc();
+					return;
+				}
+				document.getElementById('func-play').textContent = '■ Stop';
+				funcStartTime = null;
+				function tick(ts) {
+					if (!funcStartTime) funcStartTime = ts;
+					const t = Math.min(1, (ts - funcStartTime) / (FUNC_DUR * 1000));
+					funcPhase = t;
+					drawFuncFrame(t);
+					document.getElementById('func-progress-fill').style.width = t * 100 + '%';
+					document.getElementById('func-time').textContent = (t * FUNC_DUR).toFixed(1) + 's';
+					if (t < 1) funcAnimId = requestAnimationFrame(tick);
+					else {
+						funcAnimId = null;
+						document.getElementById('func-play').textContent = '▶ Play';
+					}
+				}
+				funcAnimId = requestAnimationFrame(tick);
+			}
+
+			function easeOut(t) {
+				return 1 - Math.pow(1 - t, 3);
+			}
+			function easeInOut(t) {
+				return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+			}
+
+			function drawFuncFrame(t) {
+				const canvas = document.getElementById('func-canvas');
+				const W = canvas.offsetWidth || 560;
+				const H = (W * 9) / 16;
+				const dpr = window.devicePixelRatio || 1;
+				if (canvas.width !== W * dpr || canvas.height !== H * dpr) {
+					canvas.width = W * dpr;
+					canvas.height = H * dpr;
+					canvas.style.width = W + 'px';
+					canvas.style.height = H + 'px';
+					canvas.getContext('2d').scale(dpr, dpr);
+				}
+				const ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#040710';
+				ctx.fillRect(0, 0, W, H);
+
+				const nodes = [
+					{ x: W * 0.18, y: H * 0.5, label: 'ACTION', color: '#ff4f68' },
+					{ x: W * 0.38, y: H * 0.3, label: 'TRIGGER', color: '#f5b94a' },
+					{ x: W * 0.58, y: H * 0.5, label: 'EFFECT', color: '#4aafff' },
+					{ x: W * 0.38, y: H * 0.7, label: 'FEEDBACK', color: '#3dd9a4' },
+					{ x: W * 0.78, y: H * 0.5, label: 'OUTPUT', color: '#a78bfa' }
+				];
+				const edges = [
+					[0, 1],
+					[1, 2],
+					[2, 3],
+					[3, 0],
+					[2, 4]
+				];
+
+				if (funcMode === 'reveal') {
+					// Each node revealed sequentially, 0.7s each
+					const nodeDelay = 0.18;
+					edges.forEach(([a, b]) => {
+						const ea = a * nodeDelay + nodeDelay * 0.5;
+						const et = Math.max(0, Math.min(1, (t - ea) / 0.12));
+						if (et <= 0) return;
+						const na = nodes[a],
+							nb = nodes[b];
+						ctx.strokeStyle = nb.color + '60';
+						ctx.lineWidth = 1.5;
+						ctx.setLineDash([4, 4]);
+						ctx.beginPath();
+						const ex = na.x + (nb.x - na.x) * et;
+						const ey = na.y + (nb.y - na.y) * et;
+						ctx.moveTo(na.x, na.y);
+						ctx.lineTo(ex, ey);
+						ctx.stroke();
+						ctx.setLineDash([]);
+					});
+					nodes.forEach((n, i) => {
+						const start = i * nodeDelay;
+						const et = Math.max(0, Math.min(1, (t - start) / 0.15));
+						if (et <= 0) return;
+						const r = 28 * easeOut(et);
+						const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r);
+						grd.addColorStop(0, n.color + 'cc');
+						grd.addColorStop(1, n.color + '20');
+						ctx.beginPath();
+						ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+						ctx.fillStyle = grd;
+						ctx.fill();
+						ctx.strokeStyle = n.color + '80';
+						ctx.lineWidth = 1.5;
+						ctx.stroke();
+						ctx.font = `600 ${W * 0.018}px IBM Plex Mono`;
+						ctx.fillStyle = '#fff';
+						ctx.textAlign = 'center';
+						ctx.globalAlpha = et;
+						ctx.fillText(n.label, n.x, n.y + 4);
+						ctx.globalAlpha = 1;
+					});
+				} else if (funcMode === 'highlight') {
+					// All nodes shown, highlight cycles
+					edges.forEach(([a, b]) => {
+						ctx.strokeStyle = '#1e2d40';
+						ctx.lineWidth = 1.5;
+						ctx.setLineDash([3, 3]);
+						ctx.beginPath();
+						ctx.moveTo(nodes[a].x, nodes[a].y);
+						ctx.lineTo(nodes[b].x, nodes[b].y);
+						ctx.stroke();
+						ctx.setLineDash([]);
+					});
+					const activeIdx = Math.floor(t * nodes.length * 1.2) % nodes.length;
+					nodes.forEach((n, i) => {
+						const isActive = i === activeIdx;
+						const pulse = isActive ? 0.5 + 0.5 * Math.sin(t * 20) : 0;
+						const r = isActive ? 30 + pulse * 6 : 24;
+						const alpha = isActive ? 1 : 0.35;
+						ctx.globalAlpha = alpha;
+						const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r);
+						grd.addColorStop(0, n.color);
+						grd.addColorStop(1, n.color + '20');
+						ctx.beginPath();
+						ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+						ctx.fillStyle = grd;
+						ctx.fill();
+						ctx.strokeStyle = n.color;
+						ctx.lineWidth = isActive ? 2 : 1;
+						ctx.stroke();
+						ctx.font = `600 ${W * 0.018}px IBM Plex Mono`;
+						ctx.fillStyle = '#fff';
+						ctx.textAlign = 'center';
+						ctx.fillText(n.label, n.x, n.y + 4);
+						if (isActive) {
+							// Highlight ring
+							ctx.globalAlpha = 0.3 + pulse * 0.4;
+							ctx.beginPath();
+							ctx.arc(n.x, n.y, r + 8, 0, Math.PI * 2);
+							ctx.strokeStyle = n.color;
+							ctx.lineWidth = 1.5;
+							ctx.stroke();
+						}
+						ctx.globalAlpha = 1;
+					});
+				} else if (funcMode === 'transform') {
+					// Bar chart grows, then transforms to pie-like
+					const bars = [
+						{ label: 'Q1', val: 0.35, color: '#f5b94a' },
+						{ label: 'Q2', val: 0.55, color: '#4aafff' },
+						{ label: 'Q3', val: 0.72, color: '#3dd9a4' },
+						{ label: 'Q4', val: 0.9, color: '#ff4f68' }
+					];
+					const bW = W * 0.1,
+						gap = W * 0.06;
+					const startX = W * 0.15;
+					const maxH = H * 0.55;
+					const baseY = H * 0.78;
+
+					// Phase 1 (0–0.5): bars grow
+					// Phase 2 (0.5–0.75): bars flatten / transform signal
+					// Phase 3 (0.75–1): circles emerge at top of bars
+					bars.forEach((b, i) => {
+						const x = startX + i * (bW + gap);
+						const growT = Math.min(1, t / 0.45);
+						const bH = b.val * maxH * easeOut(growT);
+
+						ctx.fillStyle = b.color + '30';
+						ctx.fillRect(x, baseY - bH, bW, bH);
+						ctx.strokeStyle = b.color;
+						ctx.lineWidth = 1.5;
+						ctx.strokeRect(x, baseY - bH, bW, bH);
+
+						// Value line appears
+						if (t > 0.5) {
+							const lt = easeOut(Math.min(1, (t - 0.5) / 0.15));
+							const y = baseY - bH;
+							ctx.strokeStyle = b.color + '60';
+							ctx.lineWidth = 1;
+							ctx.setLineDash([3, 3]);
+							ctx.beginPath();
+							ctx.moveTo(x, y);
+							ctx.lineTo(x + bW * lt * 1.5, y);
+							ctx.stroke();
+							ctx.setLineDash([]);
+						}
+
+						// Transform phase: dot appears at peak
+						if (t > 0.7) {
+							const dt = easeOut(Math.min(1, (t - 0.7) / 0.2));
+							const r = 8 * dt;
+							const cx = x + bW / 2,
+								cy = baseY - bH;
+							const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 3);
+							grd.addColorStop(0, b.color);
+							grd.addColorStop(1, b.color + '00');
+							ctx.beginPath();
+							ctx.arc(cx, cy, r * 3, 0, Math.PI * 2);
+							ctx.fillStyle = grd;
+							ctx.fill();
+							ctx.beginPath();
+							ctx.arc(cx, cy, r, 0, Math.PI * 2);
+							ctx.fillStyle = b.color;
+							ctx.fill();
+						}
+
+						ctx.font = `${W * 0.015}px IBM Plex Mono`;
+						ctx.fillStyle = b.color;
+						ctx.textAlign = 'center';
+						ctx.fillText(b.label, x + bW / 2, baseY + 14);
+					});
+
+					// Axis
+					ctx.strokeStyle = '#1e2d40';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.1, H * 0.12);
+					ctx.lineTo(W * 0.1, baseY + 2);
+					ctx.lineTo(W * 0.85, baseY + 2);
+					ctx.stroke();
+
+					if (t > 0.75) {
+						const lt = easeInOut(Math.min(1, (t - 0.75) / 0.2));
+						ctx.font = `600 ${W * 0.02}px IBM Plex Mono`;
+						ctx.fillStyle = `rgba(245,185,74,${lt})`;
+						ctx.textAlign = 'center';
+						ctx.fillText('TREND LINE EMERGING', W * 0.5, H * 0.18);
+					}
+				} else {
+					// decorative
+					// Spin-bounce-kinetic nonsense
+					const spin = t * Math.PI * 4;
+					const bounce = Math.abs(Math.sin(t * Math.PI * 6)) * 0.3;
+					const scale = 0.8 + bounce;
+
+					ctx.save();
+					ctx.translate(W / 2, H / 2);
+					ctx.rotate(spin);
+					ctx.scale(scale, scale);
+
+					// Kinetic text
+					['IMPORTANT', 'DATA', 'INSIGHT!'].forEach((word, i) => {
+						const angle = (i / 3) * Math.PI * 2 + spin * 0.5;
+						const r = W * 0.18;
+						const wx = Math.cos(angle) * r,
+							wy = Math.sin(angle) * r;
+						const col = ['#f5b94a', '#4aafff', '#ff4f68'][i];
+						ctx.font = `800 ${W * 0.035}px Syne`;
+						ctx.fillStyle = col;
+						ctx.textAlign = 'center';
+						ctx.fillText(word, wx, wy);
+					});
+
+					// Stars/sparkles
+					for (let s = 0; s < 8; s++) {
+						const sa = (s / 8) * Math.PI * 2 + t * 3;
+						const sr = W * (0.08 + 0.06 * Math.sin(t * 5 + s));
+						const sx = Math.cos(sa) * sr,
+							sy = Math.sin(sa) * sr;
+						ctx.beginPath();
+						ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+						ctx.fillStyle = `hsl(${s * 45 + t * 180},80%,65%)`;
+						ctx.fill();
+					}
+					ctx.restore();
+
+					// ✕ label
+					if (t > 0.1) {
+						ctx.font = `600 ${W * 0.016}px IBM Plex Mono`;
+						ctx.fillStyle = '#ff4f6888';
+						ctx.textAlign = 'center';
+						ctx.fillText('same information as a static frame', W / 2, H * 0.88);
+					}
+				}
+			}
+
+			// Init
+			(function () {
+				const canvas = document.getElementById('func-canvas');
+				const W = canvas.parentElement.offsetWidth || 560;
+				const H = (W * 9) / 16;
+				const dpr = window.devicePixelRatio || 1;
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.width = W + 'px';
+				canvas.style.height = H + 'px';
+				canvas.getContext('2d').scale(dpr, dpr);
+			})();
+			selectFunc('reveal');
+			window.addEventListener('resize', () => {
+				const canvas = document.getElementById('func-canvas');
+				const W = canvas.parentElement.offsetWidth || 560;
+				const H = (W * 9) / 16;
+				const dpr = window.devicePixelRatio || 1;
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.width = W + 'px';
+				canvas.style.height = H + 'px';
+				canvas.getContext('2d').scale(dpr, dpr);
+				drawFuncFrame(funcPhase);
+			});
+
+			/* ════════════════════════════════════════════
+   OVERUSE DETECTOR
+════════════════════════════════════════════ */
+			const overuseElements = [
+				{
+					id: 'ou-bg',
+					label: 'Animated background loop',
+					cost: 25,
+					active: false,
+					color: '#ff4f68',
+					desc: 'A looping background motion (particles, gradient shift, scan lines). Consumes attention continuously for the entire duration it is active.'
+				},
+				{
+					id: 'ou-text',
+					label: 'Kinetic headline text',
+					cost: 22,
+					active: false,
+					color: '#f5b94a',
+					desc: 'Text that spins, slides, or bounces into position. The entrance animation consumes the attention that should be going to the words themselves.'
+				},
+				{
+					id: 'ou-chart',
+					label: 'Auto-animating chart',
+					cost: 18,
+					active: false,
+					color: '#4aafff',
+					desc: 'A chart whose bars or lines are always in motion — growing, shrinking, pulsing. Useful once; as a loop, it competes with everything else.'
+				},
+				{
+					id: 'ou-arrow',
+					label: 'Pulsing attention arrow',
+					cost: 12,
+					active: false,
+					color: '#3dd9a4',
+					desc: 'An arrow that pulses or bounces indefinitely to point at an element. After the initial attention redirect, the persistent motion is pure cost.'
+				},
+				{
+					id: 'ou-lower',
+					label: 'Animated lower-third strip',
+					cost: 10,
+					active: false,
+					color: '#a78bfa',
+					desc: 'A sliding lower-third that re-enters every time a new name or caption appears. The slide is functional once; repeated for every element it becomes habituated noise.'
+				},
+				{
+					id: 'ou-count',
+					label: 'Counting number ticker',
+					cost: 8,
+					active: false,
+					color: '#f5b94a',
+					desc: 'A number that counts up to its final value. Functional for a single key statistic; applied to every number in the video it creates a constant motion layer.'
+				}
+			];
+
+			let overuseAnimId = null;
+			let overusePhase = 0;
+
+			function buildOveruseControls() {
+				const el = document.getElementById('overuse-controls');
+				el.innerHTML = overuseElements
+					.map(
+						(oe) => `
+    <div class="motion-cost-item">
+      <div class="mci-icon">●</div>
+      <div class="mci-label">${oe.label}</div>
+      <button class="mci-toggle" id="ou-btn-${oe.id}" onclick="toggleOveruse('${oe.id}')">${oe.active ? 'ON' : 'OFF'}</button>
+      <div class="mci-cost" style="color:${oe.color};">−${oe.cost}</div>
+    </div>`
+					)
+					.join('');
+				buildOveruseMeters();
+				renderOveruseVerdictAndMeters();
+				startOveruseAnim();
+			}
+
+			function toggleOveruse(id) {
+				const el = overuseElements.find((e) => e.id === id);
+				el.active = !el.active;
+				const btn = document.getElementById('ou-btn-' + id);
+				btn.classList.toggle('on', el.active);
+				btn.textContent = el.active ? 'ON' : 'OFF';
+				renderOveruseVerdictAndMeters();
+			}
+
+			function buildOveruseMeters() {
+				const el = document.getElementById('overuse-meters');
+				el.innerHTML = overuseElements
+					.map(
+						(oe) => `
+    <div class="overuse-meter-row">
+      <div class="overuse-meter-label">${oe.label.split(' ').slice(0, 2).join(' ')}</div>
+      <div class="overuse-meter-bar"><div id="oum-${oe.id}" class="overuse-meter-fill" style="width:0%; background:${oe.color};"></div></div>
+      <div style="font-size:11px; color:${oe.color}; min-width:28px; text-align:right; font-weight:600;" id="oumv-${oe.id}">0</div>
+    </div>`
+					)
+					.join('');
+			}
+
+			function renderOveruseVerdictAndMeters() {
+				const total = overuseElements.filter((e) => e.active).reduce((s, e) => s + e.cost, 0);
+				overuseElements.forEach((oe) => {
+					const fill = document.getElementById('oum-' + oe.id);
+					const val = document.getElementById('oumv-' + oe.id);
+					if (fill) {
+						fill.style.width = (oe.active ? oe.cost : 0) + '%';
+						val.textContent = oe.active ? oe.cost : 0;
+					}
+				});
+				const active = overuseElements.filter((e) => e.active);
+				const lastActive = active[active.length - 1];
+				let verdict = '';
+				if (total === 0)
+					verdict =
+						'No motion elements active. Zero-based starting point — add elements only when they earn their place.';
+				else if (total < 25)
+					verdict = `Total motion cost: ${total}/100. Well within threshold. ${active.length} element${active.length > 1 ? 's' : ''} active — each has room to communicate. ${lastActive ? lastActive.desc : ''}`;
+				else if (total < 50)
+					verdict = `Total motion cost: ${total}/100. Moderate load. The frame is active but not overloaded. Viewer attention is split ${active.length} ways — ensure each element has a distinct beat. ${lastActive ? lastActive.desc : ''}`;
+				else if (total < 70)
+					verdict = `Total motion cost: ${total}/100. Approaching threshold. The viewer is working hard to track motion. Each additional element here risks tipping into overload. Consider which elements can be reduced to static.`;
+				else
+					verdict = `⚠ Total motion cost: ${total}/100 — overload threshold exceeded. The viewer's motion-detection system is saturated. Content comprehension will drop significantly. Remove the lowest-value elements until the total falls below 70.`;
+
+				const vd = document.getElementById('overuse-verdict');
+				vd.textContent = verdict;
+				vd.style.borderLeftColor =
+					total > 70 ? '#ff4f68' : total > 50 ? '#f5b94a' : total > 25 ? '#4aafff' : '#3dd9a4';
+			}
+
+			function startOveruseAnim() {
+				if (overuseAnimId) return;
+				function tick() {
+					overusePhase += 0.015;
+					renderOveruseCanvas();
+					overuseAnimId = requestAnimationFrame(tick);
+				}
+				overuseAnimId = requestAnimationFrame(tick);
+			}
+
+			function renderOveruseCanvas() {
+				const canvas = document.getElementById('overuse-canvas');
+				const frame = document.getElementById('overuse-frame');
+				const dpr = window.devicePixelRatio || 1;
+				const W = frame.offsetWidth || 500;
+				const H = (W * 9) / 16;
+				if (canvas.width !== W * dpr) {
+					canvas.width = W * dpr;
+					canvas.height = H * dpr;
+					canvas.style.width = W + 'px';
+					canvas.style.height = H + 'px';
+					canvas.getContext('2d').scale(dpr, dpr);
+				}
+				const ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#040710';
+				ctx.fillRect(0, 0, W, H);
+
+				const t = overusePhase;
+
+				// BG anim
+				const bgEl = overuseElements.find((e) => e.id === 'ou-bg');
+				if (bgEl.active) {
+					for (let i = 0; i < 12; i++) {
+						const a = (i / 12) * Math.PI * 2 + t * 0.4;
+						const r = (0.1 + 0.15 * Math.sin(t + i)) * Math.min(W, H);
+						const x = W / 2 + Math.cos(a) * W * 0.3,
+							y = H / 2 + Math.sin(a) * H * 0.25;
+						const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+						grd.addColorStop(0, `rgba(255,79,104,0.05)`);
+						grd.addColorStop(1, 'transparent');
+						ctx.beginPath();
+						ctx.arc(x, y, r, 0, Math.PI * 2);
+						ctx.fillStyle = grd;
+						ctx.fill();
+					}
+				}
+
+				// Static BG grid
+				ctx.strokeStyle = '#14202e';
+				ctx.lineWidth = 0.5;
+				for (let x = 0; x < W; x += W / 10) {
+					ctx.beginPath();
+					ctx.moveTo(x, 0);
+					ctx.lineTo(x, H);
+					ctx.stroke();
+				}
+				for (let y = 0; y < H; y += H / 6) {
+					ctx.beginPath();
+					ctx.moveTo(0, y);
+					ctx.lineTo(W, y);
+					ctx.stroke();
+				}
+
+				// Headline
+				const textEl = overuseElements.find((e) => e.id === 'ou-text');
+				if (textEl.active) {
+					const bounce = Math.abs(Math.sin(t * 3)) * 6;
+					ctx.font = `800 ${W * 0.055}px Syne,sans-serif`;
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText('THE CORE IDEA', W / 2, H * 0.3 - bounce);
+				} else {
+					ctx.font = `800 ${W * 0.055}px Syne,sans-serif`;
+					ctx.fillStyle = '#ffffff90';
+					ctx.textAlign = 'center';
+					ctx.fillText('THE CORE IDEA', W / 2, H * 0.3);
+				}
+
+				// Chart
+				const chartEl = overuseElements.find((e) => e.id === 'ou-chart');
+				const bars = [0.4, 0.65, 0.55, 0.8];
+				bars.forEach((v, i) => {
+					const bx = W * 0.14 + i * (W * 0.08 + W * 0.03);
+					const bv = chartEl.active ? v * 0.7 + 0.3 * Math.sin(t * 2 + i) : v;
+					const bh = bv * H * 0.3;
+					const col = ['#f5b94a', '#4aafff', '#3dd9a4', '#f5b94a'][i];
+					ctx.fillStyle = col + '30';
+					ctx.fillRect(bx, H * 0.72 - bh, W * 0.07, bh);
+					ctx.strokeStyle = col + '80';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(bx, H * 0.72 - bh, W * 0.07, bh);
+				});
+
+				// Arrow
+				const arrowEl = overuseElements.find((e) => e.id === 'ou-arrow');
+				if (arrowEl.active) {
+					const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+					ctx.strokeStyle = `rgba(61,217,164,${0.4 + pulse * 0.4})`;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.7, H * 0.45);
+					ctx.lineTo(W * 0.75, H * 0.5);
+					ctx.lineTo(W * 0.7, H * 0.55);
+					ctx.stroke();
+					ctx.fillStyle = `rgba(61,217,164,${0.3 + pulse * 0.3})`;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.76, H * 0.5);
+					ctx.lineTo(W * 0.68, H * 0.44);
+					ctx.lineTo(W * 0.68, H * 0.56);
+					ctx.closePath();
+					ctx.fill();
+				}
+
+				// Lower third
+				const lowerEl = overuseElements.find((e) => e.id === 'ou-lower');
+				if (lowerEl.active) {
+					const slide = Math.max(0, Math.min(1, (Math.sin(t * 0.8) + 1) / 2));
+					const lx = -W * (1 - slide);
+					ctx.fillStyle = 'rgba(0,0,0,0.75)';
+					ctx.fillRect(lx, H * 0.78, W, H * 0.17);
+					ctx.fillStyle = '#a78bfa';
+					ctx.fillRect(lx + W * 0.04, H * 0.8, 3, H * 0.1);
+					ctx.font = `${W * 0.025}px IBM Plex Mono`;
+					ctx.fillStyle = '#a78bfa';
+					ctx.textAlign = 'left';
+					ctx.fillText('LOWER THIRD CONTEXT', lx + W * 0.07, H * 0.875);
+				}
+
+				// Counter
+				const countEl = overuseElements.find((e) => e.id === 'ou-count');
+				if (countEl.active) {
+					const num = Math.round(1000 + ((t * 200) % 1000));
+					ctx.font = `700 ${W * 0.06}px Syne,sans-serif`;
+					ctx.fillStyle = '#f5b94a';
+					ctx.textAlign = 'right';
+					ctx.fillText(num.toLocaleString(), W * 0.95, H * 0.38);
+				}
+			}
+
+			buildOveruseControls();
+
+			/* ════════════════════════════════════════════
+   ATTENTION DIRECTION LAB
+════════════════════════════════════════════ */
+			const attnNodes = [
+				{ x: 0.2, y: 0.5, label: 'INPUT', color: '#4aafff', r: 0.07 },
+				{ x: 0.42, y: 0.28, label: 'PROCESS', color: '#f5b94a', r: 0.07 },
+				{ x: 0.62, y: 0.52, label: 'OUTPUT', color: '#3dd9a4', r: 0.07 },
+				{ x: 0.42, y: 0.74, label: 'FEEDBACK', color: '#ff4f68', r: 0.07 },
+				{ x: 0.8, y: 0.3, label: 'METRIC', color: '#a78bfa', r: 0.055 }
+			];
+			const attnEdges = [
+				[0, 1],
+				[1, 2],
+				[2, 3],
+				[3, 0],
+				[2, 4]
+			];
+			let attnMode = 'pulse';
+			let attnAnimId = null;
+			let attnTarget = null;
+			let attnAnimPhase = 0;
+
+			const attnDescs = {
+				pulse:
+					'PULSE — A brief increase in size and brightness lasting 200–300ms. The minimal effective attention-directing technique. Costs very little motion budget, produces a clear redirect, and resolves cleanly without leaving a persistent motion in the frame.',
+				underline:
+					'UNDERLINE — A short line draws itself beneath the label at the moment of reference. Borrows from reading conventions — underlines signal importance in text. Functional duration matches how long the narration is discussing the element.',
+				outline:
+					'OUTLINE RING — An expanding ring originates from the target element and dissipates, like a ripple. More visible than a pulse across a busy frame. The ring animation communicates "here" without the persistent motion of a looping pulse.',
+				arrow:
+					'ARROW — A directional indicator appears, pointing from an empty region of the frame to the target. Functional when the element is small or surrounded by competing elements. Risk: the arrow itself becomes a competing element that must be removed when no longer needed.',
+				shake:
+					'SHAKE ✕ — Rapid oscillation applied to the target element. Effective at commanding attention but communicates instability or urgency — it reads as an error state or warning. Inappropriate for neutral explanation. Only use for genuine urgency.'
+			};
+
+			function setAttnMode(mode) {
+				attnMode = mode;
+				document.querySelectorAll('#attn-mode-btns .btn').forEach((b, i) => {
+					const modes = ['pulse', 'underline', 'outline', 'arrow', 'shake'];
+					b.classList.toggle('active', modes[i] === mode);
+					b.classList.toggle('amber', modes[i] === mode && mode === 'arrow');
+					b.classList.toggle('red', modes[i] === mode && mode === 'shake');
+				});
+				document.getElementById('attn-desc').textContent = attnDescs[mode];
+				attnTarget = null;
+				attnAnimPhase = 0;
+				drawAttnCanvas(0);
+			}
+
+			function initAttnCanvas() {
+				const canvas = document.getElementById('attn-canvas');
+				const W = canvas.offsetWidth || 560;
+				const H = 280;
+				const dpr = window.devicePixelRatio || 1;
+				canvas.width = W * dpr;
+				canvas.height = H * dpr;
+				canvas.style.height = '280px';
+				canvas.getContext('2d').scale(dpr, dpr);
+				drawAttnCanvas(0);
+			}
+
+			canvas_attn_click: {
+				document.getElementById('attn-canvas').addEventListener('click', function (e) {
+					const rect = this.getBoundingClientRect();
+					const mx = (e.clientX - rect.left) / rect.width;
+					const my = (e.clientY - rect.top) / rect.height;
+					const W = this.offsetWidth || 560;
+					const H = 280;
+					const hit = attnNodes.findIndex((n) => {
+						const dx = (mx - n.x) * W,
+							dy = (my - n.y) * H;
+						return Math.hypot(dx, dy) < n.r * Math.min(W, H);
+					});
+					if (hit >= 0) {
+						attnTarget = hit;
+						attnAnimPhase = 0;
+						if (attnAnimId) cancelAnimationFrame(attnAnimId);
+						let start = null;
+						function tick(ts) {
+							if (!start) start = ts;
+							attnAnimPhase = Math.min(1, (ts - start) / 600);
+							drawAttnCanvas(attnAnimPhase);
+							if (attnAnimPhase < 1) attnAnimId = requestAnimationFrame(tick);
+							else attnAnimId = null;
+						}
+						attnAnimId = requestAnimationFrame(tick);
+					}
+				});
+			}
+
+			function drawAttnCanvas(t) {
+				const canvas = document.getElementById('attn-canvas');
+				const W = canvas.offsetWidth || 560;
+				const H = 280;
+				const dpr = window.devicePixelRatio || 1;
+				if (canvas.width !== W * dpr) {
+					canvas.width = W * dpr;
+					canvas.height = H * dpr;
+					canvas.getContext('2d').scale(dpr, dpr);
+				}
+				const ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#040710';
+				ctx.fillRect(0, 0, W, H);
+
+				// Edges
+				attnEdges.forEach(([a, b]) => {
+					ctx.strokeStyle = '#1e2d40';
+					ctx.lineWidth = 1.5;
+					ctx.setLineDash([3, 4]);
+					ctx.beginPath();
+					ctx.moveTo(attnNodes[a].x * W, attnNodes[a].y * H);
+					ctx.lineTo(attnNodes[b].x * W, attnNodes[b].y * H);
+					ctx.stroke();
+					ctx.setLineDash([]);
+				});
+
+				// Nodes
+				attnNodes.forEach((n, i) => {
+					const isTarget = attnTarget === i;
+					const r = n.r * Math.min(W, H);
+					let drawR = r;
+
+					if (isTarget && t > 0) {
+						if (attnMode === 'pulse') {
+							drawR = r * (1 + 0.25 * Math.sin(t * Math.PI));
+						} else if (attnMode === 'shake') {
+							const shake = Math.sin(t * Math.PI * 8) * 6 * (1 - t);
+							ctx.save();
+							ctx.translate(shake, 0);
+						}
+					}
+
+					const grd = ctx.createRadialGradient(n.x * W, n.y * H, 0, n.x * W, n.y * H, drawR);
+					const alpha = isTarget || attnTarget === null ? 1 : 0.35;
+					grd.addColorStop(0, n.color + (isTarget ? 'ff' : '88'));
+					grd.addColorStop(1, n.color + '20');
+					ctx.globalAlpha = alpha;
+					ctx.beginPath();
+					ctx.arc(n.x * W, n.y * H, drawR, 0, Math.PI * 2);
+					ctx.fillStyle = grd;
+					ctx.fill();
+					ctx.strokeStyle = n.color + (isTarget ? '' : '50');
+					ctx.lineWidth = isTarget ? 2 : 1;
+					ctx.stroke();
+					ctx.font = `600 ${W * 0.018}px IBM Plex Mono`;
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText(n.label, n.x * W, n.y * H + 4);
+					ctx.globalAlpha = 1;
+
+					if (attnMode === 'shake') ctx.restore?.();
+
+					if (isTarget && t > 0) {
+						if (attnMode === 'underline') {
+							const ulLen = drawR * 1.8 * t;
+							ctx.strokeStyle = n.color;
+							ctx.lineWidth = 2;
+							ctx.beginPath();
+							ctx.moveTo(n.x * W - ulLen / 2, n.y * H + drawR * 0.85);
+							ctx.lineTo(n.x * W + ulLen / 2, n.y * H + drawR * 0.85);
+							ctx.stroke();
+						} else if (attnMode === 'outline') {
+							const outerR = drawR + t * drawR * 1.2;
+							ctx.globalAlpha = 1 - t;
+							ctx.beginPath();
+							ctx.arc(n.x * W, n.y * H, outerR, 0, Math.PI * 2);
+							ctx.strokeStyle = n.color;
+							ctx.lineWidth = 2;
+							ctx.stroke();
+							ctx.globalAlpha = 1;
+						} else if (attnMode === 'arrow') {
+							const ax = n.x * W + drawR * 2 + t * drawR * 0.5;
+							const ay = n.y * H;
+							const arrowLen = drawR * 1.2 * (1 - t * 0.2);
+							ctx.strokeStyle = n.color;
+							ctx.lineWidth = 2;
+							ctx.beginPath();
+							ctx.moveTo(ax + arrowLen, ay);
+							ctx.lineTo(ax, ay);
+							ctx.stroke();
+							ctx.fillStyle = n.color;
+							ctx.beginPath();
+							ctx.moveTo(ax, ay - 5);
+							ctx.lineTo(ax - 10, ay);
+							ctx.lineTo(ax, ay + 5);
+							ctx.closePath();
+							ctx.fill();
+						}
+					}
+				});
+
+				// Instruction if no target
+				if (attnTarget === null) {
+					ctx.font = `${W * 0.018}px IBM Plex Mono`;
+					ctx.fillStyle = '#405068';
+					ctx.textAlign = 'center';
+					ctx.fillText('Click any node to trigger attention-directing motion', W / 2, H * 0.94);
+				}
+			}
+
+			initAttnCanvas();
+			setAttnMode('pulse');
+			window.addEventListener('resize', initAttnCanvas);
+
+			/* ════════════════════════════════════════════
+   NARRATION SYNC PLANNER
+════════════════════════════════════════════ */
+			const SYNC_BEATS = 5; // narration beats
+			const SYNC_COLS = 12; // time columns (each = ~0.83s across 10s)
+
+			const syncRows = [
+				{
+					id: 'narr',
+					label: 'Narration',
+					color: '#4aafff',
+					cells: new Array(SYNC_COLS).fill(false)
+				},
+				{
+					id: 'reveal',
+					label: 'Reveal',
+					color: '#f5b94a',
+					cells: new Array(SYNC_COLS).fill(false)
+				},
+				{
+					id: 'motion',
+					label: 'Motion',
+					color: '#ff4f68',
+					cells: new Array(SYNC_COLS).fill(false)
+				},
+				{ id: 'text', label: 'Text', color: '#3dd9a4', cells: new Array(SYNC_COLS).fill(false) }
+			];
+
+			// Narration beat positions (0-1 across 10s → col index)
+			const narrationBeats = [
+				{ col: 1, label: 'feedback loop' },
+				{ col: 3, label: 'single action' },
+				{ col: 5, label: 'effect' },
+				{ col: 8, label: 'loops back' },
+				{ col: 10, label: 'amplify' }
+			];
+
+			let syncAnimId = null;
+
+			function buildSyncRows() {
+				const el = document.getElementById('sync-rows');
+				el.innerHTML = '';
+				syncRows.forEach((row) => {
+					const wrap = document.createElement('div');
+					// Label
+					const row_html = `
+      <div class="timing-row-label" style="color:${row.color};">${row.label}</div>
+      <div style="display:flex; gap:2px; position:relative;">
+        ${row.cells
+					.map((c, i) => {
+						const beatHere = narrationBeats.find((b) => b.col === i);
+						return `<div class="timing-cell${c ? ' active-' + row.id.replace('narr', 'narr').replace('reveal', 'text').replace('motion', 'motion').replace('text', 'text') : ''}"
+            id="sc-${row.id}-${i}"
+            style="${c ? 'background:color-mix(in srgb,' + row.color + ' 22%,transparent);border-color:' + row.color + ';' : ''}"
+            onclick="toggleSyncCell('${row.id}',${i})">
+            ${beatHere && row.id === 'narr' ? `<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:1px;height:8px;background:${row.color}88;"></div>` : ''}
+          </div>`;
+					})
+					.join('')}
+        ${narrationBeats.map((b) => `<div style="position:absolute;left:calc(${(b.col / SYNC_COLS) * 100}% - 1px);top:-2px;width:2px;height:calc(100% + 4px);background:${row.id === 'narr' ? row.color + '80' : '#1e2d4060'};pointer-events:none;"></div>`).join('')}
+      </div>`;
+					wrap.innerHTML = row_html;
+					el.appendChild(wrap);
+				});
+				analyzeSyncGrid();
+			}
+
+			function toggleSyncCell(rowId, col) {
+				const row = syncRows.find((r) => r.id === rowId);
+				row.cells[col] = !row.cells[col];
+				buildSyncRows();
+			}
+
+			function clearSyncGrid() {
+				syncRows.forEach((r) => r.cells.fill(false));
+				buildSyncRows();
+			}
+
+			function loadSyncPreset(type) {
+				clearSyncGrid();
+				if (type === 'good') {
+					// Narration beats, with motion aligned within 1-2 cells
+					narrationBeats.forEach((b) => {
+						syncRows.find((r) => r.id === 'narr').cells[Math.min(SYNC_COLS - 1, b.col)] = true;
+						syncRows.find((r) => r.id === 'reveal').cells[Math.min(SYNC_COLS - 1, b.col)] = true;
+					});
+					syncRows.find((r) => r.id === 'motion').cells[1] = true;
+					syncRows.find((r) => r.id === 'motion').cells[5] = true;
+					syncRows.find((r) => r.id === 'text').cells[2] = true;
+					syncRows.find((r) => r.id === 'text').cells[6] = true;
+					syncRows.find((r) => r.id === 'text').cells[9] = true;
+				} else {
+					// Many motion events, clustered away from narration beats
+					[0, 1, 2, 9, 10, 11].forEach((c) => {
+						syncRows.find((r) => r.id === 'motion').cells[Math.min(SYNC_COLS - 1, c)] = true;
+					});
+					[0, 4, 8].forEach((c) => {
+						syncRows.find((r) => r.id === 'text').cells[c] = true;
+						syncRows.find((r) => r.id === 'reveal').cells[c] = true;
+					});
+					narrationBeats.forEach((b) => {
+						syncRows.find((r) => r.id === 'narr').cells[Math.min(SYNC_COLS - 1, b.col)] = true;
+					});
+				}
+				buildSyncRows();
+			}
+
+			function analyzeSyncGrid() {
+				const narr = syncRows.find((r) => r.id === 'narr');
+				const motion = syncRows.find((r) => r.id === 'motion');
+				const reveal = syncRows.find((r) => r.id === 'reveal');
+				const text = syncRows.find((r) => r.id === 'text');
+
+				const beatCols = narrationBeats.map((b) => b.col);
+				const allMotion = [...motion.cells, ...reveal.cells, ...text.cells];
+
+				let alignedCount = 0;
+				let totalMotion =
+					motion.cells.filter(Boolean).length +
+					reveal.cells.filter(Boolean).length +
+					text.cells.filter(Boolean).length;
+
+				beatCols.forEach((bc) => {
+					const motionNear = [bc - 1, bc, bc + 1].some(
+						(c) => c >= 0 && c < SYNC_COLS && (motion.cells[c] || reveal.cells[c] || text.cells[c])
+					);
+					if (motionNear) alignedCount++;
+				});
+
+				let msg = '';
+				if (totalMotion === 0) {
+					msg =
+						'No motion events placed. Use the presets or click cells to plan a sequence, then compare Good Sync vs Bad Sync approaches.';
+				} else {
+					const alignPct = Math.round((alignedCount / Math.max(1, narrationBeats.length)) * 100);
+
+					// Check for motion-dense zones
+					const clusters = [];
+					for (let i = 0; i < SYNC_COLS - 1; i++) {
+						const here = motion.cells[i] || reveal.cells[i] || text.cells[i];
+						const next = motion.cells[i + 1] || reveal.cells[i + 1] || text.cells[i + 1];
+						if (here && next) clusters.push(i);
+					}
+
+					msg = `${totalMotion} motion event${totalMotion !== 1 ? 's' : ''} placed. ${alignedCount} of ${narrationBeats.length} narration beats have motion within ±1 column (${alignPct}% sync alignment). `;
+					if (alignPct >= 80)
+						msg +=
+							'✓ Well-synchronised — most motion events align with narration beats. The viewer will experience visual and verbal reinforcement.';
+					else if (alignPct >= 40)
+						msg +=
+							'~ Partial synchronisation — some motion is well-aligned, some is disconnected. Review events that fall more than one column from a narration beat.';
+					else
+						msg +=
+							'⚠ Low synchronisation — most motion events are not aligned to narration beats. The visual and verbal channels are decoupled — viewers will process them as separate rather than reinforcing.';
+					if (clusters.length > 2)
+						msg += ` Also: ${clusters.length} adjacent-cell clusters detected — motion is bunched in places. Spread events to match the narration rhythm.`;
+				}
+				document.getElementById('sync-analysis').textContent = msg;
+			}
+
+			function playSyncDemo() {
+				stopSyncDemo();
+				const dur = 4000;
+				let start = null;
+				document.getElementById('sync-play-btn').textContent = '■ Stop';
+				['ph-narr', 'ph-reveal', 'ph-motion', 'ph-text'].forEach((id) => {
+					const el = document.getElementById(id);
+					if (el) el.style.opacity = '1';
+				});
+				function tick(ts) {
+					if (!start) start = ts;
+					const t = Math.min(1, (ts - start) / dur);
+					// Move narration beat highlights
+					narrationBeats.forEach((b, i) => {
+						const beatT = b.col / SYNC_COLS;
+						const el = document.getElementById('nb-' + i);
+						if (el)
+							el.style.background =
+								t >= beatT && t < beatT + 0.2
+									? 'color-mix(in srgb,var(--vs-amber) 25%,transparent)'
+									: 'transparent';
+					});
+					if (t < 1) syncAnimId = requestAnimationFrame(tick);
+					else {
+						document.getElementById('sync-play-btn').textContent = '▶ Play';
+						narrationBeats.forEach((_, i) => {
+							const el = document.getElementById('nb-' + i);
+							if (el) el.style.background = 'transparent';
+						});
+					}
+				}
+				syncAnimId = requestAnimationFrame(tick);
+			}
+
+			function stopSyncDemo() {
+				if (syncAnimId) cancelAnimationFrame(syncAnimId);
+				syncAnimId = null;
+				document.getElementById('sync-play-btn').textContent = '▶ Play';
+				narrationBeats.forEach((_, i) => {
+					const el = document.getElementById('nb-' + i);
+					if (el) el.style.background = 'transparent';
+				});
+			}
+
+			loadSyncPreset('good');
+
+			/* ════════════════════════════════════════════
+   MOTION COST CALCULATOR
+════════════════════════════════════════════ */
+			const mccItems = [
+				{
+					id: 'mcc-bg-loop',
+					icon: '🔄',
+					label: 'Persistent background loop',
+					cost: 28,
+					active: false,
+					note: 'Runs for the full duration — maximum sustained cost.'
+				},
+				{
+					id: 'mcc-kinetictype',
+					icon: '✍',
+					label: 'Kinetic headline entrance',
+					cost: 22,
+					active: false,
+					note: 'Consumes the attention that should go to the words themselves.'
+				},
+				{
+					id: 'mcc-chart-anim',
+					icon: '📊',
+					label: 'Full animated chart',
+					cost: 18,
+					active: false,
+					note: 'Growing bars + axis draw + label fades — three simultaneous sub-motions.'
+				},
+				{
+					id: 'mcc-reveal-seq',
+					icon: '→',
+					label: '5-node progressive reveal',
+					cost: 12,
+					active: true,
+					note: 'Functional reveal — cost justified by the sequential comprehension it enables.'
+				},
+				{
+					id: 'mcc-highlight',
+					icon: '◉',
+					label: 'Single pulse highlight',
+					cost: 6,
+					active: true,
+					note: 'Minimal duration, single element — highest value-to-cost ratio.'
+				},
+				{
+					id: 'mcc-lower-slide',
+					icon: '▬',
+					label: 'Lower-third slide entrance',
+					cost: 8,
+					active: false,
+					note: 'Functional once; cost compounds if repeated for every name/caption.'
+				},
+				{
+					id: 'mcc-arrow-pulse',
+					icon: '→',
+					label: 'Persistent pulsing arrow',
+					cost: 15,
+					active: false,
+					note: 'Ongoing motion after the attention redirect is achieved — pure cost after t=0.'
+				},
+				{
+					id: 'mcc-transition',
+					icon: '⇌',
+					label: 'Full-frame transition wipe',
+					cost: 20,
+					active: false,
+					note: 'Covers the entire frame — consumes 100% of the motion attention budget during its duration.'
+				}
+			];
+
+			function buildMCCItems() {
+				const el = document.getElementById('mcc-items');
+				el.innerHTML = mccItems
+					.map(
+						(item) => `
+    <div class="motion-cost-item" id="mcci-wrap-${item.id}">
+      <div class="mci-icon">${item.icon}</div>
+      <div class="mci-label">
+        <div>${item.label}</div>
+        <div style="font-size:10px; color:var(--vs-muted); margin-top:1px;">${item.note}</div>
+      </div>
+      <button class="mci-toggle${item.active ? ' on' : ''}" onclick="toggleMCC('${item.id}')">${item.active ? 'ON' : 'OFF'}</button>
+      <div class="mci-cost" id="mcci-cost-${item.id}" style="color:${item.active ? '#f5b94a' : '#405068'};">−${item.cost}</div>
+    </div>`
+					)
+					.join('');
+				updateMCC();
+			}
+
+			function toggleMCC(id) {
+				const item = mccItems.find((m) => m.id === id);
+				item.active = !item.active;
+				const btn = document.querySelector(`[onclick="toggleMCC('${id}')"]`);
+				btn.classList.toggle('on', item.active);
+				btn.textContent = item.active ? 'ON' : 'OFF';
+				document.getElementById('mcci-cost-' + id).style.color = item.active
+					? '#f5b94a'
+					: '#405068';
+				updateMCC();
+			}
+
+			function updateMCC() {
+				const total = mccItems.filter((m) => m.active).reduce((s, m) => s + m.cost, 0);
+				const pct = Math.min(100, total);
+				const fill = document.getElementById('mcc-total-fill');
+				fill.style.width = pct + '%';
+				fill.style.background =
+					pct > 70 ? '#ff4f68' : pct > 50 ? '#f5b94a' : pct > 25 ? '#4aafff' : '#3dd9a4';
+				const label = document.getElementById('mcc-total-val');
+				label.textContent = total + '/100';
+				label.style.color =
+					pct > 70 ? '#ff4f68' : pct > 50 ? '#f5b94a' : pct > 25 ? '#4aafff' : '#3dd9a4';
+
+				const active = mccItems.filter((m) => m.active);
+				let verdict = '';
+				if (total === 0)
+					verdict =
+						'No motion active. A frame with zero motion is not a failure — for dense explanatory content, it is often the correct choice.';
+				else if (pct <= 30)
+					verdict = `Total cost: ${total}. Low-motion frame — ${active.length} functional element${active.length !== 1 ? 's' : ''} present. Viewer attention is largely free to process content. This is the target range for complex informational sequences.`;
+				else if (pct <= 50)
+					verdict = `Total cost: ${total}. Moderate motion — viewer attention is shared across ${active.length} motion elements. Manageable if each element is functional. Review any element that is not clearly Reveal, Highlight, or Transform.`;
+				else if (pct <= 70)
+					verdict = `Total cost: ${total}. Heavy motion load — approaching threshold. The viewer is working hard to track ${active.length} moving elements. Consider whether the lowest-value element can be made static or removed.`;
+				else
+					verdict = `⚠ Total cost: ${total} — overload threshold exceeded (>70). The viewer's motion budget is exhausted. Content comprehension drops significantly here. Deactivate the highest-cost elements that are least clearly functional.`;
+
+				document.getElementById('mcc-verdict').textContent = verdict;
+				document.getElementById('mcc-verdict').style.borderLeftColor =
+					pct > 70 ? '#ff4f68' : pct > 50 ? '#f5b94a' : pct > 25 ? '#4aafff' : '#3dd9a4';
+			}
+
+			buildMCCItems();
+
+			/* ── QUIZ ── */
+			const scores = {};
+			function answer(qId, el, correct) {
+				if (scores[qId] !== undefined) return;
+				scores[qId] = correct ? 1 : 0;
+				el.parentElement.querySelectorAll('.option').forEach((o) => {
+					o.classList.add('disabled');
+					if (o.onclick.toString().includes(',true)')) o.classList.add('correct');
+				});
+				el.classList.remove('correct');
+				if (!correct) el.classList.add('wrong');
+				const fb = document.getElementById('fb-' + qId);
+				fb.textContent = correct
+					? '✓ Correct.'
+					: '✗ Not quite — the correct answer is highlighted above.';
+				fb.className = 'feedback ' + (correct ? 'ok' : 'bad');
+				if (Object.keys(scores).length === 4) {
+					const total = Object.values(scores).reduce((a, b) => a + b, 0);
+					const sc = document.getElementById('quiz-score');
+					sc.style.display = 'block';
+					document.getElementById('score-display').textContent = total + ' / 4';
+					document.getElementById('score-display').style.color =
+						total >= 3 ? 'var(--vs-mint)' : total >= 2 ? 'var(--vs-amber)' : 'var(--vs-red)';
+				}
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,2748 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Module 7 — Audio as a Narrative Anchor</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--vs-bg: #050810;
+				--vs-surface: #080d18;
+				--vs-raised: #0d1322;
+				--vs-border: #14202e;
+				--vs-border2: #1e2d40;
+				--vs-blue: #4aafff;
+				--vs-amber: #f5b94a;
+				--vs-red: #ff4f68;
+				--vs-mint: #3dd9a4;
+				--vs-text: #b8c8de;
+				--vs-muted: #405068;
+				--vs-dim: #182033;
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				background: var(--vs-bg);
+				color: var(--vs-text);
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 14px;
+				line-height: 1.8;
+			}
+			::-webkit-scrollbar {
+				width: 6px;
+			}
+			::-webkit-scrollbar-track {
+				background: var(--vs-bg);
+			}
+			::-webkit-scrollbar-thumb {
+				background: var(--vs-border2);
+				border-radius: 3px;
+			}
+
+			.page-wrapper {
+				max-width: 960px;
+				margin: 0 auto;
+				padding: 0 2rem 6rem;
+			}
+			.two-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+			.three-col {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 1rem;
+			}
+			@media (max-width: 640px) {
+				.two-col,
+				.three-col {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.course-header {
+				border-bottom: 1px solid var(--vs-border);
+				padding: 2rem 0 1.5rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.course-label {
+				font-size: 11px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.course-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 13px;
+				color: var(--vs-muted);
+				font-weight: 400;
+			}
+
+			.module-hero {
+				padding: 5rem 0 3.5rem;
+				border-bottom: 1px solid var(--vs-border);
+				position: relative;
+				overflow: hidden;
+			}
+			.module-hero::before {
+				content: '';
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				background: repeating-linear-gradient(
+					0deg,
+					transparent,
+					transparent 2px,
+					rgba(61, 217, 164, 0.013) 2px,
+					rgba(61, 217, 164, 0.013) 4px
+				);
+			}
+			.module-number {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(80px, 15vw, 140px);
+				font-weight: 800;
+				line-height: 1;
+				color: transparent;
+				-webkit-text-stroke: 1px var(--vs-border2);
+				position: absolute;
+				right: -10px;
+				top: 50%;
+				transform: translateY(-50%);
+				pointer-events: none;
+				user-select: none;
+			}
+			.module-tag {
+				display: inline-block;
+				font-size: 10px;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--vs-mint);
+				border: 1px solid var(--vs-mint);
+				padding: 3px 10px;
+				margin-bottom: 1.5rem;
+			}
+			.module-title {
+				font-family: 'Syne', sans-serif;
+				font-size: clamp(28px, 5vw, 48px);
+				font-weight: 800;
+				line-height: 1.1;
+				color: #fff;
+				max-width: 600px;
+			}
+			.module-title span {
+				color: var(--vs-mint);
+			}
+
+			.toc {
+				margin: 3rem 0;
+				padding: 1.5rem;
+				border: 1px solid var(--vs-border);
+				background: var(--vs-surface);
+			}
+			.toc-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				margin-bottom: 1rem;
+			}
+			.toc-list {
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+			.toc-list a {
+				font-size: 12px;
+				color: var(--vs-muted);
+				text-decoration: none;
+				border: 1px solid var(--vs-border);
+				padding: 4px 10px;
+				transition: all 0.15s;
+			}
+			.toc-list a:hover {
+				color: var(--vs-mint);
+				border-color: var(--vs-mint);
+			}
+
+			.objectives {
+				margin: 2.5rem 0;
+				padding: 1.5rem 2rem;
+				border-left: 2px solid var(--vs-mint);
+				background: var(--vs-surface);
+			}
+			.objectives-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-mint);
+				margin-bottom: 1rem;
+			}
+			.objectives ul {
+				list-style: none;
+			}
+			.objectives li {
+				padding: 0.2rem 0;
+				padding-left: 1.2rem;
+				position: relative;
+			}
+			.objectives li::before {
+				content: '→';
+				position: absolute;
+				left: 0;
+				color: var(--vs-amber);
+			}
+
+			.section {
+				margin: 4rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				gap: 1rem;
+				margin-bottom: 2rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.section-num {
+				font-size: 11px;
+				color: var(--vs-amber);
+				letter-spacing: 0.1em;
+				font-weight: 600;
+			}
+			.section-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 22px;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			p {
+				margin-bottom: 1.2rem;
+				color: var(--vs-text);
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+			strong {
+				color: var(--vs-mint);
+				font-weight: 600;
+			}
+			em {
+				color: #fff;
+				font-style: normal;
+				font-weight: 500;
+			}
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+			code {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1px 6px;
+				font-size: 12px;
+				color: var(--vs-blue);
+				font-family: 'IBM Plex Mono', monospace;
+			}
+
+			.callout {
+				margin: 1.5rem 0;
+				padding: 1rem 1.5rem;
+				border-left: 2px solid var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
+				font-size: 13px;
+			}
+			.callout.amber {
+				border-color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
+			}
+			.callout.blue {
+				border-color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+			}
+			.callout.red {
+				border-color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
+			}
+			.callout-label {
+				font-size: 10px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--vs-mint);
+				margin-bottom: 0.4rem;
+				font-weight: 600;
+			}
+			.callout.amber .callout-label {
+				color: var(--vs-amber);
+			}
+			.callout.blue .callout-label {
+				color: var(--vs-blue);
+			}
+			.callout.red .callout-label {
+				color: var(--vs-red);
+			}
+
+			.demo-box {
+				background: var(--vs-surface);
+				border: 1px solid var(--vs-border);
+				margin: 2rem 0;
+			}
+			.demo-header {
+				padding: 0.75rem 1.25rem;
+				border-bottom: 1px solid var(--vs-border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			.demo-header > span {
+				font-size: 11px;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.demo-badge {
+				font-size: 10px;
+				padding: 2px 8px;
+				border: 1px solid;
+			}
+			.demo-badge.interactive {
+				color: var(--vs-mint);
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+			}
+			.demo-badge.animated {
+				color: var(--vs-amber);
+				border-color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.demo-body {
+				padding: 1.5rem;
+			}
+
+			.btn {
+				background: transparent;
+				border: 1px solid var(--vs-border2);
+				color: var(--vs-text);
+				padding: 6px 16px;
+				font-family: 'IBM Plex Mono', monospace;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.btn:hover {
+				border-color: var(--vs-mint);
+				color: var(--vs-mint);
+			}
+			.btn.active {
+				border-color: var(--vs-mint);
+				color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+			}
+			.btn.amber:hover {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+			}
+			.btn.amber.active {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+			}
+			.btn.blue:hover {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+			}
+			.btn.blue.active {
+				border-color: var(--vs-blue);
+				color: var(--vs-blue);
+				background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+			}
+			.btn.red:hover {
+				border-color: var(--vs-red);
+				color: var(--vs-red);
+			}
+			.btn.red.active {
+				border-color: var(--vs-red);
+				color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+			}
+			.btn-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-bottom: 1.25rem;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 12px;
+			}
+			th {
+				background: var(--vs-raised);
+				color: var(--vs-mint);
+				text-align: left;
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--vs-border);
+				font-weight: 600;
+				letter-spacing: 0.05em;
+			}
+			td {
+				padding: 0.5rem 1rem;
+				border: 1px solid var(--vs-border);
+				color: var(--vs-text);
+			}
+			tr:nth-child(even) td {
+				background: color-mix(in srgb, var(--vs-raised) 50%, transparent);
+			}
+
+			.divider {
+				border: none;
+				border-top: 1px solid var(--vs-border);
+				margin: 3rem 0;
+			}
+			.stats-panel {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1rem;
+				font-size: 12px;
+			}
+			.stat-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.2rem 0;
+				border-bottom: 1px solid var(--vs-border);
+			}
+			.stat-row:last-child {
+				border-bottom: none;
+			}
+			.stat-label {
+				color: var(--vs-muted);
+			}
+			.stat-val {
+				color: var(--vs-mint);
+				font-weight: 600;
+			}
+
+			.progress-bar-wrap {
+				height: 3px;
+				background: var(--vs-border);
+				width: 100%;
+				margin: 2rem 0 0;
+			}
+			.progress-bar-fill {
+				height: 100%;
+				background: var(--vs-mint);
+				width: 0;
+				transition: width 0.4s ease;
+			}
+
+			.quiz-section {
+				margin: 4rem 0;
+				padding: 2rem;
+				border: 1px solid var(--vs-border);
+				background: var(--vs-surface);
+			}
+			.quiz-header {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-bottom: 0.5rem;
+			}
+			.quiz-sub {
+				font-size: 12px;
+				color: var(--vs-muted);
+				margin-bottom: 2rem;
+			}
+			.question {
+				margin: 2rem 0;
+			}
+			.q-text {
+				font-size: 13px;
+				color: #fff;
+				margin-bottom: 1rem;
+			}
+			.q-num {
+				color: var(--vs-blue);
+				margin-right: 0.5rem;
+			}
+			.options {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.option {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--vs-border);
+				cursor: pointer;
+				font-size: 12px;
+				transition: all 0.15s;
+				user-select: none;
+				font-family: 'IBM Plex Mono', monospace;
+			}
+			.option:hover {
+				border-color: var(--vs-border2);
+				background: var(--vs-raised);
+			}
+			.option.correct {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+				color: var(--vs-mint);
+			}
+			.option.wrong {
+				border-color: var(--vs-red);
+				background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+				color: var(--vs-red);
+			}
+			.option.disabled {
+				pointer-events: none;
+			}
+			.feedback {
+				font-size: 12px;
+				margin-top: 0.75rem;
+				min-height: 1.5em;
+				color: var(--vs-muted);
+			}
+			.feedback.ok {
+				color: var(--vs-mint);
+			}
+			.feedback.bad {
+				color: var(--vs-red);
+			}
+			.quiz-score {
+				margin-top: 2rem;
+				padding: 1.5rem;
+				border: 1px solid var(--vs-border);
+				text-align: center;
+				display: none;
+			}
+			.score-num {
+				font-family: 'Syne', sans-serif;
+				font-size: 36px;
+				font-weight: 800;
+				color: var(--vs-mint);
+			}
+			.score-label {
+				font-size: 12px;
+				color: var(--vs-muted);
+				margin-top: 0.25rem;
+			}
+
+			.nav-links {
+				display: flex;
+				justify-content: space-between;
+				align-items: stretch;
+				margin-top: 4rem;
+				flex-wrap: wrap;
+				gap: 1rem;
+			}
+			.prev-link {
+				font-size: 12px;
+				color: var(--vs-muted);
+				text-decoration: none;
+				border: 1px solid var(--vs-border);
+				padding: 0.75rem 1.25rem;
+				transition: all 0.2s;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			.prev-link:hover {
+				border-color: var(--vs-amber);
+				color: var(--vs-amber);
+			}
+			.next-module {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 1.5rem 2rem;
+				border: 1px solid var(--vs-border);
+				text-decoration: none;
+				transition: all 0.2s;
+				background: var(--vs-surface);
+				flex: 1;
+			}
+			.next-module:hover {
+				border-color: var(--vs-amber);
+			}
+			.next-label {
+				font-size: 10px;
+				letter-spacing: 0.2em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+			}
+			.next-title {
+				font-family: 'Syne', sans-serif;
+				font-size: 18px;
+				font-weight: 700;
+				color: #fff;
+				margin-top: 0.25rem;
+			}
+			.next-arrow {
+				font-size: 28px;
+				color: var(--vs-amber);
+			}
+
+			/* ══════════════════════════════
+     MODULE-SPECIFIC COMPONENTS
+  ══════════════════════════════ */
+
+			/* ── WAVEFORM DISPLAY ── */
+			#waveform-canvas {
+				display: block;
+				width: 100%;
+				height: 120px;
+				border: 1px solid var(--vs-border);
+				background: #040710;
+				cursor: pointer;
+			}
+
+			/* ── AUDIO CHANNEL STACK ── */
+			.channel-track {
+				position: relative;
+				height: 52px;
+				border: 1px solid var(--vs-border);
+				margin: 2px 0;
+				background: var(--vs-raised);
+				overflow: hidden;
+			}
+			.channel-track-label {
+				position: absolute;
+				left: 0;
+				top: 0;
+				bottom: 0;
+				width: 80px;
+				display: flex;
+				align-items: center;
+				padding: 0 10px;
+				font-size: 10px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				border-right: 1px solid var(--vs-border);
+				background: var(--vs-raised);
+				z-index: 2;
+				flex-shrink: 0;
+			}
+			.channel-track-body {
+				position: absolute;
+				left: 80px;
+				right: 0;
+				top: 0;
+				bottom: 0;
+			}
+			.channel-clip {
+				position: absolute;
+				top: 4px;
+				bottom: 4px;
+				border-radius: 2px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 9px;
+				font-weight: 600;
+				letter-spacing: 0.06em;
+				overflow: hidden;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+				padding: 0 6px;
+				transition: opacity 0.3s;
+			}
+			.channel-playhead {
+				position: absolute;
+				left: 0;
+				top: 0;
+				bottom: 0;
+				width: 2px;
+				background: rgba(255, 255, 255, 0.8);
+				opacity: 0;
+				z-index: 3;
+				box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+				transition: left 0.04s linear;
+			}
+			.ch-time-ruler {
+				height: 18px;
+				position: relative;
+				border: 1px solid var(--vs-border);
+				border-top: none;
+				background: #040710;
+			}
+
+			/* ── VOICE PACING SIMULATOR ── */
+			.vp-display {
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				padding: 1.5rem;
+				min-height: 120px;
+				position: relative;
+				overflow: hidden;
+			}
+			.vp-word {
+				display: inline-block;
+				margin: 0 3px;
+				font-family: 'Syne', sans-serif;
+				font-weight: 700;
+				transition: all 0.15s;
+				opacity: 0.18;
+				color: var(--vs-text);
+			}
+			.vp-word.spoken {
+				opacity: 1;
+				color: #fff;
+			}
+			.vp-word.active {
+				opacity: 1;
+				color: var(--vs-mint);
+				transform: scale(1.08);
+			}
+			.vp-cursor {
+				display: inline-block;
+				width: 2px;
+				height: 1.1em;
+				background: var(--vs-mint);
+				vertical-align: middle;
+				animation: blink 1s step-end infinite;
+			}
+			@keyframes blink {
+				50% {
+					opacity: 0;
+				}
+			}
+			.vp-metrics {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr 1fr;
+				gap: 1px;
+				background: var(--vs-border);
+				margin-top: 0.75rem;
+			}
+			.vp-metric {
+				background: var(--vs-raised);
+				padding: 0.5rem 0.75rem;
+				text-align: center;
+			}
+			.vp-metric-val {
+				font-family: 'Syne', sans-serif;
+				font-size: 20px;
+				font-weight: 700;
+				line-height: 1;
+			}
+			.vp-metric-lbl {
+				font-size: 9px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--vs-muted);
+				margin-top: 3px;
+			}
+
+			/* ── SOUND CUE MAPPER ── */
+			.cue-palette {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+				margin-bottom: 1.25rem;
+			}
+			.cue-chip {
+				padding: 5px 12px;
+				border: 1px solid;
+				font-size: 11px;
+				cursor: pointer;
+				transition: all 0.15s;
+				display: flex;
+				align-items: center;
+				gap: 5px;
+				user-select: none;
+			}
+			.cue-chip.selected {
+				opacity: 1;
+			}
+			.cue-chip:not(.selected) {
+				opacity: 0.55;
+			}
+			#cue-timeline {
+				display: block;
+				width: 100%;
+				height: 180px;
+				background: #040710;
+				border: 1px solid var(--vs-border);
+				cursor: pointer;
+			}
+			.cue-legend {
+				display: flex;
+				gap: 1.5rem;
+				flex-wrap: wrap;
+				margin-top: 0.5rem;
+				font-size: 10px;
+				color: var(--vs-muted);
+			}
+			.cue-legend-item {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+			}
+			.cue-legend-dot {
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				flex-shrink: 0;
+			}
+
+			/* ── PAUSE ARCHITECTURE ── */
+			.pause-sentence {
+				padding: 0.75rem 1rem;
+				border: 1px solid var(--vs-border);
+				margin: 0.4rem 0;
+				cursor: pointer;
+				transition: all 0.2s;
+				background: var(--vs-raised);
+				position: relative;
+				overflow: hidden;
+			}
+			.pause-sentence:hover {
+				border-color: var(--vs-border2);
+			}
+			.pause-sentence.selected {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 6%, var(--vs-raised));
+			}
+			.pause-word-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 4px;
+				margin-top: 8px;
+			}
+			.pw {
+				display: inline-block;
+				padding: 2px 7px;
+				font-size: 11px;
+				border: 1px solid var(--vs-border);
+				color: var(--vs-text);
+				cursor: pointer;
+				transition: all 0.15s;
+			}
+			.pw:hover {
+				border-color: var(--vs-border2);
+			}
+			.pw.pause-before {
+				border-color: var(--vs-mint);
+				background: color-mix(in srgb, var(--vs-mint) 12%, transparent);
+				color: var(--vs-mint);
+			}
+			.pw.pause-before::before {
+				content: '‖ ';
+				color: var(--vs-mint);
+				font-size: 10px;
+			}
+			.pw.emphasis {
+				border-color: var(--vs-amber);
+				background: color-mix(in srgb, var(--vs-amber) 12%, transparent);
+				color: var(--vs-amber);
+				font-weight: 600;
+			}
+			.pause-controls {
+				display: flex;
+				gap: 0.5rem;
+				margin-top: 0.75rem;
+				flex-wrap: wrap;
+			}
+			#pause-verdict {
+				margin-top: 0.75rem;
+				padding: 0.75rem 1rem;
+				border-left: 2px solid var(--vs-border2);
+				font-size: 12px;
+				color: var(--vs-text);
+				line-height: 1.7;
+				background: var(--vs-raised);
+				min-height: 44px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page-wrapper">
+			<header class="course-header">
+				<div>
+					<div class="course-label">Visual Storytelling for Faceless Video</div>
+					<div class="course-title">Narrative, Pacing &amp; Visual Communication</div>
+				</div>
+				<div style="font-size: 11px; color: var(--vs-muted); text-align: right">
+					Module 07 of 10
+				</div>
+			</header>
+
+			<div class="module-hero">
+				<div class="module-number">07</div>
+				<div class="module-tag">Module 07 · Theory + Practice</div>
+				<h1 class="module-title">Audio as a<br /><span>Narrative Anchor</span></h1>
+				<div class="progress-bar-wrap">
+					<div class="progress-bar-fill" id="reading-progress"></div>
+				</div>
+			</div>
+
+			<nav class="toc">
+				<div class="toc-label">Contents</div>
+				<ul class="toc-list">
+					<li><a href="#objectives">Objectives</a></li>
+					<li><a href="#audio-channels">The Audio Channels</a></li>
+					<li><a href="#narration-rhythm">Narration Rhythm</a></li>
+					<li><a href="#voice-pacing">Voice Pacing</a></li>
+					<li><a href="#pause-architecture">Pause Architecture</a></li>
+					<li><a href="#ambient-sound">Ambient &amp; Sound Design</a></li>
+					<li><a href="#transitions">Audio Transitions</a></li>
+					<li><a href="#practical">Practical Work</a></li>
+					<li><a href="#quiz">Quiz</a></li>
+				</ul>
+			</nav>
+
+			<section id="objectives" class="objectives">
+				<div class="objectives-label">Learning Objectives</div>
+				<ul>
+					<li>Understand the four audio channels in faceless video and what each one does</li>
+					<li>Use narration rhythm as an active structural tool, not just a delivery mechanism</li>
+					<li>Design pause architecture — where silence appears, for how long, and why</li>
+					<li>Apply ambient sound and minimal sound design to reinforce visual meaning</li>
+					<li>Align audio beats with visual beats to produce compound engagement signals</li>
+				</ul>
+			</section>
+
+			<!-- ═══ SECTION 1: THE AUDIO CHANNELS ═══ -->
+			<section id="audio-channels" class="section">
+				<div class="section-header">
+					<span class="section-num">07.01</span>
+					<h2 class="section-title">The Four Audio Channels</h2>
+				</div>
+
+				<p>
+					Every faceless video operates across four distinct audio channels simultaneously:
+					<strong>narration</strong>, <strong>ambient sound</strong>, <strong>sound design</strong>,
+					and <strong>music</strong>. Each channel occupies a different register and carries a
+					different type of meaning. When all four are active at once at equal volume, they produce
+					the audio equivalent of text clutter — the viewer's auditory attention is distributed
+					across four competing signals and processes none of them fully.
+				</p>
+				<p>
+					The discipline of audio design for faceless video is not about adding more — it is about
+					assigning each channel its own register, its own moment, and its own relationship to the
+					narration. <em>Narration</em> carries the argument. <em>Ambient sound</em> carries the
+					world — the tonal context that signals what kind of space or situation we are in.
+					<em>Sound design</em> carries specific cues — brief audio events that correspond to visual
+					events on screen. <em>Music</em> carries emotional temperature — the felt register that
+					primes how the viewer processes the content.
+				</p>
+
+				<div class="callout">
+					<div class="callout-label">The Channel Contract</div>
+					Each audio channel must have a different job. If narration and music are both carrying
+					emotional weight simultaneously, one is redundant. If sound design cues are firing during
+					a dense narration passage, the cues will not be perceived as signals — they will be
+					perceived as noise. The contract is: narration runs, all other channels support or yield.
+				</div>
+
+				<!-- DEMO: Audio Channel Stack -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Audio Channel Stack</span>
+						<span class="demo-badge animated">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							A 12-second audio sequence shown across all four channels. Press Play to run the
+							sequence. Toggle channels to hear how each one changes the overall mix — observe which
+							combinations compete and which complement.
+						</p>
+
+						<div class="btn-row" id="acs-toggles"></div>
+
+						<div id="acs-tracks"></div>
+						<div class="ch-time-ruler" id="acs-ruler"></div>
+
+						<div
+							style="
+								display: flex;
+								gap: 0.5rem;
+								margin-top: 1rem;
+								flex-wrap: wrap;
+								align-items: center;
+							"
+						>
+							<button class="btn active" onclick="playACS()" id="acs-play-btn">▶ Play</button>
+							<button class="btn" onclick="stopACS()">■ Stop</button>
+							<div
+								style="
+									flex: 1;
+									height: 3px;
+									background: var(--vs-border);
+									overflow: hidden;
+									min-width: 80px;
+								"
+							>
+								<div
+									id="acs-prog"
+									style="height: 100%; background: var(--vs-mint); width: 0%; transition: none"
+								></div>
+							</div>
+							<span id="acs-time" style="font-size: 11px; color: var(--vs-muted); min-width: 36px"
+								>0.0s</span
+							>
+						</div>
+
+						<div
+							id="acs-verdict"
+							style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 40px;
+							"
+						></div>
+					</div>
+				</div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Channel</th>
+							<th>Function</th>
+							<th>Volume Relationship to Narration</th>
+							<th>When to Reduce</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Narration</td>
+							<td>Carries the argument — primary channel</td>
+							<td>Always the loudest element</td>
+							<td>Never — if narration drops, everything drops with it</td>
+						</tr>
+						<tr>
+							<td>Ambient sound</td>
+							<td>World-building; tonal context</td>
+							<td>−12 to −18 dB below narration</td>
+							<td>During high-density narration passages; can run beneath pauses</td>
+						</tr>
+						<tr>
+							<td>Sound design</td>
+							<td>Cues that correspond to visual events</td>
+							<td>Brief peaks to narration level; otherwise absent</td>
+							<td>Should not run continuously — cue-based only</td>
+						</tr>
+						<tr>
+							<td>Music</td>
+							<td>Emotional temperature; macro-level tone</td>
+							<td>−15 to −22 dB below narration</td>
+							<td>During explanatory passages requiring full cognitive load</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- ═══ SECTION 2: NARRATION RHYTHM ═══ -->
+			<section id="narration-rhythm" class="section">
+				<div class="section-header">
+					<span class="section-num">07.02</span>
+					<h2 class="section-title">Narration Rhythm</h2>
+				</div>
+
+				<p>
+					Narration rhythm is the pattern of spoken and silent time across a script — the duration
+					of phrases, the length of pauses between them, and the variation in both. Most creators
+					think of rhythm as a property of the spoken words alone: how fast they speak, whether
+					their delivery is energetic or calm. But rhythm is more precisely the
+					<em>relationship between sound and silence</em> — and in faceless video, that relationship
+					is doing structural work.
+				</p>
+				<p>
+					A narration with no pauses between sentences is a wall of sound. The viewer has no moment
+					to process one idea before the next arrives. A narration with irregular, meandering pauses
+					is unpredictable — the viewer cannot tell whether a pause is significant or simply the
+					result of the presenter losing their place. <strong>Deliberate rhythm</strong> means
+					pauses that are placed intentionally, sized appropriately to what they follow, and
+					consistent in their signalling across the video.
+				</p>
+
+				<!-- DEMO: Waveform Rhythm Analyzer -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Narration Waveform Analyzer</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Select a narration pattern and observe how the waveform shape reveals the rhythm
+							structure. Click a region of the waveform to inspect that moment's characteristics.
+						</p>
+
+						<div class="btn-row" id="wave-btns">
+							<button class="btn active" onclick="setWavePattern('wall')">No Pauses</button>
+							<button class="btn" onclick="setWavePattern('irregular')">Irregular Pauses</button>
+							<button class="btn mint" onclick="setWavePattern('structured')">
+								Structured Rhythm
+							</button>
+							<button class="btn amber" onclick="setWavePattern('dramatic')">
+								Dramatic Pacing
+							</button>
+						</div>
+
+						<canvas id="waveform-canvas"></canvas>
+
+						<div
+							id="wave-inspect"
+							style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-mint);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 44px;
+							"
+						></div>
+
+						<div
+							style="
+								margin-top: 1rem;
+								display: grid;
+								grid-template-columns: 1fr 1fr 1fr;
+								gap: 1rem;
+								font-size: 11px;
+							"
+						>
+							<div
+								style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+							>
+								<div
+									style="
+										color: var(--vs-red);
+										font-size: 9px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.4rem;
+									"
+								>
+									No Pauses
+								</div>
+								<div style="color: var(--vs-text); line-height: 1.7">
+									Constant sound envelope. Viewer cannot locate structural boundaries. Each idea
+									arrives before the previous one is filed. Processing load is maximum throughout.
+								</div>
+							</div>
+							<div
+								style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+							>
+								<div
+									style="
+										color: var(--vs-amber);
+										font-size: 9px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.4rem;
+									"
+								>
+									Irregular Pauses
+								</div>
+								<div style="color: var(--vs-text); line-height: 1.7">
+									Gaps exist but carry no consistent signal. Viewer cannot interpret what a pause
+									means — boundary, hesitation, or error. Engagement is unpredictable.
+								</div>
+							</div>
+							<div
+								style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+							>
+								<div
+									style="
+										color: var(--vs-mint);
+										font-size: 9px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.4rem;
+									"
+								>
+									Structured Rhythm
+								</div>
+								<div style="color: var(--vs-text); line-height: 1.7">
+									Short pauses mark sentence ends. Longer pauses mark section transitions. The
+									viewer learns the signal vocabulary quickly and processes boundaries
+									automatically.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<p>
+					Good narration rhythm uses three pause lengths with distinct structural meanings: a
+					<strong>breath pause</strong> (0.3–0.6s) that separates clauses within a sentence; a
+					<strong>sentence pause</strong> (0.7–1.2s) that closes one complete thought; and a
+					<strong>section pause</strong> (1.5–3s) that signals a major conceptual transition. When
+					these three types are used consistently, the viewer internalises the pattern and processes
+					structure without conscious effort — freeing cognitive capacity for content.
+				</p>
+			</section>
+
+			<!-- ═══ SECTION 3: VOICE PACING ═══ -->
+			<section id="voice-pacing" class="section">
+				<div class="section-header">
+					<span class="section-num">07.03</span>
+					<h2 class="section-title">Voice Pacing for Faceless Channels</h2>
+				</div>
+
+				<p>
+					The optimal speaking rate for educational faceless video is slower than most creators
+					initially use. Conversational speech in English averages 130–160 words per minute.
+					Educational narration for complex content performs best between 100–130 WPM — a pace that
+					feels slightly deliberate to the speaker but is precisely correct for comprehension in a
+					viewing context, where the viewer cannot ask for repetition.
+				</p>
+				<p>
+					The reason is not that viewers are slow — it is that narration in video is competing with
+					the visual layer for processing attention. The viewer is simultaneously watching the
+					screen, reading any on-screen text, and listening to the narration. At 160 WPM, the
+					combined load is too high for anything except familiar material. At 110 WPM, each channel
+					has room to be fully processed.
+				</p>
+				<p>
+					Voice pacing also interacts with <em>emphasis</em> — the deliberate slowing of a specific
+					phrase to signal that it carries more weight than the surrounding text. A creator who
+					narrates at 155 WPM throughout has no room to slow down for emphasis — they are already
+					near the comprehension ceiling. A creator who narrates at 110 WPM can drop to 85 WPM for
+					one phrase, and the contrast alone signals: <em>this is the important part</em>.
+				</p>
+
+				<!-- DEMO: Voice Pacing Simulator -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Voice Pacing Simulator</span>
+						<span class="demo-badge animated">ANIMATED</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Select a words-per-minute rate and observe how the narration text is paced across the
+							display. Watch the comprehension indicator — it models the cognitive load of
+							processing each rate.
+						</p>
+
+						<div class="btn-row" id="vp-rate-btns">
+							<button class="btn red" onclick="setVPRate(160)">Fast (160 WPM)</button>
+							<button class="btn amber" onclick="setVPRate(130)">Medium (130 WPM)</button>
+							<button class="btn active mint" onclick="setVPRate(110)">Optimal (110 WPM)</button>
+							<button class="btn blue" onclick="setVPRate(85)">Slow / Emphasis (85 WPM)</button>
+						</div>
+
+						<div class="vp-display" id="vp-display"></div>
+
+						<div class="vp-metrics">
+							<div class="vp-metric">
+								<div class="vp-metric-val" id="vpm-wpm" style="color: var(--vs-mint)">110</div>
+								<div class="vp-metric-lbl">WPM</div>
+							</div>
+							<div class="vp-metric">
+								<div class="vp-metric-val" id="vpm-ms" style="color: var(--vs-blue)">—</div>
+								<div class="vp-metric-lbl">ms / word</div>
+							</div>
+							<div class="vp-metric">
+								<div class="vp-metric-val" id="vpm-comp" style="color: var(--vs-mint)">—</div>
+								<div class="vp-metric-lbl">Comprehension</div>
+							</div>
+							<div class="vp-metric">
+								<div class="vp-metric-val" id="vpm-load" style="color: var(--vs-mint)">—</div>
+								<div class="vp-metric-lbl">Cog. Load</div>
+							</div>
+						</div>
+
+						<div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap">
+							<button class="btn active mint" onclick="playVP()" id="vp-play-btn">▶ Play</button>
+							<button class="btn" onclick="stopVP()">■ Stop</button>
+						</div>
+						<div
+							id="vp-verdict"
+							style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-mint);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+							"
+						></div>
+					</div>
+				</div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Rate</th>
+							<th>WPM</th>
+							<th>Comprehension Context</th>
+							<th>Use When</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Emphasis / Slow</td>
+							<td>70–90</td>
+							<td>Maximum retention per word</td>
+							<td>Key definitions, critical statistics, emotional peaks</td>
+						</tr>
+						<tr>
+							<td>Optimal Educational</td>
+							<td>100–125</td>
+							<td>High retention, low cognitive strain</td>
+							<td>Default for most explanatory content</td>
+						</tr>
+						<tr>
+							<td>Comfortable Conversational</td>
+							<td>125–145</td>
+							<td>Good retention for familiar content</td>
+							<td>Introduction, transitions, familiar recap</td>
+						</tr>
+						<tr>
+							<td>Fast / Energy</td>
+							<td>145–165</td>
+							<td>Reduced retention; useful for momentum</td>
+							<td>Lists, examples, already-understood content only</td>
+						</tr>
+						<tr>
+							<td>Too Fast</td>
+							<td>165+</td>
+							<td>Significant comprehension loss</td>
+							<td>Avoid for educational content</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- ═══ SECTION 4: PAUSE ARCHITECTURE ═══ -->
+			<section id="pause-architecture" class="section">
+				<div class="section-header">
+					<span class="section-num">07.04</span>
+					<h2 class="section-title">Pause Architecture</h2>
+				</div>
+
+				<p>
+					Pause architecture is the deliberate placement and sizing of silence within a narration
+					track. Most creators treat pauses as the absence of speech — gaps that exist because they
+					ran out of words for a moment. Skilled audio design treats pauses as active structural
+					elements: each pause has a type, a duration appropriate to that type, and a specific
+					position relative to the surrounding content.
+				</p>
+				<p>
+					The most underused pause type is the <strong>pre-emphasis pause</strong> — a beat of
+					silence immediately before the most important word or phrase in a sentence. This pause
+					functions as a visual equivalent of bold text: it signals to the listener that what comes
+					next is the payload. A listener who hears a pause where they expected continuity leans in.
+					When the important word arrives, it receives full, primed attention. Without the pause,
+					the important word arrives at the same density as every other word.
+				</p>
+
+				<!-- DEMO: Pause Architecture Builder -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Pause Architecture Builder</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Click a sentence to select it. Then click individual words to mark them as pause
+							points (‖) or emphasis targets. The analysis shows how the pause structure signals
+							meaning.
+						</p>
+
+						<div id="pause-sentences"></div>
+
+						<div class="pause-controls" id="pause-controls" style="display: none">
+							<button class="btn active" onclick="setPauseMode('pause')">Mark Pause Before</button>
+							<button class="btn amber" onclick="setPauseMode('emphasis')">Mark Emphasis</button>
+							<button class="btn" onclick="clearPauseSentence()">Clear Marks</button>
+						</div>
+
+						<div id="pause-verdict"></div>
+					</div>
+				</div>
+
+				<div class="callout amber">
+					<div class="callout-label">The Pre-Emphasis Rule</div>
+					Before the most important word in any key sentence, add a pause of 0.4–0.7 seconds. The
+					pause does not need to feel natural in speech — it will feel deliberate. That
+					deliberateness is the point. In recording, this is added in post-production: a precise cut
+					of silence inserted at the correct position. It changes the entire weight distribution of
+					the sentence without changing a single word.
+				</div>
+			</section>
+
+			<!-- ═══ SECTION 5: AMBIENT SOUND & SOUND DESIGN ═══ -->
+			<section id="ambient-sound" class="section">
+				<div class="section-header">
+					<span class="section-num">07.05</span>
+					<h2 class="section-title">Ambient Sound &amp; Sound Design</h2>
+				</div>
+
+				<p>
+					Ambient sound is the environmental audio layer — rain, office ambience, a coffee shop hum,
+					a forest, an empty studio. Its primary function is world-building: establishing a sense of
+					space that orients the viewer in an environment before the narration begins. In faceless
+					video, ambient sound operates almost entirely below conscious perception — the viewer does
+					not notice it, but they would notice its absence. A completely silent background beneath
+					narration feels exposed and clinical; ambient sound provides a floor that makes the
+					narration feel placed in a world rather than floating in a void.
+				</p>
+				<p>
+					Sound design is different: brief, specific audio cues that correspond to visual events on
+					screen. A soft click when a new diagram element appears. A gentle rise when a bar chart
+					grows. A subtle chime when the key concept label fades in. These cues are not decorative —
+					they function as <strong>audio confirmations</strong> that tell the viewer their eye has
+					found the right element. They are most powerful in the 80–120ms range: short enough to be
+					subliminal but present enough to register as a signal.
+				</p>
+
+				<!-- DEMO: Sound Cue Mapper -->
+				<div class="demo-box">
+					<div class="demo-header">
+						<span>Interactive · Sound Cue Mapper</span>
+						<span class="demo-badge interactive">INTERACTIVE</span>
+					</div>
+					<div class="demo-body">
+						<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+							Select a cue type from the palette, then click the timeline to place it. Each cue type
+							has a different character — observe how the placement density affects the overall feel
+							of the audio design.
+						</p>
+
+						<div class="cue-palette" id="cue-palette"></div>
+						<canvas id="cue-timeline"></canvas>
+
+						<div class="cue-legend" id="cue-legend"></div>
+
+						<div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap">
+							<button class="btn" onclick="clearCues()">Clear</button>
+							<button class="btn active" onclick="loadCuePreset('sparse')">Load: Sparse</button>
+							<button class="btn amber" onclick="loadCuePreset('dense')">Load: Dense</button>
+							<button class="btn red" onclick="loadCuePreset('noise')">Load: Noise ✕</button>
+						</div>
+
+						<div
+							id="cue-verdict"
+							style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 44px;
+							"
+						></div>
+					</div>
+				</div>
+
+				<div class="callout blue">
+					<div class="callout-label">The 5% Rule for Sound Design</div>
+					Sound design cues should be present for approximately 5% of the video's total duration. If
+					your cue density is higher than this, the audio events become habituated — the viewer
+					stops processing them as signals and starts filtering them as background noise. If it is
+					lower, you have untapped opportunities to reinforce visual events. 5% of a 4-minute video
+					is about 12 seconds of total cue duration.
+				</div>
+			</section>
+
+			<!-- ═══ SECTION 6: AUDIO TRANSITIONS ═══ -->
+			<section id="transitions" class="section">
+				<div class="section-header">
+					<span class="section-num">07.06</span>
+					<h2 class="section-title">Audio Transitions</h2>
+				</div>
+
+				<p>
+					An audio transition is any deliberate change in the audio layer that signals a structural
+					shift in the content. The most commonly neglected transition in self-produced video is the
+					<strong>audio lead</strong> — a change in the non-narration audio channels (music,
+					ambient) that precedes a visual or content transition by 1–3 seconds. Because the auditory
+					system registers change before the visual system does, an audio lead effectively tells the
+					viewer "something is about to change" without any visible cue. This primes their attention
+					and reduces the cognitive disruption of the transition itself.
+				</p>
+				<p>
+					The three most useful audio transitions in faceless video are the
+					<strong>music swell</strong> (a brief increase in music volume and energy immediately
+					before a section peak), the <strong>ambient fade</strong> (a reduction in ambient sound
+					approaching a moment of dense narration, creating a felt silence that signals importance),
+					and the <strong>audio cut</strong> (a hard stop of all non-narration audio, used to create
+					maximum attention on a single statement).
+				</p>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Transition Type</th>
+							<th>What It Signals</th>
+							<th>Lead Time</th>
+							<th>Use for</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Audio lead (music change)</td>
+							<td>Section transition approaching</td>
+							<td>1–3s before visual cut</td>
+							<td>Chapter breaks, major concept introductions</td>
+						</tr>
+						<tr>
+							<td>Ambient fade-out</td>
+							<td>High-importance moment approaching</td>
+							<td>2–4s before key statement</td>
+							<td>Key definitions, data reveals, conclusions</td>
+						</tr>
+						<tr>
+							<td>Audio cut (hard stop)</td>
+							<td>Maximum focus — single statement</td>
+							<td>At the statement</td>
+							<td>Thesis statements, surprising facts, calls to action</td>
+						</tr>
+						<tr>
+							<td>Music fade-in</td>
+							<td>Tension releasing, resolution approaching</td>
+							<td>Begins with or after key statement</td>
+							<td>After explanations complete, section endings</td>
+						</tr>
+						<tr>
+							<td>Sound design cue burst</td>
+							<td>Multiple events completing simultaneously</td>
+							<td>At event cluster</td>
+							<td>Diagram completion, list closure, build payoff</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<div class="callout red">
+					<div class="callout-label">The Cut Paradox</div>
+					Silence is the loudest thing in a video. A hard cut to complete silence during narration —
+					all ambient, music, and sound design removed simultaneously — creates an immediate,
+					physical demand on attention. Used once or twice in a video for a critical statement, it
+					is more powerful than any music swell or visual effect. Used frequently, it habituates and
+					loses all force. Reserve it for the one or two moments that must land with absolute
+					weight.
+				</div>
+			</section>
+
+			<!-- PRACTICAL -->
+			<section id="practical" class="section">
+				<div class="section-header">
+					<span class="section-num">07.07</span>
+					<h2 class="section-title">Practical Work</h2>
+				</div>
+
+				<div class="callout">
+					<div class="callout-label">Exercise A · Narration Pacing Edit</div>
+					Record a 60-second narration of any topic at your natural speaking rate. Then re-record
+					the same script in three further passes: at your natural rate with deliberate structured
+					pauses added (sentence and section pauses as described), at 110 WPM, and with one
+					pre-emphasis pause placed before the single most important phrase. Listen to all four back
+					to back without watching the screen. Write one sentence about what changed in how
+					authoritative and clear each version felt.
+				</div>
+
+				<div class="callout amber">
+					<div class="callout-label">Exercise B · Audio Mismatch Analysis</div>
+					Find a faceless educational video whose audio feels disconnected — where the music,
+					narration, and visual events seem to operate independently. Identify three specific
+					moments where an audio lead, an ambient fade, or a sound design cue would have improved
+					the synchronisation. Describe what you would use, when it would appear, and what it would
+					signal. You do not need to produce audio — the exercise is in the diagnostic ear.
+				</div>
+
+				<div class="callout blue">
+					<div class="callout-label">Exercise C · Pause Architecture Script</div>
+					Take a 30-second narration script and mark it up for pause architecture: label every pause
+					as breath (B), sentence (S), section (X), or pre-emphasis (P), with the intended duration
+					in brackets. Then read it aloud to the marked structure and record the result. Compare it
+					to an unmarked read of the same script. The marked version will feel slower in the mouth
+					and more authoritative in the ear.
+				</div>
+
+				<div style="margin-top: 2rem">
+					<div
+						style="
+							font-size: 10px;
+							letter-spacing: 0.15em;
+							text-transform: uppercase;
+							color: var(--vs-muted);
+							margin-bottom: 1rem;
+						"
+					>
+						Key terms from this module
+					</div>
+					<div class="two-col">
+						<div class="stats-panel">
+							<div class="stat-row">
+								<span class="stat-label">Channel contract</span
+								><span class="stat-val">one job per channel</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Narration rhythm</span
+								><span class="stat-val">sound-to-silence pattern</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Pre-emphasis pause</span
+								><span class="stat-val">silence before payload</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Optimal WPM</span
+								><span class="stat-val">100–125 for education</span>
+							</div>
+						</div>
+						<div class="stats-panel">
+							<div class="stat-row">
+								<span class="stat-label">Ambient sound</span
+								><span class="stat-val">world below perception</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Sound design</span
+								><span class="stat-val">cue = visual confirmation</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">Audio lead</span
+								><span class="stat-val">change 1–3s before visual</span>
+							</div>
+							<div class="stat-row">
+								<span class="stat-label">The Cut Paradox</span
+								><span class="stat-val">silence = loudest signal</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<hr class="divider" />
+
+			<section id="quiz" class="quiz-section">
+				<div class="quiz-header">Module 07 — Check Your Understanding</div>
+				<div class="quiz-sub">4 questions · No time limit</div>
+
+				<div class="question" id="q1">
+					<div class="q-text">
+						<span class="q-num">01.</span>A creator narrates at a consistent 155 WPM throughout
+						their entire video, including the most important definitions and statistics. What key
+						capability does this eliminate?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q1', this, false)">
+							The ability to use music as an emotional layer, since fast narration competes with
+							music for attention
+						</div>
+						<div class="option" onclick="answer('q1', this, true)">
+							The ability to use pace as an emphasis signal — slowing down for key phrases
+							communicates importance through contrast, but if the baseline rate is already at the
+							comprehension ceiling, there is no room left to drop further
+						</div>
+						<div class="option" onclick="answer('q1', this, false)">
+							The ability to use pauses effectively, because fast pacing makes pauses feel like
+							errors rather than structure
+						</div>
+						<div class="option" onclick="answer('q1', this, false)">
+							The ability to align narration with visual beats, because fast narration outruns the
+							visual editing
+						</div>
+					</div>
+					<div class="feedback" id="fb-q1"></div>
+				</div>
+
+				<div class="question" id="q2">
+					<div class="q-text">
+						<span class="q-num">02.</span>What is the primary function of a pre-emphasis pause in
+						narration?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q2', this, false)">
+							To give the viewer time to read on-screen text before the narration continues
+						</div>
+						<div class="option" onclick="answer('q2', this, false)">
+							To signal the end of a section so the viewer can process the complete idea
+						</div>
+						<div class="option" onclick="answer('q2', this, true)">
+							To prime the listener's attention before the most important word or phrase arrives —
+							the pause creates a moment of expectation that causes the following word to be
+							received with full, unshared attention
+						</div>
+						<div class="option" onclick="answer('q2', this, false)">
+							To create breathing room between dense information passages, reducing cognitive
+							fatigue
+						</div>
+					</div>
+					<div class="feedback" id="fb-q2"></div>
+				</div>
+
+				<div class="question" id="q3">
+					<div class="q-text">
+						<span class="q-num">03.</span>According to the channel contract, what should happen to
+						music and ambient sound during a passage of dense, complex narration?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q3', this, false)">
+							Both should increase to match the energy and density of the narration content
+						</div>
+						<div class="option" onclick="answer('q3', this, false)">
+							Music should be removed but ambient sound should remain at its standard level for
+							continuity
+						</div>
+						<div class="option" onclick="answer('q3', this, true)">
+							Both should reduce or yield — during high-load narration the listener needs the full
+							auditory attention budget for the narration itself; competing channels consume
+							capacity without adding communicative value
+						</div>
+						<div class="option" onclick="answer('q3', this, false)">
+							Music should transition to a lower-energy track while ambient remains unchanged as a
+							grounding layer
+						</div>
+					</div>
+					<div class="feedback" id="fb-q3"></div>
+				</div>
+
+				<div class="question" id="q4">
+					<div class="q-text">
+						<span class="q-num">04.</span>An audio lead precedes a visual section transition by 2
+						seconds. What is it communicating to the viewer, and why is lead time necessary?
+					</div>
+					<div class="options">
+						<div class="option" onclick="answer('q4', this, false)">
+							It tells the viewer the current section has ended — lead time allows for a smooth fade
+							rather than an abrupt cut
+						</div>
+						<div class="option" onclick="answer('q4', this, false)">
+							It signals that the visual is about to become more complex, so viewers should pay
+							closer attention
+						</div>
+						<div class="option" onclick="answer('q4', this, true)">
+							It primes the viewer that a transition is approaching — because the auditory system
+							registers change before the visual system does, the audio lead gives the viewer's
+							attention time to prepare for the structural shift before it arrives visually
+						</div>
+						<div class="option" onclick="answer('q4', this, false)">
+							It provides continuity across the cut, ensuring the viewer does not interpret the
+							section change as a different video
+						</div>
+					</div>
+					<div class="feedback" id="fb-q4"></div>
+				</div>
+
+				<div class="quiz-score" id="quiz-score">
+					<div class="score-num" id="score-display">—</div>
+					<div class="score-label">questions correct out of 4</div>
+				</div>
+			</section>
+
+			<div class="nav-links">
+				<a href="./06" class="prev-link">← Module 06: Motion Graphics for Narrative Support</a>
+				<a href="./08" class="next-module">
+					<div>
+						<div class="next-label">Next Module</div>
+						<div class="next-title">Editing Techniques for Clarity &amp; Engagement</div>
+					</div>
+					<div class="next-arrow">→</div>
+				</a>
+			</div>
+		</div>
+
+		<script>
+			/* ── READING PROGRESS ── */
+			window.addEventListener('scroll', () => {
+				const el = document.getElementById('reading-progress');
+				const d = document.documentElement.scrollHeight - window.innerHeight;
+				if (d > 0) el.style.width = Math.min(100, (window.scrollY / d) * 100) + '%';
+			});
+
+			const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+			const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+			const lerp = (a, b, t) => a + (b - a) * t;
+
+			/* ════════════════════════════════════════════
+   AUDIO CHANNEL STACK
+════════════════════════════════════════════ */
+			const ACS_DUR = 12;
+			const acsChannels = [
+				{
+					id: 'narr',
+					label: 'Narration',
+					color: '#3dd9a4',
+					active: true,
+					clips: [
+						{ start: 0.5, end: 3.5, label: 'Opening statement', opacity: 0.85 },
+						{ start: 4.2, end: 7.0, label: 'Core explanation', opacity: 0.9 },
+						{ start: 7.8, end: 10.5, label: 'Supporting detail', opacity: 0.85 },
+						{ start: 11.0, end: 11.8, label: 'Close', opacity: 0.8 }
+					],
+					verdictOn: 'Primary channel carrying the argument.',
+					verdictOff: '⚠ No narration — all other channels have nothing to support.'
+				},
+				{
+					id: 'ambient',
+					label: 'Ambient',
+					color: '#4aafff',
+					active: true,
+					clips: [
+						{ start: 0, end: 3.8, label: 'Room tone', opacity: 0.45 },
+						{ start: 4.5, end: 11.8, label: 'Light background texture', opacity: 0.4 }
+					],
+					verdictOn:
+						'Ambient runs continuously at −15 dB — provides world-building floor beneath narration.',
+					verdictOff:
+						'No ambient — narration sounds isolated and clinical without a world to sit in.'
+				},
+				{
+					id: 'sfx',
+					label: 'Sound FX',
+					color: '#f5b94a',
+					active: true,
+					clips: [
+						{ start: 1.2, end: 1.55, label: 'click', opacity: 0.9 },
+						{ start: 4.55, end: 4.85, label: 'appear', opacity: 0.85 },
+						{ start: 6.1, end: 6.4, label: 'chime', opacity: 0.9 },
+						{ start: 9.2, end: 9.55, label: 'confirm', opacity: 0.85 }
+					],
+					verdictOn:
+						'Sound FX: 4 brief cues at visual event moments. ≈5% of total duration — within the target range.',
+					verdictOff:
+						'No sound design — visual events lack audio confirmation. Diagram reveals feel silent.'
+				},
+				{
+					id: 'music',
+					label: 'Music',
+					color: '#a78bfa',
+					active: true,
+					clips: [
+						{ start: 0, end: 3.6, label: 'Intro texture', opacity: 0.35 },
+						{ start: 4.0, end: 5.5, label: '— yield during dense narr —', opacity: 0.12 },
+						{ start: 6.5, end: 11.8, label: 'Outro swell', opacity: 0.38 }
+					],
+					verdictOn:
+						'Music yields during dense narration (4.0–5.5s) — correctly stepping back to give narration full auditory space.',
+					verdictOff:
+						'No music — emotional temperature is flat. The viewer has no primed affective context.'
+				}
+			];
+
+			let acsAnimId = null;
+
+			function buildACS() {
+				// Toggles
+				const tEl = document.getElementById('acs-toggles');
+				tEl.innerHTML = acsChannels
+					.map(
+						(ch) =>
+							`<button class="btn${ch.active ? ' active' : ''}" id="acs-btn-${ch.id}" onclick="toggleACS('${ch.id}')" style="${ch.active ? `border-color:${ch.color};color:${ch.color};background:color-mix(in srgb,${ch.color} 10%,transparent);` : ''}">${ch.label}</button>`
+					)
+					.join('');
+
+				// Tracks
+				const trkEl = document.getElementById('acs-tracks');
+				trkEl.innerHTML = acsChannels
+					.map(
+						(ch) => `
+    <div class="channel-track" id="acs-track-${ch.id}" style="opacity:${ch.active ? 1 : 0.3};">
+      <div class="channel-track-label" style="color:${ch.color};">${ch.label}</div>
+      <div class="channel-track-body" id="acs-body-${ch.id}">
+        ${ch.clips
+					.map(
+						(cl) => `
+          <div class="channel-clip"
+            style="left:${(cl.start / ACS_DUR) * 100}%;width:${((cl.end - cl.start) / ACS_DUR) * 100}%;
+            background:color-mix(in srgb,${ch.color} ${Math.round(cl.opacity * 35)}%,transparent);
+            border:1px solid ${ch.color}${ch.active ? '80' : '30'};color:${ch.color};
+            opacity:${ch.active ? 1 : 0.3};">
+            ${cl.label}
+          </div>`
+					)
+					.join('')}
+        <div class="channel-playhead" id="acs-ph-${ch.id}"></div>
+      </div>
+    </div>`
+					)
+					.join('');
+
+				// Ruler
+				const rEl = document.getElementById('acs-ruler');
+				rEl.innerHTML = `<svg width="100%" height="18" style="display:block;">
+    ${Array.from(
+			{ length: 13 },
+			(_, i) => `
+      <line x1="${(i / 12) * 100}%" y1="0" x2="${(i / 12) * 100}%" y2="${i % 4 === 0 ? 12 : 6}" stroke="#1e2d40" stroke-width="1"/>
+      ${i % 4 === 0 ? `<text x="${(i / 12) * 100}%" y="17" font-size="8" fill="#405068" text-anchor="middle" font-family="IBM Plex Mono">${i}s</text>` : ''}
+    `
+		).join('')}
+  </svg>`;
+
+				updateACSVerdict();
+			}
+
+			function toggleACS(id) {
+				const ch = acsChannels.find((c) => c.id === id);
+				ch.active = !ch.active;
+				buildACS();
+			}
+
+			function updateACSVerdict() {
+				const active = acsChannels.filter((c) => c.active);
+				const msgs = active.map((ch) => ch.verdictOn);
+				const inactive = acsChannels.filter((c) => !c.active);
+				inactive.forEach((ch) => msgs.push(ch.verdictOff));
+
+				const narrOn = acsChannels.find((c) => c.id === 'narr').active;
+				let prefix = '';
+				if (!narrOn)
+					prefix =
+						'⚠ Narration is off — all other channels are support layers with nothing to support. ';
+				const musicOn = acsChannels.find((c) => c.id === 'music').active;
+				const sfxOn = acsChannels.find((c) => c.id === 'sfx').active;
+				const ambOn = acsChannels.find((c) => c.id === 'ambient').active;
+				if (narrOn && musicOn && sfxOn && ambOn) prefix = '✓ All four channels active. ';
+
+				document.getElementById('acs-verdict').textContent = prefix + msgs.join(' ');
+				document.getElementById('acs-verdict').style.borderLeftColor = !narrOn
+					? '#ff4f68'
+					: narrOn && musicOn && sfxOn && ambOn
+						? '#3dd9a4'
+						: '#4aafff';
+			}
+
+			function playACS() {
+				stopACS();
+				document.getElementById('acs-play-btn').textContent = '■ Stop';
+				acsChannels.forEach((ch) => {
+					const ph = document.getElementById('acs-ph-' + ch.id);
+					if (ph) ph.style.opacity = '1';
+				});
+				const dur = ACS_DUR * 1000 * 0.7;
+				let start = null;
+				function tick(ts) {
+					if (!start) start = ts;
+					const t = Math.min(1, (ts - start) / dur);
+					acsChannels.forEach((ch) => {
+						const ph = document.getElementById('acs-ph-' + ch.id);
+						const body = document.getElementById('acs-body-' + ch.id);
+						if (ph && body) {
+							ph.style.left = t * body.offsetWidth + 'px';
+							ph.style.opacity = ch.active ? '1' : '0';
+						}
+					});
+					document.getElementById('acs-prog').style.width = t * 100 + '%';
+					document.getElementById('acs-time').textContent = (t * ACS_DUR).toFixed(1) + 's';
+					if (t < 1) acsAnimId = requestAnimationFrame(tick);
+					else {
+						acsAnimId = null;
+						document.getElementById('acs-play-btn').textContent = '▶ Play';
+						acsChannels.forEach((ch) => {
+							const ph = document.getElementById('acs-ph-' + ch.id);
+							if (ph) ph.style.opacity = '0';
+						});
+					}
+				}
+				acsAnimId = requestAnimationFrame(tick);
+			}
+
+			function stopACS() {
+				if (acsAnimId) cancelAnimationFrame(acsAnimId);
+				acsAnimId = null;
+				document.getElementById('acs-play-btn').textContent = '▶ Play';
+				acsChannels.forEach((ch) => {
+					const ph = document.getElementById('acs-ph-' + ch.id);
+					if (ph) ph.style.opacity = '0';
+				});
+				document.getElementById('acs-prog').style.width = '0%';
+				document.getElementById('acs-time').textContent = '0.0s';
+			}
+
+			buildACS();
+
+			/* ════════════════════════════════════════════
+   WAVEFORM RHYTHM ANALYZER
+════════════════════════════════════════════ */
+			const wavePatterns = {
+				wall: {
+					// No pauses — continuous dense blocks
+					segments: [
+						{ s: 0, e: 0.08, amp: 0.9 },
+						{ s: 0.08, e: 0.16, amp: 0.85 },
+						{ s: 0.16, e: 0.24, amp: 0.88 },
+						{ s: 0.24, e: 0.32, amp: 0.82 },
+						{ s: 0.32, e: 0.4, amp: 0.9 },
+						{ s: 0.4, e: 0.48, amp: 0.86 },
+						{ s: 0.48, e: 0.56, amp: 0.87 },
+						{ s: 0.56, e: 0.64, amp: 0.85 },
+						{ s: 0.64, e: 0.72, amp: 0.9 },
+						{ s: 0.72, e: 0.8, amp: 0.84 },
+						{ s: 0.8, e: 0.88, amp: 0.88 },
+						{ s: 0.88, e: 1.0, amp: 0.87 }
+					],
+					color: '#ff4f68',
+					desc: 'Wall of sound — no structural pauses. The viewer cannot locate section boundaries, sentence ends, or emphasis moments. Each idea collides with the next before the previous one is processed. Comprehension drops progressively through the video.'
+				},
+				irregular: {
+					segments: [
+						{ s: 0, e: 0.12, amp: 0.85 },
+						{ s: 0.12, e: 0.18, amp: 0.0 },
+						{ s: 0.18, e: 0.26, amp: 0.88 },
+						{ s: 0.26, e: 0.27, amp: 0.0 },
+						{ s: 0.27, e: 0.34, amp: 0.8 },
+						{ s: 0.34, e: 0.42, amp: 0.85 },
+						{ s: 0.42, e: 0.5, amp: 0.0 },
+						{ s: 0.5, e: 0.62, amp: 0.87 },
+						{ s: 0.62, e: 0.64, amp: 0.0 },
+						{ s: 0.64, e: 0.7, amp: 0.82 },
+						{ s: 0.7, e: 0.75, amp: 0.0 },
+						{ s: 0.75, e: 0.88, amp: 0.86 },
+						{ s: 0.88, e: 0.93, amp: 0.0 },
+						{ s: 0.93, e: 1.0, amp: 0.84 }
+					],
+					color: '#f5b94a',
+					desc: 'Irregular pauses — gaps exist but have no consistent size or placement. The viewer cannot interpret what a pause means: is this a section boundary, a hesitation, or a breath? Unpredictable rhythm creates cognitive friction that wears the viewer down without adding structural information.'
+				},
+				structured: {
+					segments: [
+						// Phrase 1
+						{ s: 0, e: 0.1, amp: 0.88 },
+						{ s: 0.1, e: 0.14, amp: 0.0 }, // breath
+						{ s: 0.14, e: 0.25, amp: 0.86 },
+						{ s: 0.25, e: 0.31, amp: 0.0 }, // sentence pause
+						// Phrase 2
+						{ s: 0.31, e: 0.42, amp: 0.87 },
+						{ s: 0.42, e: 0.46, amp: 0.0 }, // breath
+						{ s: 0.46, e: 0.52, amp: 0.85 },
+						{ s: 0.52, e: 0.6, amp: 0.0 }, // sentence pause
+						// Phrase 3 — section transition coming
+						{ s: 0.6, e: 0.7, amp: 0.88 },
+						{ s: 0.7, e: 0.8, amp: 0.0 }, // SECTION pause (long)
+						// Phrase 4
+						{ s: 0.8, e: 0.88, amp: 0.87 },
+						{ s: 0.88, e: 0.92, amp: 0.0 },
+						{ s: 0.92, e: 1.0, amp: 0.85 }
+					],
+					color: '#3dd9a4',
+					desc: 'Structured rhythm — three distinct pause lengths: breath pauses (short, within phrases), sentence pauses (medium, closing complete thoughts), and a section pause (long, marking a major transition at 0.70). The viewer rapidly learns this vocabulary and processes structure automatically — freeing cognitive capacity for content.'
+				},
+				dramatic: {
+					segments: [
+						// Build slowly
+						{ s: 0, e: 0.08, amp: 0.75 },
+						{ s: 0.08, e: 0.12, amp: 0.0 },
+						{ s: 0.12, e: 0.18, amp: 0.8 },
+						{ s: 0.18, e: 0.23, amp: 0.0 },
+						// Pre-emphasis pause (long silence before key phrase)
+						{ s: 0.23, e: 0.3, amp: 0.82 },
+						{ s: 0.3, e: 0.4, amp: 0.0 }, // ← PRE-EMPHASIS
+						// Key phrase — slow, deliberate
+						{ s: 0.4, e: 0.5, amp: 0.95 },
+						{ s: 0.5, e: 0.55, amp: 0.0 },
+						// Resolution
+						{ s: 0.55, e: 0.62, amp: 0.83 },
+						{ s: 0.62, e: 0.66, amp: 0.0 },
+						{ s: 0.66, e: 0.76, amp: 0.85 },
+						{ s: 0.76, e: 0.82, amp: 0.0 },
+						{ s: 0.82, e: 1.0, amp: 0.84 }
+					],
+					color: '#a78bfa',
+					desc: 'Dramatic pacing — a long pre-emphasis pause at 0.30–0.40 precedes the key phrase (shown with higher amplitude). The extended silence creates expectation; when the phrase arrives, the viewer has primed, full attention. The amplitude spike models the felt weight of the word. Use this structure for the one or two moments in a video that must land with maximum force.'
+				}
+			};
+
+			let currentWavePattern = 'wall';
+
+			function setWavePattern(name) {
+				currentWavePattern = name;
+				document.querySelectorAll('#wave-btns .btn').forEach((b, i) => {
+					const names = ['wall', 'irregular', 'structured', 'dramatic'];
+					b.classList.toggle('active', names[i] === name);
+					b.classList.remove('mint', 'amber', 'red');
+					if (names[i] === name) {
+						if (name === 'structured') b.classList.add('mint');
+						else if (name === 'dramatic') b.classList.add('amber');
+						else if (name === 'wall') b.classList.add('red');
+					}
+				});
+				drawWaveform();
+				document.getElementById('wave-inspect').textContent = wavePatterns[name].desc;
+			}
+
+			function drawWaveform(highlightX) {
+				const canvas = document.getElementById('waveform-canvas');
+				const dpr = window.devicePixelRatio || 1;
+				const W = canvas.offsetWidth || 560;
+				const H = 120;
+				if (canvas.width !== W * dpr) {
+					canvas.width = W * dpr;
+					canvas.height = H * dpr;
+					canvas.style.height = '120px';
+					canvas.getContext('2d').scale(dpr, dpr);
+				}
+				const ctx = canvas.getContext('2d');
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#040710';
+				ctx.fillRect(0, 0, W, H);
+
+				const pat = wavePatterns[currentWavePattern];
+				const cx = W / 2,
+					cy = H / 2;
+				const seed = currentWavePattern.length;
+
+				pat.segments.forEach((seg, si) => {
+					if (seg.amp < 0.01) return; // silence
+					const x1 = seg.s * W,
+						x2 = seg.e * W;
+					const segW = x2 - x1;
+					const steps = Math.max(4, Math.round(segW * 1.5));
+					ctx.beginPath();
+					let started = false;
+					for (let i = 0; i <= steps; i++) {
+						const tx = x1 + (i / steps) * segW;
+						const noise =
+							Math.sin(tx * 0.3 + si * 1.7) * 0.12 + Math.sin(tx * 0.8 + si * 3.1) * 0.08;
+						const amp = seg.amp * (1 + noise) * (cy - 8);
+						if (!started) {
+							ctx.moveTo(tx, cy - amp);
+							started = true;
+						} else ctx.lineTo(tx, cy - amp);
+					}
+					for (let i = steps; i >= 0; i--) {
+						const tx = x1 + (i / steps) * segW;
+						const noise =
+							Math.sin(tx * 0.3 + si * 1.7) * 0.12 + Math.sin(tx * 0.8 + si * 3.1) * 0.08;
+						const amp = seg.amp * (1 + noise) * (cy - 8);
+						ctx.lineTo(tx, cy + amp);
+					}
+					ctx.closePath();
+					const grd = ctx.createLinearGradient(
+						0,
+						cy - seg.amp * (cy - 8),
+						0,
+						cy + seg.amp * (cy - 8)
+					);
+					grd.addColorStop(0, pat.color + 'cc');
+					grd.addColorStop(1, pat.color + '44');
+					ctx.fillStyle = grd;
+					ctx.fill();
+				});
+
+				// Centre line
+				ctx.strokeStyle = '#1e2d40';
+				ctx.lineWidth = 1;
+				ctx.beginPath();
+				ctx.moveTo(0, cy);
+				ctx.lineTo(W, cy);
+				ctx.stroke();
+
+				// Pause markers
+				pat.segments.forEach((seg, i) => {
+					if (seg.amp < 0.01 && i > 0) {
+						const px = seg.s * W;
+						const pauseW = (seg.e - seg.s) * W;
+						// Only label meaningful pauses (>1.5% of total)
+						if (seg.e - seg.s > 0.015) {
+							ctx.fillStyle = pat.color + '18';
+							ctx.fillRect(px, 4, pauseW, H - 8);
+							if (pauseW > 14) {
+								ctx.font = '8px IBM Plex Mono';
+								ctx.fillStyle = pat.color + '88';
+								ctx.textAlign = 'center';
+								ctx.fillText('‖', px + pauseW / 2, cy + 3);
+							}
+						}
+					}
+				});
+
+				if (highlightX !== undefined) {
+					ctx.strokeStyle = '#ffffff40';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([3, 3]);
+					ctx.beginPath();
+					ctx.moveTo(highlightX, 0);
+					ctx.lineTo(highlightX, H);
+					ctx.stroke();
+					ctx.setLineDash([]);
+				}
+			}
+
+			document.getElementById('waveform-canvas').addEventListener('click', function (e) {
+				const rect = this.getBoundingClientRect();
+				const t = (e.clientX - rect.left) / rect.width;
+				const pat = wavePatterns[currentWavePattern];
+				const seg = pat.segments.find((s) => t >= s.s && t < s.e);
+				if (seg) {
+					const isSilence = seg.amp < 0.01;
+					const duration = (seg.e - seg.s) * ACS_DUR;
+					if (isSilence) {
+						document.getElementById('wave-inspect').textContent =
+							`Pause at ${(t * 100).toFixed(0)}% — duration ≈${duration.toFixed(2)}s. ${duration < 0.4 ? 'Breath pause: separates clauses within a sentence.' : duration < 1.0 ? 'Sentence pause: closes a complete thought.' : duration < 2.0 ? 'Section pause: signals a major conceptual transition.' : 'Pre-emphasis pause: extended silence priming the listener for an important phrase.'}`;
+					} else {
+						document.getElementById('wave-inspect').textContent =
+							`Speech segment at ${(t * 100).toFixed(0)}% — amplitude ${Math.round(seg.amp * 100)}%. ${seg.amp > 0.9 ? 'Peak intensity — this phrase is carrying high informational or emotional weight.' : seg.amp > 0.75 ? 'Normal speech level.' : 'Quieter phrase — may signal a lower-priority aside or transition.'}`;
+					}
+					drawWaveform(t * (this.offsetWidth || 560));
+				}
+			});
+
+			setTimeout(() => {
+				drawWaveform();
+				setWavePattern('wall');
+			}, 80);
+			window.addEventListener('resize', drawWaveform);
+
+			/* ════════════════════════════════════════════
+   VOICE PACING SIMULATOR
+════════════════════════════════════════════ */
+			const VP_SCRIPT =
+				'The planning fallacy is not a failure of intelligence. It is a systematic bias — one that affects experienced professionals just as reliably as novices. The core mechanism is straightforward: when estimating how long a task will take, the brain focuses on the task itself and ignores the base rate of how long similar tasks have historically taken. The result is confidence without calibration.'.split(
+					' '
+				);
+
+			let vpRate = 110;
+			let vpAnimId = null;
+			let vpWordIdx = 0;
+			let vpLastWordTime = 0;
+
+			const vpVerdicts = {
+				160: {
+					comp: '~60%',
+					load: 'HIGH',
+					color: '#ff4f68',
+					text: 'At 160 WPM, the viewer is processing a new word every 375ms — well above the threshold for complex educational content. Comprehension of novel or abstract ideas drops significantly. The viewer may follow the surface narrative but will not retain the conceptual structure.'
+				},
+				130: {
+					comp: '~75%',
+					load: 'MED',
+					color: '#f5b94a',
+					text: '130 WPM is comfortable for familiar content and light explanation. For complex concepts requiring mental model construction, it is at the upper edge of the effective range. Pauses become critical at this rate to provide the processing time the delivery pace does not.'
+				},
+				110: {
+					comp: '~90%',
+					load: 'LOW',
+					color: '#3dd9a4',
+					text: '110 WPM is the optimal rate for educational content involving new or abstract concepts. The viewer has time to process each idea, form a mental model, and prepare for the next. This rate feels deliberate to the narrator but correct to the listener. It also creates room for emphasis through further deceleration.'
+				},
+				85: {
+					comp: '~95%',
+					load: 'VERY LOW',
+					color: '#4aafff',
+					text: '85 WPM is too slow as a sustained rate — it creates the impression of hesitation or uncertainty. Use it selectively for the 1–3 most important phrases in a video, where the combination of slow rate and surrounding context signals maximum importance. The contrast with surrounding 110 WPM is what makes it powerful.'
+				}
+			};
+
+			function setVPRate(rate) {
+				vpRate = rate;
+				stopVP();
+				const info = vpVerdicts[rate] || vpVerdicts[110];
+				document.querySelectorAll('#vp-rate-btns .btn').forEach((b, i) => {
+					const rates = [160, 130, 110, 85];
+					b.classList.remove('active', 'red', 'amber', 'mint', 'blue');
+					if (rates[i] === rate) {
+						b.classList.add('active');
+						if (rate === 160) b.classList.add('red');
+						else if (rate === 130) b.classList.add('amber');
+						else if (rate === 110) b.classList.add('mint');
+						else b.classList.add('blue');
+					}
+				});
+				document.getElementById('vpm-wpm').textContent = rate;
+				document.getElementById('vpm-wpm').style.color = info.color;
+				document.getElementById('vpm-ms').textContent = Math.round(60000 / rate) + 'ms';
+				document.getElementById('vpm-comp').textContent = info.comp;
+				document.getElementById('vpm-comp').style.color = info.color;
+				document.getElementById('vpm-load').textContent = info.load;
+				document.getElementById('vpm-load').style.color = info.color;
+				document.getElementById('vp-verdict').textContent = info.text;
+				document.getElementById('vp-verdict').style.borderLeftColor = info.color;
+				renderVPDisplay(-1);
+			}
+
+			function renderVPDisplay(activeIdx) {
+				const el = document.getElementById('vp-display');
+				el.innerHTML =
+					VP_SCRIPT.map((w, i) => {
+						let cls = 'vp-word';
+						if (i < activeIdx) cls += ' spoken';
+						if (i === activeIdx) cls += ' active';
+						return `<span class="${cls}" id="vpw-${i}">${w}</span>`;
+					}).join(' ') + ' <span class="vp-cursor"></span>';
+			}
+
+			function playVP() {
+				stopVP();
+				vpWordIdx = 0;
+				document.getElementById('vp-play-btn').textContent = '■ Stop';
+				const msPerWord = 60000 / vpRate;
+				renderVPDisplay(0);
+
+				function tick(ts) {
+					if (vpWordIdx >= VP_SCRIPT.length) {
+						stopVP();
+						return;
+					}
+					if (ts - vpLastWordTime >= msPerWord) {
+						vpLastWordTime = ts;
+						renderVPDisplay(vpWordIdx);
+						vpWordIdx++;
+					}
+					vpAnimId = requestAnimationFrame(tick);
+				}
+				vpLastWordTime = performance.now();
+				vpAnimId = requestAnimationFrame(tick);
+			}
+
+			function stopVP() {
+				if (vpAnimId) cancelAnimationFrame(vpAnimId);
+				vpAnimId = null;
+				document.getElementById('vp-play-btn').textContent = '▶ Play';
+			}
+
+			setVPRate(110);
+
+			/* ════════════════════════════════════════════
+   PAUSE ARCHITECTURE BUILDER
+════════════════════════════════════════════ */
+			const pauseSentences = [
+				{
+					id: 0,
+					text: 'The most important thing to understand is that clarity is a choice, not a talent.',
+					words: []
+				},
+				{
+					id: 1,
+					text: 'Every second of silence in your narration is doing structural work.',
+					words: []
+				},
+				{
+					id: 2,
+					text: 'The viewer will not notice good pause architecture — they will only feel it.',
+					words: []
+				},
+				{
+					id: 3,
+					text: 'Emphasis is not volume — it is the space before the word that matters most.',
+					words: []
+				}
+			];
+			pauseSentences.forEach((s) => {
+				s.words = s.text.split(' ').map((w) => ({ text: w, pauseBefore: false, emphasis: false }));
+			});
+
+			let selectedPauseSentence = null;
+			let pauseMode = 'pause';
+
+			function buildPauseSentences() {
+				const el = document.getElementById('pause-sentences');
+				el.innerHTML = pauseSentences
+					.map(
+						(s) => `
+    <div class="pause-sentence${selectedPauseSentence === s.id ? ' selected' : ''}" id="ps-${s.id}" onclick="selectPauseSentence(${s.id})">
+      <div style="font-size:11px; color:var(--vs-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:6px;">Sentence ${s.id + 1}</div>
+      <div style="font-size:13px; color:${selectedPauseSentence === s.id ? '#fff' : 'var(--vs-text)'}; line-height:1.8;">${s.text}</div>
+      ${
+				selectedPauseSentence === s.id
+					? `
+      <div class="pause-word-row">
+        ${s.words.map((w, wi) => `<span class="pw${w.pauseBefore ? ' pause-before' : ''}${w.emphasis ? ' emphasis' : ''}" onclick="event.stopPropagation(); togglePauseWord(${s.id},${wi})">${w.text}</span>`).join('')}
+      </div>`
+					: ``
+			}
+    </div>`
+					)
+					.join('');
+
+				document.getElementById('pause-controls').style.display =
+					selectedPauseSentence !== null ? 'flex' : 'none';
+				updatePauseVerdict();
+			}
+
+			function selectPauseSentence(id) {
+				selectedPauseSentence = selectedPauseSentence === id ? null : id;
+				buildPauseSentences();
+			}
+
+			function setPauseMode(mode) {
+				pauseMode = mode;
+				document.querySelectorAll('.pause-controls .btn').forEach((b, i) => {
+					b.classList.toggle('active', ['pause', 'emphasis'][i] === mode);
+					b.classList.toggle('amber', ['pause', 'emphasis'][i] === mode && mode === 'emphasis');
+				});
+			}
+
+			function togglePauseWord(sid, wi) {
+				const s = pauseSentences[sid];
+				const w = s.words[wi];
+				if (pauseMode === 'pause') {
+					if (wi === 0) return; // can't pause before first word
+					w.pauseBefore = !w.pauseBefore;
+				} else {
+					w.emphasis = !w.emphasis;
+				}
+				buildPauseSentences();
+			}
+
+			function clearPauseSentence() {
+				if (selectedPauseSentence === null) return;
+				pauseSentences[selectedPauseSentence].words.forEach((w) => {
+					w.pauseBefore = false;
+					w.emphasis = false;
+				});
+				buildPauseSentences();
+			}
+
+			function updatePauseVerdict() {
+				if (selectedPauseSentence === null) {
+					document.getElementById('pause-verdict').textContent =
+						'Click a sentence to select it, then mark pause points and emphasis words.';
+					document.getElementById('pause-verdict').style.borderLeftColor = 'var(--vs-border2)';
+					return;
+				}
+				const s = pauseSentences[selectedPauseSentence];
+				const pauses = s.words.filter((w) => w.pauseBefore).length;
+				const emphases = s.words.filter((w) => w.emphasis).length;
+				const hasPauseBeforeEmphasis = s.words.some(
+					(w, i) => w.emphasis && i > 0 && s.words[i - 1].pauseBefore
+				);
+
+				let msg = '';
+				if (pauses === 0 && emphases === 0)
+					msg = 'No marks yet. Click words to place pause points (‖) or mark emphasis targets.';
+				else if (emphases > 2)
+					msg =
+						'⚠ Too many emphasis marks — when everything is emphasised, nothing is. Reserve emphasis for the single most important word or short phrase per sentence.';
+				else if (pauses > 0 && emphases > 0 && !hasPauseBeforeEmphasis)
+					msg =
+						'Good structure: pauses and emphasis marks placed. For maximum effect, add a pause immediately before each emphasis word — the silence primes the listener for the payload.';
+				else if (hasPauseBeforeEmphasis)
+					msg =
+						'✓ Excellent — a pause precedes an emphasis word. This is the pre-emphasis structure: silence creates expectation, the emphasised word lands into primed attention. This is the most powerful tool in voice pacing.';
+				else if (pauses > 0)
+					msg = `${pauses} pause point${pauses !== 1 ? 's' : ''} placed. Add emphasis marks to the words these pauses are setting up — pauses without a following emphasis target are structural, not anticipatory.`;
+				else
+					msg = `${emphases} emphasis word${emphases !== 1 ? 's' : ''} marked. Add pause points immediately before them to create the pre-emphasis structure that gives them full listener attention.`;
+
+				document.getElementById('pause-verdict').textContent = msg;
+				document.getElementById('pause-verdict').style.borderLeftColor = hasPauseBeforeEmphasis
+					? '#3dd9a4'
+					: emphases > 2
+						? '#ff4f68'
+						: pauses > 0 || emphases > 0
+							? '#4aafff'
+							: 'var(--vs-border2)';
+			}
+
+			buildPauseSentences();
+
+			/* ════════════════════════════════════════════
+   SOUND CUE MAPPER
+════════════════════════════════════════════ */
+			const CUE_DUR = 10; // seconds
+			const cueTypes = [
+				{
+					id: 'click',
+					label: 'Click / Tap',
+					color: '#3dd9a4',
+					icon: '▪',
+					desc: 'Brief transient confirming a visual element appears or is clicked.'
+				},
+				{
+					id: 'chime',
+					label: 'Soft Chime',
+					color: '#4aafff',
+					icon: '♪',
+					desc: 'Melodic micro-cue for key concept reveals or section markers.'
+				},
+				{
+					id: 'whoosh',
+					label: 'Micro Whoosh',
+					color: '#f5b94a',
+					icon: '≈',
+					desc: 'Short air-movement sound for diagram transitions or slide moves.'
+				},
+				{
+					id: 'bass',
+					label: 'Bass Cue',
+					color: '#ff4f68',
+					icon: '●',
+					desc: 'Low-frequency pulse for impact moments, statistics, or tension.'
+				},
+				{
+					id: 'ambient',
+					label: 'Ambient Swell',
+					color: '#a78bfa',
+					icon: '~',
+					desc: 'Slow fade-in of atmospheric texture — marks a section transition.'
+				}
+			];
+			let selectedCueType = 'click';
+			let cues = [];
+
+			function buildCuePalette() {
+				const el = document.getElementById('cue-palette');
+				el.innerHTML = cueTypes
+					.map(
+						(ct) =>
+							`<div class="cue-chip${ct.id === selectedCueType ? ' selected' : ''}"
+      style="border-color:${ct.color}; color:${ct.color}; ${ct.id === selectedCueType ? `background:color-mix(in srgb,${ct.color} 12%,transparent);` : ''}"
+      onclick="selectCueType('${ct.id}')">
+      <span>${ct.icon}</span>${ct.label}
+    </div>`
+					)
+					.join('');
+
+				const leg = document.getElementById('cue-legend');
+				leg.innerHTML = cueTypes
+					.map(
+						(ct) =>
+							`<div class="cue-legend-item"><div class="cue-legend-dot" style="background:${ct.color};"></div>${ct.label}: ${ct.desc}</div>`
+					)
+					.join('');
+			}
+
+			function selectCueType(id) {
+				selectedCueType = id;
+				buildCuePalette();
+			}
+
+			function initCueCanvas() {
+				const canvas = document.getElementById('cue-timeline');
+				const dpr = window.devicePixelRatio || 1;
+				const W = canvas.offsetWidth || 560;
+				canvas.width = W * dpr;
+				canvas.height = 180 * dpr;
+				canvas.style.height = '180px';
+				canvas.getContext('2d').scale(dpr, dpr);
+				drawCueTimeline();
+			}
+
+			function drawCueTimeline() {
+				const canvas = document.getElementById('cue-timeline');
+				const ctx = canvas.getContext('2d');
+				const W = canvas.offsetWidth || 560;
+				const H = 180;
+				const PAD_L = 10,
+					PAD_R = 10,
+					PAD_T = 20,
+					PAD_B = 30;
+				const TW = W - PAD_L - PAD_R;
+				const rowH = (H - PAD_T - PAD_B) / cueTypes.length;
+
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#040710';
+				ctx.fillRect(0, 0, W, H);
+
+				// Time grid
+				for (let t = 0; t <= CUE_DUR; t += 2) {
+					const x = PAD_L + (t / CUE_DUR) * TW;
+					ctx.strokeStyle = '#14202e';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(x, PAD_T);
+					ctx.lineTo(x, H - PAD_B);
+					ctx.stroke();
+					ctx.font = '8px IBM Plex Mono';
+					ctx.fillStyle = '#405068';
+					ctx.textAlign = 'center';
+					ctx.fillText(t + 's', x, H - PAD_B + 12);
+				}
+
+				// Row lanes
+				cueTypes.forEach((ct, ri) => {
+					const y = PAD_T + ri * rowH;
+					ctx.fillStyle = ct.color + '08';
+					ctx.fillRect(PAD_L, y, TW, rowH - 2);
+					ctx.font = '8px IBM Plex Mono';
+					ctx.fillStyle = ct.color + '60';
+					ctx.textAlign = 'left';
+					ctx.fillText(ct.label, PAD_L + 3, y + rowH / 2 + 3);
+				});
+
+				// Cues
+				cues.forEach((cue) => {
+					const ct = cueTypes.find((c) => c.id === cue.type);
+					const ri = cueTypes.findIndex((c) => c.id === cue.type);
+					const x = PAD_L + (cue.t / CUE_DUR) * TW;
+					const y = PAD_T + ri * rowH;
+					const cueW = Math.max(6, 0.03 * TW);
+
+					ctx.fillStyle = ct.color + '88';
+					ctx.fillRect(x - cueW / 2, y + 4, cueW, rowH - 10);
+					ctx.strokeStyle = ct.color;
+					ctx.lineWidth = 1.5;
+					ctx.strokeRect(x - cueW / 2, y + 4, cueW, rowH - 10);
+
+					// Stem down from bottom to ruler
+					ctx.strokeStyle = ct.color + '40';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([2, 3]);
+					ctx.beginPath();
+					ctx.moveTo(x, y + rowH - 6);
+					ctx.lineTo(x, H - PAD_B);
+					ctx.stroke();
+					ctx.setLineDash([]);
+				});
+
+				// Density bar at bottom
+				const bins = 20;
+				const density = new Array(bins).fill(0);
+				cues.forEach((cue) => {
+					const b = Math.floor((cue.t / CUE_DUR) * bins);
+					if (b < bins) density[b]++;
+				});
+				const maxD = Math.max(1, ...density);
+				density.forEach((d, i) => {
+					if (d === 0) return;
+					const x = PAD_L + (i / bins) * TW;
+					const w = TW / bins - 1;
+					const h = (d / maxD) * 12;
+					ctx.fillStyle = `rgba(61,217,164,${0.3 + (d / maxD) * 0.5})`;
+					ctx.fillRect(x, H - PAD_B + 16, w, h);
+				});
+
+				analyzeCues();
+			}
+
+			function analyzeCues() {
+				const n = cues.length;
+				if (n === 0) {
+					document.getElementById('cue-verdict').textContent =
+						'No cues placed. Click the timeline to add audio events. Select a cue type first.';
+					document.getElementById('cue-verdict').style.borderLeftColor = 'var(--vs-border2)';
+					return;
+				}
+				const totalDur = cues.reduce((s, c) => {
+					const ct = cueTypes.find((t) => t.id === c.type);
+					return s + (c.type === 'ambient' ? 0.8 : c.type === 'chime' ? 0.12 : 0.08);
+				}, 0);
+				const pct = Math.round((totalDur / CUE_DUR) * 100);
+				// Check clustering
+				const sorted = [...cues].sort((a, b) => a.t - b.t);
+				let clusters = 0;
+				for (let i = 1; i < sorted.length; i++) if (sorted[i].t - sorted[i - 1].t < 0.4) clusters++;
+
+				let msg = '';
+				if (pct < 3)
+					msg = `${n} cue${n !== 1 ? 's' : ''} placed. Total cue coverage: ≈${pct}% of ${CUE_DUR}s. Below the 5% target — consider adding more audio confirmations at visual event moments.`;
+				else if (pct <= 8)
+					msg = `✓ ${n} cue${n !== 1 ? 's' : ''} placed. Coverage: ≈${pct}% — within the 5% target range. ${clusters > 1 ? `⚠ ${clusters} adjacent cues may cluster as noise — space them to align with distinct visual events.` : 'Cues are well-distributed.'}`;
+				else
+					msg = `⚠ ${n} cue${n !== 1 ? 's' : ''} placed. Coverage: ≈${pct}% — above the 5% threshold. High cue density risks habituation: the viewer will filter the cues as background noise rather than processing them as signals. Remove the lowest-priority cues.`;
+
+				document.getElementById('cue-verdict').textContent = msg;
+				document.getElementById('cue-verdict').style.borderLeftColor =
+					pct > 8 ? '#ff4f68' : pct >= 3 ? '#3dd9a4' : '#4aafff';
+			}
+
+			document.getElementById('cue-timeline').addEventListener('click', function (e) {
+				const rect = this.getBoundingClientRect();
+				const t = ((e.clientX - rect.left) / rect.width) * CUE_DUR;
+				if (t < 0 || t > CUE_DUR) return;
+				// Check if clicking near existing cue (remove)
+				const hitIdx = cues.findIndex((c) => Math.abs(c.t - t) < 0.3 && c.type === selectedCueType);
+				if (hitIdx >= 0) cues.splice(hitIdx, 1);
+				else cues.push({ type: selectedCueType, t });
+				drawCueTimeline();
+			});
+
+			function clearCues() {
+				cues = [];
+				drawCueTimeline();
+			}
+
+			function loadCuePreset(name) {
+				cues = [];
+				if (name === 'sparse') {
+					cues = [
+						{ type: 'click', t: 1.2 },
+						{ type: 'chime', t: 3.5 },
+						{ type: 'click', t: 5.8 },
+						{ type: 'bass', t: 7.2 },
+						{ type: 'chime', t: 9.1 }
+					];
+				} else if (name === 'dense') {
+					cues = [
+						{ type: 'click', t: 0.5 },
+						{ type: 'click', t: 1.0 },
+						{ type: 'chime', t: 1.8 },
+						{ type: 'whoosh', t: 2.4 },
+						{ type: 'click', t: 3.2 },
+						{ type: 'chime', t: 3.8 },
+						{ type: 'bass', t: 4.5 },
+						{ type: 'click', t: 5.2 },
+						{ type: 'whoosh', t: 6.0 },
+						{ type: 'chime', t: 6.8 },
+						{ type: 'click', t: 7.5 },
+						{ type: 'bass', t: 8.2 },
+						{ type: 'ambient', t: 8.8 },
+						{ type: 'click', t: 9.4 }
+					];
+				} else {
+					// noise — random, overlapping
+					for (let i = 0; i < 18; i++) {
+						cues.push({ type: cueTypes[i % cueTypes.length].id, t: Math.random() * CUE_DUR });
+					}
+				}
+				drawCueTimeline();
+			}
+
+			buildCuePalette();
+			setTimeout(initCueCanvas, 80);
+			window.addEventListener('resize', initCueCanvas);
+
+			/* ── QUIZ ── */
+			const scores = {};
+			function answer(qId, el, correct) {
+				if (scores[qId] !== undefined) return;
+				scores[qId] = correct ? 1 : 0;
+				el.parentElement.querySelectorAll('.option').forEach((o) => {
+					o.classList.add('disabled');
+					if (o.onclick.toString().includes(',true)')) o.classList.add('correct');
+				});
+				el.classList.remove('correct');
+				if (!correct) el.classList.add('wrong');
+				const fb = document.getElementById('fb-' + qId);
+				fb.textContent = correct
+					? '✓ Correct.'
+					: '✗ Not quite — the correct answer is highlighted above.';
+				fb.className = 'feedback ' + (correct ? 'ok' : 'bad');
+				if (Object.keys(scores).length === 4) {
+					const total = Object.values(scores).reduce((a, b) => a + b, 0);
+					const sc = document.getElementById('quiz-score');
+					sc.style.display = 'block';
+					document.getElementById('score-display').textContent = total + ' / 4';
+					document.getElementById('score-display').style.color =
+						total >= 3 ? 'var(--vs-mint)' : total >= 2 ? 'var(--vs-amber)' : 'var(--vs-red)';
+				}
+			}
+		</script>
+	</body>
+</html>

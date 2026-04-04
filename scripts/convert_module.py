@@ -289,8 +289,189 @@ def convert_module(input_path, output_path):
         ".dtree-result.static",
         ".dtree-result.either",
         ".dtree-verdict",
-        ".dtree-reason",
+        ".dnode-reason",
         ".contrast-swatch",
+        ".sg-dont::before",
+        ".sg-dont",
+        ".sg-do",
+        ".sg-do::before",
+        ".sg-color-chip",
+        ".sg-color-chip-swatch",
+        ".sg-color-chip-info",
+        ".sg-color-chip-name",
+        ".sg-color-chip-role",
+        ".sg-color-chip-val",
+        ".sg-type-row",
+        ".sg-type-row:last-child",
+        ".sg-type-spec",
+        ".sg-type-tag",
+        ".sg-icon-cell",
+        ".sg-icon-cell canvas",
+        ".sg-icon-cell-label",
+        ".sg-voice-pair",
+        ".sg-voice-do",
+        ".sg-voice-dont",
+        ".sg-voice-label",
+        ".sg-voice-text",
+        ".export-card",
+        ".export-card-header",
+        ".export-card-fmt",
+        ".export-card-type",
+        ".export-card-body",
+        ".export-card-uses",
+        ".export-use-item",
+        ".export-use-dot",
+        ".export-card-warn",
+        ".audit-q-item",
+        ".audit-q-header",
+        ".audit-q-header.answered-yes",
+        ".audit-q-header.answered-no",
+        ".audit-q-body",
+        ".audit-q-cat",
+        ".audit-q-btns",
+        ".audit-q-btn",
+        ".audit-q-btn.yes",
+        ".audit-q-btn.no",
+        ".audit-result.visible",
+        ".audit-area-item",
+        ".two-col",
+        ".callout.warn",
+        ".callout.warn .callout-label",
+        ".ep-info strong",
+        ".rot-score-label",
+        ".rot-score-label span",
+        ".callout.violet",
+        ".callout.violet .callout-label",
+        ".h-swatch",
+        ".h-swatch:hover",
+        ".h-swatch-label",
+        ".cc-badge",
+        ".cc-badge.pass",
+        ".cc-badge.fail",
+        ".palette-opt.correct",
+        ".palette-opt.wrong",
+        ".palette-opt.disabled",
+        ".palette-feedback.ok",
+        ".palette-feedback.bad",
+        ".brand-layer",
+        ".brand-layer .layer-title",
+        ".brand-layer .layer-subtitle",
+        ".brand-layer .layer-arrow",
+        ".brand-layer.open .layer-arrow",
+        ".layer-content",
+        ".layer-content.open",
+        ".layer-content ul",
+        ".layer-content li",
+        ".layer-content li::before",
+        ".layer-content .layer-example",
+        ".concept-score-row",
+        ".concept-score-label",
+        ".concept-score-bar-bg",
+        ".concept-score-bar",
+        ".concept-score-val",
+        ".sgp-logo-area",
+        ".sgp-logo-mark",
+        ".sgp-brand-name",
+        ".sgp-tagline",
+        ".sgp-palette-row",
+        ".sgp-swatch",
+        ".sgp-type-row",
+        ".sgp-heading",
+        ".sgp-body-text",
+        ".sgp-thumb",
+        ".sgp-thumb-canvas",
+        ".sgp-label",
+        ".cc-touchpoint",
+        ".cc-tp-label",
+        ".cc-tp-canvas",
+        ".cc-verdict-item",
+        ".cc-verdict-icon",
+        ".critique-specimen",
+        ".critique-specimen-canvas",
+        ".critique-specimen-label",
+        ".critique-q",
+        ".critique-opts",
+        ".critique-opt",
+        ".critique-opt:hover",
+        ".critique-opt.correct",
+        ".critique-opt.wrong",
+        ".critique-opt.disabled",
+        ".critique-feedback",
+        ".critique-feedback.ok",
+        ".critique-feedback.bad",
+        ".tf-anatomy",
+        ".tf-tag.sage",
+        ".tf-ann-line",
+        ".audit-opt.correct",
+        ".audit-opt.wrong",
+        ".audit-opt.disabled",
+        ".audit-feedback.ok",
+        ".audit-feedback.bad",
+        ".compare-item.selected",
+        ".assess-q",
+        ".assess-q-header",
+        ".assess-q-body",
+        ".assess-canvas-wrap",
+        ".assess-canvas-wrap canvas",
+        ".assess-q-text",
+        ".assess-opts",
+        ".assess-opt",
+        ".assess-opt:hover",
+        ".assess-opt.correct",
+        ".assess-opt.wrong",
+        ".assess-opt.disabled",
+        ".assess-feedback",
+        ".checklist-module",
+        ".checklist-module-header",
+        ".checklist-module-title",
+        ".checklist-module-progress",
+        ".checklist-module-bar",
+        ".checklist-module-bar-fill",
+        ".checklist-items",
+        ".checklist-item",
+        ".checklist-item:last-child",
+        ".checklist-item:hover",
+        ".checklist-item.done .ci-box",
+        ".checklist-item.done .ci-check",
+        ".checklist-item.done .ci-text",
+        ".ci-box",
+        ".ci-check",
+        ".ci-text",
+        ".ci-tag",
+        ".sg-logo-variant",
+        ".sg-logo-variant-label",
+        ".analogy-card",
+        ".analogy-card:hover",
+        ".analogy-card.selected",
+        ".analogy-card canvas",
+        ".analogy-card-label",
+        ".seq-stage",
+        ".seq-stage:last-child",
+        ".seq-stage:hover",
+        ".seq-stage.active",
+        ".seq-stage:hover + .seq-stage",
+        ".seq-stage.active + .seq-stage",
+        ".seq-stage-num",
+        ".seq-stage-label",
+        ".reduction-step-btn",
+        ".reduction-step-btn:hover",
+        ".reduction-step-btn.active",
+        ".reduction-step-btn .step-num",
+        ".sb-panel",
+        ".sb-panel.selected",
+        ".sb-panel canvas",
+        ".sb-panel-footer",
+        ".sb-panel-num",
+        ".sb-strip-item",
+        ".sb-strip-item canvas",
+        ".sb-strip-label",
+        ".assess-question",
+        ".assess-q-hdr",
+        ".assess-canvas-row",
+        ".assess-canvas-row canvas",
+        ".assess-fb",
+        ".assess-fb.ok",
+        ".assess-fb.bad",
     ]
     for sel in selectors_to_wrap:
         escaped_sel = re.escape(sel)
@@ -367,7 +548,9 @@ def convert_module(input_path, output_path):
                 if id_match
                 else "Canvas Demonstration"
             )
-            return f'<canvas{attrs} aria-label="{label}" role="region" tabindex="0">'
+            return (
+                f'<canvas{attrs} aria-label="{label}" role="application" tabindex="0">'
+            )
         return match.group(0)
 
     html_content = re.sub(r"<canvas([^>]*)>", fix_canvas_aria, html_content)
@@ -547,8 +730,7 @@ def convert_module(input_path, output_path):
     def dedup_function(match):
         name = match.group(1)
         if name in seen_functions:
-            # Return empty — we'll strip the entire duplicate function body in a second pass
-            return f"/* duplicate {name} removed */ var _dup_{name} = function("
+            return f"var _dup_{name} = function("
         seen_functions.add(name)
         return match.group(0)
 
@@ -559,14 +741,6 @@ def convert_module(input_path, output_path):
 
     # Then deduplicate declarations
     script_js = re.sub(r"function\s+([a-zA-Z0-9_]+)\s*\(", dedup_function, script_js)
-    # Remove orphaned duplicate function bodies introduced by the header rewrite above
-    for name in function_names:
-        script_js = re.sub(
-            rf"/\*\s*duplicate\s+{re.escape(name)}\s+removed\s*\*/\s*var\s+_dup_{re.escape(name)}\s*=\s*function\s*\([^)]*\)\s*\{{.*?\}}\s*;?",
-            "",
-            script_js,
-            flags=re.DOTALL,
-        )
 
     # 2. Build actions bindings for template onclick handlers
     actions_bindings = "\n\t\t".join(
@@ -677,17 +851,17 @@ def convert_module(input_path, output_path):
     eslint_disable_str = ", ".join(eslint_disables)
 
     svelte_content = (
-        '<script lang="ts">\n'
+        "<script>\n"
         f"\t/* eslint-disable {eslint_disable_str} */\n"
         "\timport { onMount } from 'svelte';\n\n"
-        "\tlet actions: Record<string, any> = new Proxy(\n"
+        "\tlet actions = new Proxy(\n"
         "\t\t{},\n"
         "\t\t{\n"
-        "\t\t\tget: (target: Record<string, unknown>, prop: string | symbol) => {\n"
+        "\t\t\tget: (target, prop) => {\n"
         "\t\t\t\tif (prop === 'then') return undefined;\n"
-        "\t\t\t\tif (typeof prop !== 'string') return (..._args: unknown[]) => {};\n"
+        "\t\t\t\tif (typeof prop !== 'string') return (..._args) => {};\n"
         "\t\t\t\tif (prop in target) return target[prop];\n"
-        "\t\t\t\treturn (..._args: unknown[]) => {};\n"
+        "\t\t\t\treturn (..._args) => {};\n"
         "\t\t\t}\n"
         "\t\t}\n"
         "\t);\n\n"

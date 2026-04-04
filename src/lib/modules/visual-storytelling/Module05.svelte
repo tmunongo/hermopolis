@@ -1,0 +1,3278 @@
+<script lang="ts">
+	/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, no-undef, no-useless-assignment */
+	import { onMount } from 'svelte';
+
+	let actions: Record<string, any> = new Proxy(
+		{},
+		{
+			get: (target: Record<string, unknown>, prop: string | symbol) => {
+				if (prop === 'then') return undefined;
+				if (typeof prop !== 'string') return (..._args: unknown[]) => {};
+				if (prop in target) return target[prop];
+				return (..._args: unknown[]) => {};
+			}
+		}
+	);
+
+	onMount(() => {
+		const _listeners = [];
+		const _addWinListener = (type, listener, options) => {
+			window.addEventListener(type, listener, options);
+			_listeners.push({ target: window, args: [type, listener, options] });
+		};
+		const _addDocListener = (type, listener, options) => {
+			document.addEventListener(type, listener, options);
+			_listeners.push({ target: document, args: [type, listener, options] });
+		};
+		/* ── READING PROGRESS ── */
+		_addWinListener('scroll', () => {
+			const el = document.getElementById('reading-progress');
+			const d = document.documentElement.scrollHeight - window.innerHeight;
+			if (d > 0) el.style.width = Math.min(100, (window.scrollY / d) * 100) + '%';
+		});
+
+		/* ════════════════════════════════════════
+   FRAMING TYPES EXPLORER
+════════════════════════════════════════ */
+		const framingTypes = [
+			{
+				label: 'Centre',
+				color: '#4aafff',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					drawFaintGrid(ctx, W, H);
+					const cx = W / 2,
+						cy = H / 2,
+						r = Math.min(W, H) * 0.22;
+					const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+					grd.addColorStop(0, '#4aafff');
+					grd.addColorStop(1, '#4aafff30');
+					ctx.beginPath();
+					ctx.arc(cx, cy, r, 0, Math.PI * 2);
+					ctx.fillStyle = grd;
+					ctx.fill();
+					ctx.strokeStyle = '#4aafff80';
+					ctx.lineWidth = 1;
+					ctx.stroke();
+				},
+				detail:
+					'<strong>Centre composition</strong> — Subject placed at the exact frame centre. Reads as static, stable, and contained. The equal space on all sides signals balance and completeness. Use for isolated objects, title cards, and diagrams where neutrality serves the content. Avoid when energy, direction, or tension is needed — centre framing can read as passive.'
+			},
+			{
+				label: 'Rule of Thirds',
+				color: '#f5b94a',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					drawFaintGrid(ctx, W, H);
+					// Thirds lines
+					ctx.strokeStyle = '#f5b94a22';
+					ctx.lineWidth = 1;
+					[W / 3, (2 * W) / 3].forEach((x) => {
+						ctx.beginPath();
+						ctx.moveTo(x, 0);
+						ctx.lineTo(x, H);
+						ctx.stroke();
+					});
+					[H / 3, (2 * H) / 3].forEach((y) => {
+						ctx.beginPath();
+						ctx.moveTo(0, y);
+						ctx.lineTo(W, y);
+						ctx.stroke();
+					});
+					// Subject at upper-right intersection
+					const sx = (2 * W) / 3,
+						sy = H / 3,
+						r = Math.min(W, H) * 0.18;
+					const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+					grd.addColorStop(0, '#f5b94a');
+					grd.addColorStop(1, '#f5b94a20');
+					ctx.beginPath();
+					ctx.arc(sx, sy, r, 0, Math.PI * 2);
+					ctx.fillStyle = grd;
+					ctx.fill();
+					ctx.strokeStyle = '#f5b94a60';
+					ctx.lineWidth = 1;
+					ctx.stroke();
+					// Dot at intersection
+					ctx.beginPath();
+					ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+					ctx.fillStyle = '#f5b94a';
+					ctx.fill();
+				},
+				detail:
+					'<strong>Rule of Thirds</strong> — Subject placed at one of the four intersections of the thirds grid. Creates a balanced-but-dynamic composition — the subject is important but exists in relation to the empty space beside it. The most versatile compositional choice for video frames. The off-centre placement implies directionality and energy without instability.'
+			},
+			{
+				label: 'Left-Heavy',
+				color: '#3dd9a4',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					drawFaintGrid(ctx, W, H);
+					const sx = W * 0.22,
+						sy = H / 2,
+						r = Math.min(W, H) * 0.21;
+					const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+					grd.addColorStop(0, '#3dd9a4');
+					grd.addColorStop(1, '#3dd9a420');
+					ctx.beginPath();
+					ctx.arc(sx, sy, r, 0, Math.PI * 2);
+					ctx.fillStyle = grd;
+					ctx.fill();
+					ctx.strokeStyle = '#3dd9a460';
+					ctx.lineWidth = 1;
+					ctx.stroke();
+					// "Looking room" arrow
+					ctx.strokeStyle = '#3dd9a430';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([3, 4]);
+					ctx.beginPath();
+					ctx.moveTo(sx + r + 10, sy);
+					ctx.lineTo(W - 20, sy);
+					ctx.stroke();
+					ctx.setLineDash([]);
+					ctx.fillStyle = '#3dd9a430';
+					ctx.beginPath();
+					ctx.moveTo(W - 16, sy - 4);
+					ctx.lineTo(W - 8, sy);
+					ctx.lineTo(W - 16, sy + 4);
+					ctx.fill();
+				},
+				detail:
+					'<strong>Left-heavy composition</strong> — Subject anchored to the left, with expansive negative space to the right. In left-to-right reading cultures, this creates "looking room" — the impression that the subject is oriented toward or moving into the space ahead of it. Use when the narration is about forward movement, anticipation, or possibility. The empty right side invites the eye to travel, which creates a felt sense of openness.'
+			},
+			{
+				label: 'Diagonal',
+				color: '#ff4f68',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					drawFaintGrid(ctx, W, H);
+					// Diagonal line
+					ctx.strokeStyle = '#ff4f6830';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([4, 4]);
+					ctx.beginPath();
+					ctx.moveTo(0, H);
+					ctx.lineTo(W, 0);
+					ctx.stroke();
+					ctx.setLineDash([]);
+					// Two elements on the diagonal
+					[
+						[W * 0.18, H * 0.78, 0.16],
+						[W * 0.72, H * 0.24, 0.12]
+					].forEach(([sx, sy, fr]) => {
+						const r = Math.min(W, H) * fr;
+						const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+						grd.addColorStop(0, '#ff4f68');
+						grd.addColorStop(1, '#ff4f6820');
+						ctx.beginPath();
+						ctx.arc(sx, sy, r, 0, Math.PI * 2);
+						ctx.fillStyle = grd;
+						ctx.fill();
+						ctx.strokeStyle = '#ff4f6850';
+						ctx.lineWidth = 1;
+						ctx.stroke();
+					});
+				},
+				detail:
+					'<strong>Diagonal composition</strong> — Elements arranged along a diagonal axis. The diagonal is the most energetic compositional structure — it implies motion, instability, or transformation. The ascending diagonal (↗) reads as growth or increase; the descending diagonal (↘) reads as decline or resolution. Use for contrast sequences, before/after comparisons, and any content where change is the subject.'
+			},
+			{
+				label: 'Lower Third',
+				color: '#a78bfa',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					drawFaintGrid(ctx, W, H);
+					// Strip at bottom
+					ctx.fillStyle = 'rgba(167,139,250,0.12)';
+					ctx.fillRect(0, H * 0.72, W, H * 0.28);
+					ctx.strokeStyle = '#a78bfa40';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.moveTo(0, H * 0.72);
+					ctx.lineTo(W, H * 0.72);
+					ctx.stroke();
+					// Accent bar
+					ctx.fillStyle = '#a78bfa';
+					ctx.fillRect(W * 0.06, H * 0.78, 3, H * 0.12);
+					// Text placeholder
+					ctx.fillStyle = '#a78bfa80';
+					ctx.fillRect(W * 0.1, H * 0.79, W * 0.35, 8);
+					ctx.fillStyle = '#a78bfa40';
+					ctx.fillRect(W * 0.1, H * 0.86, W * 0.22, 5);
+					// Subject in upper zone
+					const sx = W / 2,
+						sy = H * 0.38,
+						r = Math.min(W, H) * 0.2;
+					const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+					grd.addColorStop(0, '#ffffff18');
+					grd.addColorStop(1, 'transparent');
+					ctx.beginPath();
+					ctx.arc(sx, sy, r, 0, Math.PI * 2);
+					ctx.fillStyle = grd;
+					ctx.fill();
+				},
+				detail:
+					'<strong>Lower-third anchoring</strong> — Primary visual content occupies the upper two-thirds; an information strip anchors the lower third. A convention borrowed from broadcast television — viewers have a pre-built reading habit for this layout. The upper zone is perceived as content; the lower zone as context or identification. Effective for educational video because it establishes a clear spatial contract with the viewer from the first frame.'
+			},
+			{
+				label: 'Extreme Close',
+				color: '#4aafff',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					// Frame-filling element
+					const cx = W * 0.55,
+						cy = H * 0.45,
+						r = Math.min(W, H) * 0.55;
+					const grd = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
+					grd.addColorStop(0, '#4aafff20');
+					grd.addColorStop(0.5, '#4aafff10');
+					grd.addColorStop(1, 'transparent');
+					ctx.beginPath();
+					ctx.arc(cx, cy, r, 0, Math.PI * 2);
+					ctx.fillStyle = grd;
+					ctx.fill();
+					// Arc suggesting close-up crop
+					ctx.strokeStyle = '#4aafff30';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+					ctx.fillStyle = '#4aafff';
+					ctx.fill();
+					// Crop marks at edges
+					[
+						[0, 0],
+						[W, 0],
+						[0, H],
+						[W, H]
+					].forEach(([ex, ey]) => {
+						const dx = ex > W / 2 ? -14 : 14,
+							dy = ey > H / 2 ? -14 : 14;
+						ctx.strokeStyle = '#4aafff40';
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.moveTo(ex, ey);
+						ctx.lineTo(ex + dx, ey);
+						ctx.stroke();
+						ctx.beginPath();
+						ctx.moveTo(ex, ey);
+						ctx.lineTo(ex, ey + dy);
+						ctx.stroke();
+					});
+				},
+				detail:
+					'<strong>Extreme close / frame-filling</strong> — The subject extends beyond the frame edges, implying scale that exceeds the frame. Used to create intimacy, intensity, or emphasis on a single detail. In graphic design terms, a text headline or diagram element that bleeds to the edge of the frame feels larger than the frame itself. Use sparingly — the visual tension is high and cannot be sustained for long without exhausting the viewer.'
+			}
+		];
+
+		function drawFaintGrid(ctx, W, H) {
+			ctx.strokeStyle = '#14202e';
+			ctx.lineWidth = 0.5;
+			for (let x = 0; x <= W; x += W / 8) {
+				ctx.beginPath();
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, H);
+				ctx.stroke();
+			}
+			for (let y = 0; y <= H; y += H / 6) {
+				ctx.beginPath();
+				ctx.moveTo(0, y);
+				ctx.lineTo(W, y);
+				ctx.stroke();
+			}
+		}
+
+		let selectedFraming = null;
+
+		function buildFramingGrid() {
+			const grid = document.getElementById('framing-grid');
+			grid.innerHTML = '';
+			framingTypes.forEach((ft, i) => {
+				const cell = document.createElement('div');
+				cell.className = 'framing-cell';
+				cell.onclick = () => selectFraming(i);
+				const canvas = document.createElement('canvas');
+				canvas.style.cssText = 'display:block; width:100%; aspect-ratio:16/9;';
+				cell.appendChild(canvas);
+				const label = document.createElement('div');
+				label.className = 'framing-cell-label';
+				label.textContent = ft.label;
+				cell.appendChild(label);
+				grid.appendChild(cell);
+
+				// Draw
+				setTimeout(() => {
+					const dpr = window.devicePixelRatio || 1;
+					const W = canvas.offsetWidth || 160;
+					const H = (W * 9) / 16;
+					canvas.width = W * dpr;
+					canvas.height = H * dpr;
+					const ctx = canvas.getContext('2d');
+					ctx.scale(dpr, dpr);
+					ft.draw(ctx, W, H);
+				}, 50);
+			});
+		}
+		buildFramingGrid();
+		_addWinListener('resize', buildFramingGrid);
+
+		function selectFraming(i) {
+			document
+				.querySelectorAll('.framing-cell')
+				.forEach((c, j) => c.classList.toggle('selected', j === i));
+			document.getElementById('framing-detail').innerHTML = framingTypes[i].detail;
+			selectedFraming = i;
+		}
+
+		/* ════════════════════════════════════════
+   COMPOSITION LAB
+════════════════════════════════════════ */
+		const guideState = {
+			thirds: true,
+			phi: false,
+			centre: false,
+			diagonal: false,
+			safezone: false
+		};
+		let compElements = [];
+
+		function toggleGuide(name) {
+			guideState[name] = !guideState[name];
+			document.getElementById('gp-' + name).classList.toggle('on', guideState[name]);
+			drawCompositionLab();
+		}
+
+		function clearElements() {
+			compElements = [];
+			drawCompositionLab();
+			updateCompScore();
+		}
+
+		function initCompCanvas() {
+			const wrap = document.querySelector('.frame-canvas-wrap');
+			const canvas = document.getElementById('comp-canvas');
+			if (!wrap) return;
+			const dpr = window.devicePixelRatio || 1;
+			const W = wrap.offsetWidth;
+			const H = (W * 9) / 16;
+			canvas.width = W * dpr;
+			canvas.height = H * dpr;
+			canvas.style.width = W + 'px';
+			canvas.style.height = H + 'px';
+			canvas.getContext('2d').scale(dpr, dpr);
+		}
+
+		function drawCompositionLab() {
+			const canvas = document.getElementById('comp-canvas');
+			const W = parseInt(canvas.style.width) || canvas.offsetWidth || 560;
+			const H = (W * 9) / 16;
+			const ctx = canvas.getContext('2d');
+			ctx.clearRect(0, 0, W * 2, H * 2);
+
+			// Background
+			ctx.fillStyle = '#040710';
+			ctx.fillRect(0, 0, W, H);
+			drawFaintGrid(ctx, W, H);
+
+			// Guides
+			if (guideState.thirds) {
+				ctx.strokeStyle = '#4aafff30';
+				ctx.lineWidth = 1;
+				ctx.setLineDash([3, 3]);
+				[W / 3, (2 * W) / 3].forEach((x) => {
+					ctx.beginPath();
+					ctx.moveTo(x, 0);
+					ctx.lineTo(x, H);
+					ctx.stroke();
+				});
+				[H / 3, (2 * H) / 3].forEach((y) => {
+					ctx.beginPath();
+					ctx.moveTo(0, y);
+					ctx.lineTo(W, y);
+					ctx.stroke();
+				});
+				// Intersection dots
+				[
+					[W / 3, H / 3],
+					[(2 * W) / 3, H / 3],
+					[W / 3, (2 * H) / 3],
+					[(2 * W) / 3, (2 * H) / 3]
+				].forEach(([x, y]) => {
+					ctx.beginPath();
+					ctx.arc(x, y, 4, 0, Math.PI * 2);
+					ctx.fillStyle = '#4aafff50';
+					ctx.fill();
+				});
+				ctx.setLineDash([]);
+			}
+			if (guideState.phi) {
+				const px = W * 0.382,
+					py = H * 0.382;
+				ctx.strokeStyle = '#f5b94a28';
+				ctx.lineWidth = 1;
+				ctx.setLineDash([2, 4]);
+				[px, W - px].forEach((x) => {
+					ctx.beginPath();
+					ctx.moveTo(x, 0);
+					ctx.lineTo(x, H);
+					ctx.stroke();
+				});
+				[py, H - py].forEach((y) => {
+					ctx.beginPath();
+					ctx.moveTo(0, y);
+					ctx.lineTo(W, y);
+					ctx.stroke();
+				});
+				ctx.setLineDash([]);
+			}
+			if (guideState.centre) {
+				ctx.strokeStyle = '#3dd9a428';
+				ctx.lineWidth = 1;
+				ctx.setLineDash([4, 4]);
+				ctx.beginPath();
+				ctx.moveTo(W / 2, 0);
+				ctx.lineTo(W / 2, H);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(0, H / 2);
+				ctx.lineTo(W, H / 2);
+				ctx.stroke();
+				ctx.setLineDash([]);
+			}
+			if (guideState.diagonal) {
+				ctx.strokeStyle = '#ff4f6828';
+				ctx.lineWidth = 1;
+				ctx.setLineDash([4, 4]);
+				ctx.beginPath();
+				ctx.moveTo(0, 0);
+				ctx.lineTo(W, H);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(W, 0);
+				ctx.lineTo(0, H);
+				ctx.stroke();
+				ctx.setLineDash([]);
+			}
+			if (guideState.safezone) {
+				ctx.strokeStyle = '#ffffff18';
+				ctx.lineWidth = 1;
+				ctx.strokeRect(W * 0.05, H * 0.05, W * 0.9, H * 0.9);
+			}
+
+			// Elements
+			const colors = ['#4aafff', '#f5b94a', '#3dd9a4', '#ff4f68', '#a78bfa', '#ffffff'];
+			compElements.forEach((el, i) => {
+				const r = (el.size * Math.min(W, H)) / 200;
+				const grd = ctx.createRadialGradient(el.x * W, el.y * H, 0, el.x * W, el.y * H, r);
+				grd.addColorStop(0, colors[i % colors.length]);
+				grd.addColorStop(1, colors[i % colors.length] + '30');
+				ctx.beginPath();
+				ctx.arc(el.x * W, el.y * H, r, 0, Math.PI * 2);
+				ctx.fillStyle = grd;
+				ctx.fill();
+				ctx.strokeStyle = colors[i % colors.length] + '80';
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+				// Label
+				ctx.font = '9px IBM Plex Mono';
+				ctx.fillStyle = colors[i % colors.length];
+				ctx.textAlign = 'center';
+				ctx.fillText(`E${i + 1}`, el.x * W, el.y * H + 3);
+			});
+		}
+
+		function updateCompScore() {
+			const n = compElements.length;
+			document.getElementById('cs-elements').textContent = n;
+			if (n === 0) {
+				['cs-thirds', 'cs-balance', 'cs-grade'].forEach(
+					(id) => (document.getElementById(id).textContent = '—')
+				);
+				document.getElementById('comp-feedback').textContent =
+					'Click the frame to place elements and evaluate your composition.';
+				return;
+			}
+
+			// Thirds alignment: how close each element is to a thirds intersection
+			const intersections = [
+				[1 / 3, 1 / 3],
+				[2 / 3, 1 / 3],
+				[1 / 3, 2 / 3],
+				[2 / 3, 2 / 3]
+			];
+			const thirdsScore =
+				compElements.reduce((sum, el) => {
+					const d = Math.min(...intersections.map(([tx, ty]) => Math.hypot(el.x - tx, el.y - ty)));
+					return sum + Math.max(0, 1 - d * 3);
+				}, 0) / n;
+			const thirdsLabel = thirdsScore > 0.6 ? '✓ HIGH' : thirdsScore > 0.3 ? '~ MED' : '✗ LOW';
+			const thirdsColor = thirdsScore > 0.6 ? '#3dd9a4' : thirdsScore > 0.3 ? '#f5b94a' : '#ff4f68';
+			document.getElementById('cs-thirds').textContent = thirdsLabel;
+			document.getElementById('cs-thirds').style.color = thirdsColor;
+
+			// Balance: left vs right half
+			const leftWeight = compElements.filter((e) => e.x < 0.5).reduce((s, e) => s + e.size, 0);
+			const rightWeight = compElements.filter((e) => e.x >= 0.5).reduce((s, e) => s + e.size, 0);
+			const totalW = leftWeight + rightWeight;
+			const balanceRatio =
+				totalW > 0 ? Math.min(leftWeight, rightWeight) / Math.max(leftWeight, rightWeight, 1) : 1;
+			const balanceLabel =
+				balanceRatio > 0.7 ? '✓ EVEN' : balanceRatio > 0.4 ? '~ TILT' : '✗ HEAVY';
+			const balanceColor =
+				balanceRatio > 0.7 ? '#3dd9a4' : balanceRatio > 0.4 ? '#f5b94a' : '#ff4f68';
+			document.getElementById('cs-balance').textContent = balanceLabel;
+			document.getElementById('cs-balance').style.color = balanceColor;
+
+			// Overall grade
+			const avgScore = (thirdsScore + balanceRatio) / 2;
+			const grade = avgScore > 0.65 ? 'A' : avgScore > 0.45 ? 'B' : avgScore > 0.3 ? 'C' : 'D';
+			const gradeColor = { A: '#3dd9a4', B: '#4aafff', C: '#f5b94a', D: '#ff4f68' }[grade];
+			document.getElementById('cs-grade').textContent = grade;
+			document.getElementById('cs-grade').style.color = gradeColor;
+
+			let feedback = '';
+			if (n === 1)
+				feedback =
+					'Single element — try adding a second to create hierarchy and tension. Thirds alignment: ' +
+					Math.round(thirdsScore * 100) +
+					'%.';
+			else if (thirdsScore < 0.3)
+				feedback =
+					'Elements are far from thirds intersections. Try moving them closer to the grid lines where the eye naturally wants to find importance.';
+			else if (balanceRatio < 0.4)
+				feedback =
+					'Frame is heavily weighted to one side — either intentional tension or accidental imbalance. If tension is not the intent, redistribute.';
+			else
+				feedback = `${n} elements placed. Thirds alignment: ${Math.round(thirdsScore * 100)}%. Balance ratio: ${Math.round(balanceRatio * 100)}%. Grade ${grade} — ${grade === 'A' ? 'strong compositional choices.' : grade === 'B' ? 'good structure, minor refinements available.' : 'consider repositioning for stronger guide alignment.'}`;
+			document.getElementById('comp-feedback').textContent = feedback;
+		}
+
+		document.getElementById('comp-canvas').addEventListener('click', function (e) {
+			const canvas = e.currentTarget as HTMLCanvasElement;
+			const rect = canvas.getBoundingClientRect();
+			const x = (e.clientX - rect.left) / rect.width;
+			const y = (e.clientY - rect.top) / rect.height;
+			if (compElements.length < 6) {
+				compElements.push({ x, y, size: 20 + Math.random() * 20 });
+				drawCompositionLab();
+				updateCompScore();
+			}
+		});
+
+		initCompCanvas();
+		drawCompositionLab();
+		_addWinListener('resize', () => {
+			initCompCanvas();
+			drawCompositionLab();
+		});
+
+		/* ════════════════════════════════════════
+   VISUAL WEIGHT BALANCE
+════════════════════════════════════════ */
+		function calcWeight(size, contrast, sat, iso) {
+			return (size * 0.35 + contrast * 0.3 + sat * 0.2 + iso * 0.15) / 100;
+		}
+
+		function updateBalance() {
+			[
+				'lw-size',
+				'lw-contrast',
+				'lw-sat',
+				'lw-iso',
+				'rw-size',
+				'rw-contrast',
+				'rw-sat',
+				'rw-iso'
+			].forEach((id) => {
+				document.getElementById(id + '-v').textContent = document.getElementById(id).value;
+			});
+
+			const lw = calcWeight(
+				+document.getElementById('lw-size').value,
+				+document.getElementById('lw-contrast').value,
+				+document.getElementById('lw-sat').value,
+				+document.getElementById('lw-iso').value
+			);
+			const rw = calcWeight(
+				+document.getElementById('rw-size').value,
+				+document.getElementById('rw-contrast').value,
+				+document.getElementById('rw-sat').value,
+				+document.getElementById('rw-iso').value
+			);
+			drawBalance(lw, rw);
+
+			const ratio = lw / (lw + rw);
+			let verdict;
+			if (Math.abs(ratio - 0.5) < 0.06) {
+				verdict =
+					'✓ Near-balanced. The frame has roughly equal visual weight on both sides. This produces a stable, neutral composition — appropriate for explanatory content where no side should dominate.';
+			} else if (ratio > 0.5) {
+				verdict = `Left element is heavier (${Math.round(ratio * 100)}% vs ${Math.round((1 - ratio) * 100)}%). The frame tilts left — the viewer's eye will settle there first. Consider whether this supports or contradicts your reading path intention.`;
+			} else {
+				verdict = `Right element is heavier (${Math.round((1 - ratio) * 100)}% vs ${Math.round(ratio * 100)}%). Note: the right side read last in LTR cultures — a heavy right element can feel like a landing point or conclusion, which sometimes serves the narrative. Evaluate deliberately.`;
+			}
+			document.getElementById('balance-verdict').textContent = verdict;
+		}
+
+		function drawBalance(lw, rw) {
+			const canvas = document.getElementById('balance-canvas');
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.offsetWidth || 400;
+			const H = 180;
+			canvas.width = W * dpr;
+			canvas.height = H * dpr;
+			const ctx = canvas.getContext('2d');
+			ctx.scale(dpr, dpr);
+			ctx.clearRect(0, 0, W, H);
+
+			const cx = W / 2,
+				pivot = H * 0.3,
+				armLen = W * 0.38;
+			const tiltAngle = (lw - rw) * 0.7; // radians
+
+			// Pivot base
+			ctx.fillStyle = '#1e2d40';
+			ctx.beginPath();
+			ctx.moveTo(cx - 12, H - 20);
+			ctx.lineTo(cx + 12, H - 20);
+			ctx.lineTo(cx, pivot + 4);
+			ctx.closePath();
+			ctx.fill();
+			ctx.beginPath();
+			ctx.arc(cx, pivot + 4, 5, 0, Math.PI * 2);
+			ctx.fillStyle = '#405068';
+			ctx.fill();
+
+			// Beam
+			ctx.save();
+			ctx.translate(cx, pivot);
+			ctx.rotate(tiltAngle);
+			ctx.strokeStyle = '#2a3a50';
+			ctx.lineWidth = 4;
+			ctx.beginPath();
+			ctx.moveTo(-armLen, 0);
+			ctx.lineTo(armLen, 0);
+			ctx.stroke();
+
+			// Left dish string + dish
+			ctx.strokeStyle = '#4aafff40';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.moveTo(-armLen, 0);
+			ctx.lineTo(-armLen, 30);
+			ctx.stroke();
+			ctx.strokeStyle = '#4aafff';
+			ctx.lineWidth = 1.5;
+			ctx.beginPath();
+			ctx.arc(-armLen, 30, 22, 0, Math.PI, false);
+			ctx.stroke();
+			// Left element
+			const lr = lw * 38;
+			const lgrd = ctx.createRadialGradient(-armLen, 15, 0, -armLen, 15, lr);
+			lgrd.addColorStop(0, '#4aafff');
+			lgrd.addColorStop(1, '#4aafff30');
+			ctx.beginPath();
+			ctx.arc(-armLen, 15, lr, 0, Math.PI * 2);
+			ctx.fillStyle = lgrd;
+			ctx.fill();
+
+			// Right dish string + dish
+			ctx.strokeStyle = '#f5b94a40';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.moveTo(armLen, 0);
+			ctx.lineTo(armLen, 30);
+			ctx.stroke();
+			ctx.strokeStyle = '#f5b94a';
+			ctx.lineWidth = 1.5;
+			ctx.beginPath();
+			ctx.arc(armLen, 30, 22, 0, Math.PI, false);
+			ctx.stroke();
+			// Right element
+			const rr = rw * 38;
+			const rgrd = ctx.createRadialGradient(armLen, 15, 0, armLen, 15, rr);
+			rgrd.addColorStop(0, '#f5b94a');
+			rgrd.addColorStop(1, '#f5b94a30');
+			ctx.beginPath();
+			ctx.arc(armLen, 15, rr, 0, Math.PI * 2);
+			ctx.fillStyle = rgrd;
+			ctx.fill();
+			ctx.restore();
+
+			// Labels
+			ctx.font = '10px IBM Plex Mono';
+			ctx.textAlign = 'center';
+			ctx.fillStyle = '#4aafff80';
+			ctx.fillText('LEFT', W * 0.15, H - 8);
+			ctx.fillStyle = '#f5b94a80';
+			ctx.fillText('RIGHT', W * 0.85, H - 8);
+			ctx.fillStyle = '#405068';
+			ctx.fillText(`weight: ${Math.round(lw * 100)}`, W * 0.15, H - 20);
+			ctx.fillText(`weight: ${Math.round(rw * 100)}`, W * 0.85, H - 20);
+		}
+
+		// Init balance canvas size
+		(function () {
+			const canvas = document.getElementById('balance-canvas');
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.parentElement.offsetWidth || 400;
+			canvas.width = W * dpr;
+			canvas.height = 180 * dpr;
+			canvas.style.width = W + 'px';
+			canvas.style.height = '180px';
+		})();
+		updateBalance();
+		_addWinListener('resize', () => {
+			const canvas = document.getElementById('balance-canvas');
+			const dpr = window.devicePixelRatio || 1;
+			const W = canvas.parentElement.offsetWidth || 400;
+			canvas.width = W * dpr;
+			canvas.height = 180 * dpr;
+			canvas.style.width = W + 'px';
+			canvas.style.height = '180px';
+			const lw = calcWeight(
+				+document.getElementById('lw-size').value,
+				+document.getElementById('lw-contrast').value,
+				+document.getElementById('lw-sat').value,
+				+document.getElementById('lw-iso').value
+			);
+			const rw = calcWeight(
+				+document.getElementById('rw-size').value,
+				+document.getElementById('rw-contrast').value,
+				+document.getElementById('rw-sat').value,
+				+document.getElementById('rw-iso').value
+			);
+			drawBalance(lw, rw);
+		});
+
+		/* ════════════════════════════════════════
+   ISOLATION LAB
+════════════════════════════════════════ */
+		const isoCompetitors = [
+			{
+				id: 'iso-c1',
+				label: 'Subtitle text',
+				active: true,
+				renderBefore(el, W, H) {
+					el.style.cssText = `position:absolute;bottom:${H * 0.08}px;left:${W * 0.05}px;right:${W * 0.05}px;font-size:${W * 0.022}px;color:rgba(255,255,255,0.5);font-family:'IBM Plex Mono',monospace;text-align:center;`;
+					el.textContent = 'A secondary caption that adds context below';
+				},
+				renderAfter(el, W, H) {
+					el.remove();
+				}
+			},
+			{
+				id: 'iso-c2',
+				label: 'Background texture',
+				active: true,
+				renderBefore(el, W, H) {
+					el.style.cssText = `position:absolute;inset:0;opacity:0.4;`;
+					el.innerHTML = `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="bg-pat" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="#4aafff"/></pattern></defs><rect width="100%" height="100%" fill="url(#bg-pat)"/></svg>`;
+				},
+				renderAfter(el) {
+					el.remove();
+				}
+			},
+			{
+				id: 'iso-c3',
+				label: 'Annotation labels',
+				active: true,
+				renderBefore(el, W, H) {
+					el.style.cssText = `position:absolute;inset:0;pointer-events:none;`;
+					el.innerHTML = `
+        <div style="position:absolute;top:${H * 0.12}px;left:${W * 0.05}px;font-size:${W * 0.018}px;color:rgba(245,185,74,0.5);font-family:'IBM Plex Mono',monospace;">annotation A</div>
+        <div style="position:absolute;top:${H * 0.12}px;right:${W * 0.05}px;font-size:${W * 0.018}px;color:rgba(245,185,74,0.5);font-family:'IBM Plex Mono',monospace;">annotation B</div>
+        <div style="position:absolute;bottom:${H * 0.25}px;left:${W * 0.08}px;font-size:${W * 0.018}px;color:rgba(61,217,164,0.4);font-family:'IBM Plex Mono',monospace;">ref. C</div>`;
+				},
+				renderAfter(el) {
+					el.remove();
+				}
+			},
+			{
+				id: 'iso-c4',
+				label: 'Lower third strip',
+				active: true,
+				renderBefore(el, W, H) {
+					el.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${H * 0.22}px;background:rgba(0,0,0,0.6);display:flex;align-items:center;padding:0 ${W * 0.06}px;gap:${W * 0.015}px;`;
+					el.innerHTML = `<div style="width:3px;height:50%;background:#4aafff;flex-shrink:0;"></div><div><div style="font-size:${W * 0.018}px;color:#4aafff;font-family:'IBM Plex Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;">Context strip</div><div style="font-size:${W * 0.022}px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;">Secondary information here</div></div>`;
+				},
+				renderAfter(el) {
+					el.remove();
+				}
+			}
+		];
+
+		function buildIsolationLab() {
+			const paneB = document.getElementById('iso-pane-before');
+			const paneA = document.getElementById('iso-pane-after');
+			const W = paneB.offsetWidth || 280;
+			const H = paneB.offsetHeight || 157;
+
+			// Clear
+			[...paneB.querySelectorAll('.iso-dyn'), ...paneA.querySelectorAll('.iso-dyn')].forEach((e) =>
+				e.remove()
+			);
+
+			// Primary element — both panes
+			[paneB, paneA].forEach((pane, idx) => {
+				const activeCount = isoCompetitors.filter((c) => c.active).length;
+				const fontSize =
+					idx === 1 ? Math.min(W * 0.065, 22) + activeCount * 2 : Math.min(W * 0.065, 22);
+				const el = document.createElement('div');
+				el.className = 'iso-dyn iso-element';
+				const opacity =
+					idx === 1 ? Math.min(1, 0.5 + activeCount * 0.1) : 0.5 + (4 - activeCount) * 0.1;
+				el.style.cssText = `font-size:${Math.max(14, idx === 1 ? W * 0.08 : W * 0.06)}px; font-family:'Syne',sans-serif; font-weight:800; color:rgba(255,255,255,${Math.min(1, 0.4 + (4 - activeCount) * 0.15)}); left:50%; top:50%; transform:translate(-50%,-50%);`;
+				el.textContent = 'PRIMARY';
+				pane.appendChild(el);
+			});
+
+			// Competitors only in "before" pane
+			isoCompetitors.forEach((comp) => {
+				if (!comp.active) return;
+				const el = document.createElement('div');
+				el.className = 'iso-dyn';
+				el.id = comp.id + '-before';
+				paneB.appendChild(el);
+				comp.renderBefore(el, W, H);
+			});
+
+			// Update weight meter
+			const activeCount = isoCompetitors.filter((c) => c.active).length;
+			const weightPct = Math.round((1 - activeCount / 4) * 70 + 30);
+			document.getElementById('iso-weight-fill').style.width = weightPct + '%';
+			document.getElementById('iso-weight-val').textContent = weightPct + '%';
+			document.getElementById('iso-weight-fill').style.background =
+				weightPct > 70 ? '#3dd9a4' : weightPct > 50 ? '#4aafff' : '#f5b94a';
+
+			// Verdict
+			const verdicts = [
+				'Four competing elements surround the primary. The eye scans randomly — the PRIMARY label is visible but not dominant. This is the crowded baseline most creators default to.',
+				'Three competing elements. The primary gains a little weight but is still competing for attention. The frame still feels busy.',
+				'Two competing elements. The primary starts to emerge — the eye now settles on it after a brief scan. The frame has a hierarchy, but it is not yet clear.',
+				'One competing element. The primary has significant presence. The remaining element adds context without dominating. Most deliberate compositions land here.',
+				'⬡ Zero competing elements. The primary is isolated — it has maximum weight and commands the frame without contest. This is the strongest possible single-element composition.'
+			];
+			const vc = isoCompetitors.filter((c) => c.active).length;
+			document.getElementById('iso-verdict').textContent = verdicts[4 - vc];
+			document.getElementById('iso-verdict').style.borderLeftColor = [
+				'#3dd9a4',
+				'#3dd9a4',
+				'#4aafff',
+				'#f5b94a',
+				'#ff4f68'
+			][4 - vc];
+		}
+
+		function buildIsoToggles() {
+			const wrap = document.getElementById('iso-toggle-wrap');
+			isoCompetitors.forEach((comp) => {
+				const btn = document.createElement('button');
+				btn.className = 'btn active';
+				btn.id = 'iso-btn-' + comp.id;
+				btn.textContent = '− ' + comp.label;
+				btn.onclick = () => {
+					comp.active = !comp.active;
+					btn.classList.toggle('active', comp.active);
+					btn.textContent = (comp.active ? '− ' : '+ ') + comp.label;
+					buildIsolationLab();
+				};
+				wrap.appendChild(btn);
+			});
+		}
+
+		buildIsoToggles();
+		setTimeout(buildIsolationLab, 100);
+		_addWinListener('resize', buildIsolationLab);
+
+		/* ════════════════════════════════════════
+   LEADING LINES EXPLORER
+════════════════════════════════════════ */
+		const llineTypes = [
+			{
+				label: 'Converging',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					const vx = W * 0.72,
+						vy = H * 0.32;
+					const lines = [
+						[0, H],
+						[W * 0.2, H],
+						[W * 0.4, H],
+						[0, H * 0.6],
+						[0, H * 0.8]
+					];
+					lines.forEach(([sx, sy]) => {
+						ctx.strokeStyle = '#4aafff18';
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.moveTo(sx, sy);
+						ctx.lineTo(vx, vy);
+						ctx.stroke();
+					});
+					// Vanishing point
+					ctx.beginPath();
+					ctx.arc(vx, vy, 5, 0, Math.PI * 2);
+					ctx.fillStyle = '#f5b94a80';
+					ctx.fill();
+					// Text element at vanishing point
+					ctx.font = 'bold 10px IBM Plex Mono';
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText('TEXT', vx, vy - 16);
+					ctx.strokeStyle = '#ffffff30';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(vx - 22, vy - 26, 44, 16);
+				},
+				detail:
+					'<strong>Converging lines</strong> — Lines converge to a vanishing point, pulling the eye to that location with force. Place the primary text element at or near the vanishing point — the lines are doing the directing work for you. If the text is placed elsewhere, the visual and textual hierarchies conflict and the viewer must consciously override the line-directed path to read the text.'
+			},
+			{
+				label: 'Horizontal',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					[0.3, 0.5, 0.65, 0.8].forEach((y, i) => {
+						ctx.strokeStyle = `rgba(74,175,255,${0.06 + i * 0.04})`;
+						ctx.lineWidth = 1 + i * 0.5;
+						ctx.beginPath();
+						ctx.moveTo(0, H * y);
+						ctx.lineTo(W, H * y);
+						ctx.stroke();
+					});
+					// Text upper-left (reading start)
+					ctx.font = 'bold 10px IBM Plex Mono';
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText('TEXT', W * 0.5, H * 0.18);
+					ctx.strokeStyle = '#ffffff30';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(W * 0.5 - 22, H * 0.12, 44, 16);
+					ctx.strokeStyle = '#4aafff30';
+					ctx.lineWidth = 1;
+					ctx.setLineDash([3, 3]);
+					ctx.beginPath();
+					ctx.moveTo(W * 0.5, H * 0.28);
+					ctx.lineTo(W * 0.5, H * 0.29);
+					ctx.stroke();
+					ctx.setLineDash([]);
+				},
+				detail:
+					'<strong>Horizontal lines</strong> — Parallel horizontal lines create calm, stability, and a sense of width. The eye moves left to right along each line, reinforcing the natural reading direction. Place text above or between lines — using the lines as a baseline or a framing band. Avoid placing text across multiple lines, which creates the impression the text is being segmented.'
+			},
+			{
+				label: 'Ascending Diagonal ↗',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					for (let i = 0; i < 5; i++) {
+						const y = H - i * H * 0.25;
+						ctx.strokeStyle = `rgba(61,217,164,${0.08 + i * 0.04})`;
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.moveTo(0, y);
+						ctx.lineTo(W, y - H * 0.5);
+						ctx.stroke();
+					}
+					// Arrow direction
+					ctx.strokeStyle = '#3dd9a430';
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(W * 0.1, H * 0.8);
+					ctx.lineTo(W * 0.85, H * 0.2);
+					ctx.stroke();
+					// Arrowhead
+					ctx.fillStyle = '#3dd9a450';
+					ctx.beginPath();
+					ctx.moveTo(W * 0.85, H * 0.2);
+					ctx.lineTo(W * 0.78, H * 0.22);
+					ctx.lineTo(W * 0.83, H * 0.28);
+					ctx.closePath();
+					ctx.fill();
+					// Text at top-right destination
+					ctx.font = 'bold 10px IBM Plex Mono';
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText('TEXT', W * 0.78, H * 0.15);
+					ctx.strokeStyle = '#ffffff30';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(W * 0.78 - 22, H * 0.09, 44, 16);
+				},
+				detail:
+					'<strong>Ascending diagonal (↗)</strong> — Lines moving from lower-left to upper-right imply growth, increase, and upward movement. The eye follows this line to the upper-right — a naturally high-weight zone in compositional terms. Text placed at the upper-right destination of the diagonal arrives as a conclusion: the narration has climbed to reach it. Use for data growth, optimism, and sequences where the resolution is positive.'
+			},
+			{
+				label: 'Curved / Arc',
+				draw(ctx, W, H) {
+					ctx.fillStyle = '#040710';
+					ctx.fillRect(0, 0, W, H);
+					for (let i = 0; i < 4; i++) {
+						ctx.strokeStyle = `rgba(167,139,250,${0.08 + i * 0.05})`;
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.moveTo(W * 0.05, H * 0.5);
+						ctx.quadraticCurveTo(W * 0.5, H * (0.05 + i * 0.05), W * 0.95, H * 0.5);
+						ctx.stroke();
+					}
+					// Text at arc apex
+					ctx.font = 'bold 10px IBM Plex Mono';
+					ctx.fillStyle = '#fff';
+					ctx.textAlign = 'center';
+					ctx.fillText('TEXT', W * 0.5, H * 0.32);
+					ctx.strokeStyle = '#ffffff30';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(W * 0.5 - 22, H * 0.26, 44, 16);
+				},
+				detail:
+					'<strong>Curved / arc lines</strong> — Arcs and curves draw the eye along their length and return it to a central point — the apex or the focal point of the arc. Place text at the apex for maximum alignment. Curved compositions feel organic and cyclical, making them appropriate for process diagrams, cycles, and natural or biological topics. The softness of the curve also reduces compositional tension relative to diagonals.'
+			}
+		];
+
+		let selectedLLine = null;
+
+		function buildLLines() {
+			const grid = document.getElementById('llines-grid');
+			grid.innerHTML = '';
+			llineTypes.forEach((lt, i) => {
+				const cell = document.createElement('div');
+				cell.className = 'lline-cell';
+				cell.onclick = () => selectLLine(i);
+				const canvas = document.createElement('canvas');
+				canvas.style.cssText =
+					'display:block; width:100%; aspect-ratio:16/9; position:absolute; inset:0;';
+				cell.style.position = 'relative';
+				cell.appendChild(canvas);
+				const label = document.createElement('div');
+				label.className = 'lline-label';
+				label.textContent = lt.label;
+				cell.appendChild(label);
+				grid.appendChild(cell);
+				setTimeout(() => {
+					const dpr = window.devicePixelRatio || 1;
+					const W = canvas.offsetWidth || 220;
+					const H = (W * 9) / 16;
+					canvas.width = W * dpr;
+					canvas.height = H * dpr;
+					const ctx = canvas.getContext('2d');
+					ctx.scale(dpr, dpr);
+					lt.draw(ctx, W, H);
+				}, 60);
+			});
+		}
+		buildLLines();
+		_addWinListener('resize', buildLLines);
+
+		function selectLLine(i) {
+			document
+				.querySelectorAll('.lline-cell')
+				.forEach((c, j) => c.classList.toggle('selected', j === i));
+			document.getElementById('llines-detail').innerHTML = llineTypes[i].detail;
+			selectedLLine = i;
+		}
+
+		/* ════════════════════════════════════════
+   MOTION HIERARCHY SIMULATOR
+════════════════════════════════════════ */
+		let mhMode = 'unmanaged';
+		let mhAnimId = null;
+		let mhPhase = 0;
+
+		const mhDescs = {
+			unmanaged:
+				'UNMANAGED — No treatment applied to the background. The full-motion, full-contrast background competes directly with the static text. The eye tracks the moving particles first; the text is perceived as a secondary element despite being the intended primary. This is the default state for creators who do not manage the motion budget.',
+			scrim:
+				"DARK SCRIM — A semi-transparent dark overlay reduces the background's contrast and perceived luminosity without obscuring it. The text now has a clear contrast advantage. The background motion is still felt as atmosphere, but it no longer wins the hierarchy contest. This is the most common and reliable fix — 50–70% opacity dark scrim covers most situations.",
+			slow: 'SLOW / DESATURATED — The background moves slowly and its colour is muted to near-grey. Slow motion is processed by the motion-detection system at a lower priority than fast motion. Desaturation removes the brightness contrast that makes moving elements draw attention. Combined, these treatments make the background recede even without a scrim.',
+			blur: "BACKGROUND BLUR — The background is defocused, which removes the sharp edges that the visual system uses to track motion. A blurred moving element is registered as 'there is movement' but not 'follow this specific element' — which is the precise state where the background provides atmosphere without dominating. Best combined with a mild scrim for text-heavy frames."
+		};
+
+		function setMHMode(mode) {
+			mhMode = mode;
+			document.querySelectorAll('#mh-btns .btn').forEach((b, i) => {
+				const modes = ['unmanaged', 'scrim', 'slow', 'blur'];
+				b.classList.toggle('active', modes[i] === mode);
+				b.classList.toggle('mint', modes[i] === mode && mode === 'blur');
+			});
+			document.getElementById('mh-desc').textContent = mhDescs[mode];
+		}
+
+		(function initMHCanvas() {
+			const canvas = document.getElementById('mh-canvas');
+			const wrap = canvas.parentElement;
+			const dpr = window.devicePixelRatio || 1;
+			const W = wrap.offsetWidth || 560;
+			const H = (W * 9) / 16;
+			canvas.width = W * dpr;
+			canvas.height = H * dpr;
+			canvas.style.width = W + 'px';
+			canvas.style.height = H + 'px';
+			const ctx = canvas.getContext('2d');
+			ctx.scale(dpr, dpr);
+
+			const particles = Array.from({ length: 40 }, () => ({
+				x: Math.random(),
+				y: Math.random(),
+				vx: (Math.random() - 0.5) * 0.003,
+				vy: (Math.random() - 0.5) * 0.003,
+				r: 2 + Math.random() * 4,
+				color: Math.random() > 0.5 ? '#4aafff' : '#3dd9a4'
+			}));
+
+			function frame() {
+				mhPhase += 0.012;
+				const w = parseInt(canvas.style.width) || 560;
+				const h = parseInt(canvas.style.height) || 315;
+				ctx.clearRect(0, 0, w, h);
+
+				const slow = mhMode === 'slow';
+				const blur = mhMode === 'blur';
+				const scrim = mhMode === 'scrim';
+
+				// BG
+				ctx.fillStyle = '#040710';
+				ctx.fillRect(0, 0, w, h);
+
+				if (blur) {
+					// Soft blur sim: draw particles larger and very transparent
+					particles.forEach((p) => {
+						p.x = (p.x + p.vx + 1) % 1;
+						p.y = (p.y + p.vy + 1) % 1;
+						const grd = ctx.createRadialGradient(p.x * w, p.y * h, 0, p.x * w, p.y * h, p.r * 6);
+						grd.addColorStop(0, p.color + '20');
+						grd.addColorStop(1, 'transparent');
+						ctx.beginPath();
+						ctx.arc(p.x * w, p.y * h, p.r * 6, 0, Math.PI * 2);
+						ctx.fillStyle = grd;
+						ctx.fill();
+					});
+				} else {
+					// Normal particles
+					particles.forEach((p) => {
+						const speed = slow ? 0.3 : 1.0;
+						p.x = (p.x + p.vx * speed + 1) % 1;
+						p.y = (p.y + p.vy * speed + 1) % 1;
+						const alpha = slow ? '18' : '44';
+						ctx.beginPath();
+						ctx.arc(p.x * w, p.y * h, p.r * (slow ? 0.7 : 1), 0, Math.PI * 2);
+						ctx.fillStyle = p.color + alpha;
+						ctx.fill();
+					});
+					// Moving horizontal band
+					if (!slow) {
+						const bandY = (Math.sin(mhPhase) * 0.3 + 0.5) * h;
+						const grd = ctx.createLinearGradient(0, bandY - 20, 0, bandY + 20);
+						grd.addColorStop(0, 'transparent');
+						grd.addColorStop(0.5, '#4aafff08');
+						grd.addColorStop(1, 'transparent');
+						ctx.fillStyle = grd;
+						ctx.fillRect(0, bandY - 20, w, 40);
+					}
+				}
+
+				// Scrim
+				if (scrim) {
+					ctx.fillStyle = 'rgba(0,0,0,0.62)';
+					ctx.fillRect(0, 0, w, h);
+				} else if (slow) {
+					ctx.fillStyle = 'rgba(0,0,0,0.2)';
+					ctx.fillRect(0, 0, w, h);
+				}
+
+				// Text element — always static
+				const textAlpha = mhMode === 'unmanaged' ? 0.65 : 0.95;
+				ctx.font = `800 ${w * 0.065}px Syne, sans-serif`;
+				ctx.textAlign = 'center';
+				ctx.fillStyle = `rgba(255,255,255,${textAlpha})`;
+				ctx.fillText('THE SIGNAL', w / 2, h * 0.42);
+				ctx.font = `400 ${w * 0.022}px IBM Plex Mono`;
+				ctx.fillStyle = `rgba(74,175,255,${textAlpha * 0.9})`;
+				ctx.fillText('reaches through the noise', w / 2, h * 0.56);
+
+				// Text border
+				ctx.strokeStyle = `rgba(74,175,255,${textAlpha * 0.3})`;
+				ctx.lineWidth = 1;
+				const tw1 = ctx.measureText('THE SIGNAL').width;
+				ctx.strokeRect(w / 2 - tw1 / 2 - 12, h * 0.32, tw1 + 24, h * 0.28);
+
+				mhAnimId = requestAnimationFrame(frame);
+			}
+			mhAnimId = requestAnimationFrame(frame);
+			setMHMode('unmanaged');
+		})();
+
+		/* ── QUIZ ── */
+		const scores = {};
+		function answer(qId, el, correct) {
+			if (scores[qId] !== undefined) return;
+			scores[qId] = correct ? 1 : 0;
+			el.parentElement.querySelectorAll('.option').forEach((o) => {
+				o.classList.add('disabled');
+				if (o.onclick.toString().includes(',true)')) o.classList.add('correct');
+			});
+			el.classList.remove('correct');
+			if (!correct) el.classList.add('wrong');
+			const fb = document.getElementById('fb-' + qId);
+			fb.textContent = correct
+				? '✓ Correct.'
+				: '✗ Not quite — the correct answer is highlighted above.';
+			fb.className = 'feedback ' + (correct ? 'ok' : 'bad');
+			if (Object.keys(scores).length === 4) {
+				const total = Object.values(scores).reduce((a, b) => a + b, 0);
+				const sc = document.getElementById('quiz-score');
+				sc.style.display = 'block';
+				document.getElementById('score-display').textContent = total + ' / 4';
+				document.getElementById('score-display').style.color =
+					total >= 3 ? 'var(--vs-mint)' : total >= 2 ? 'var(--vs-amber)' : 'var(--vs-red)';
+			}
+		}
+
+		if (typeof drawFaintGrid === 'function') actions.drawFaintGrid = drawFaintGrid;
+		if (typeof buildFramingGrid === 'function') actions.buildFramingGrid = buildFramingGrid;
+		if (typeof selectFraming === 'function') actions.selectFraming = selectFraming;
+		if (typeof toggleGuide === 'function') actions.toggleGuide = toggleGuide;
+		if (typeof clearElements === 'function') actions.clearElements = clearElements;
+		if (typeof initCompCanvas === 'function') actions.initCompCanvas = initCompCanvas;
+		if (typeof drawCompositionLab === 'function') actions.drawCompositionLab = drawCompositionLab;
+		if (typeof updateCompScore === 'function') actions.updateCompScore = updateCompScore;
+		if (typeof calcWeight === 'function') actions.calcWeight = calcWeight;
+		if (typeof updateBalance === 'function') actions.updateBalance = updateBalance;
+		if (typeof drawBalance === 'function') actions.drawBalance = drawBalance;
+		if (typeof buildIsolationLab === 'function') actions.buildIsolationLab = buildIsolationLab;
+		if (typeof buildIsoToggles === 'function') actions.buildIsoToggles = buildIsoToggles;
+		if (typeof buildLLines === 'function') actions.buildLLines = buildLLines;
+		if (typeof selectLLine === 'function') actions.selectLLine = selectLLine;
+		if (typeof setMHMode === 'function') actions.setMHMode = setMHMode;
+		if (typeof initMHCanvas === 'function') actions.initMHCanvas = initMHCanvas;
+		if (typeof frame === 'function') actions.frame = frame;
+		if (typeof answer === 'function') actions.answer = answer;
+
+		return () => {
+			if (typeof mhAnimId !== 'undefined' && mhAnimId) cancelAnimationFrame(mhAnimId);
+			_listeners.forEach((l) => l.target.removeEventListener(...l.args));
+		};
+	});
+</script>
+
+<div class="page-wrapper">
+	<header class="course-header">
+		<div>
+			<div class="course-label">Visual Storytelling for Faceless Video</div>
+			<div class="course-title">Narrative, Pacing &amp; Visual Communication</div>
+		</div>
+		<div style="font-size: 11px; color: var(--vs-muted); text-align: right">Module 05 of 10</div>
+	</header>
+
+	<div class="module-hero">
+		<div class="module-number">05</div>
+		<div class="module-tag">Module 05 · Theory + Practice</div>
+		<h1 class="module-title">Composition &amp;<br /><span>Visual Hierarchy in Frames</span></h1>
+		<div class="progress-bar-wrap">
+			<div
+				class="progress-bar-fill"
+				id="reading-progress"
+				role="progressbar"
+				aria-valuemin="0"
+				aria-valuemax="100"
+				aria-valuenow="0"
+			></div>
+		</div>
+	</div>
+
+	<nav class="toc">
+		<div class="toc-label">Contents</div>
+		<ul class="toc-list">
+			<li><a href="#objectives">Objectives</a></li>
+			<li><a href="#framing">Framing &amp; Focus</a></li>
+			<li><a href="#guides">Compositional Guides</a></li>
+			<li><a href="#visual-weight">Visual Weight</a></li>
+			<li><a href="#isolation">Isolation &amp; Negative Space</a></li>
+			<li><a href="#leading-lines">Leading Lines</a></li>
+			<li><a href="#motion-hierarchy">Hierarchy Across Motion</a></li>
+			<li><a href="#practical">Practical Work</a></li>
+			<li><a href="#quiz">Quiz</a></li>
+		</ul>
+	</nav>
+
+	<section id="objectives" class="objectives">
+		<div class="objectives-label">Learning Objectives</div>
+		<ul>
+			<li>Plan frames that guide the viewer's eye along a deliberate reading path</li>
+			<li>Understand and apply visual weight to create or destroy hierarchy</li>
+			<li>Use isolation and negative space as active compositional tools</li>
+			<li>Recognise how leading lines direct attention within a frame</li>
+			<li>Manage hierarchy across frames that contain both moving and static elements</li>
+		</ul>
+	</section>
+
+	<!-- ═══ SECTION 1: FRAMING & FOCUS ═══ -->
+	<section id="framing" class="section">
+		<div class="section-header">
+			<span class="section-num">05.01</span>
+			<h2 class="section-title">Framing &amp; Focus</h2>
+		</div>
+
+		<p>
+			Every video frame is a bounded rectangle. Within that rectangle, the viewer's eye does not
+			wander — it follows a path determined by the distribution of visual weight, contrast, and
+			structure. <em>Framing</em> is the decision about what occupies that rectangle and where. It is
+			not a passive choice. A frame that has not been deliberately composed still communicates a composition
+			— just an accidental one.
+		</p>
+		<p>
+			In faceless video, framing applies to every layer: the background footage or image, the
+			graphic overlays, the text elements, the diagrams. Each layer has a composition of its own,
+			and when they are combined in a frame they interact — reinforcing each other's hierarchy or
+			competing against it. The discipline of framing means making every layer's composition serve a
+			single reading path.
+		</p>
+
+		<div class="callout">
+			<div class="callout-label">The Reading Path</div>
+			A reading path is the sequence in which the viewer's eye moves through a frame. In left-to-right
+			cultures, the default path is top-left to bottom-right. Any element that interrupts this path with
+			a competing signal — higher contrast, larger size, or motion — redirects the eye to itself. Intentional
+			composition means every redirect is deliberate.
+		</div>
+
+		<!-- DEMO: Framing Types Explorer -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Framing Types Explorer</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Click each framing approach to see how the same subject — a single focal element — reads
+					differently depending on where it sits in the frame.
+				</p>
+				<div class="framing-grid" id="framing-grid"></div>
+				<div class="framing-detail" id="framing-detail">
+					Select a framing type above to see its effect and when to use it.
+				</div>
+			</div>
+		</div>
+
+		<p>
+			The choice of framing is inseparable from the choice of what to emphasise. A subject placed
+			dead centre reads as static and stable — important, but contained. The same subject placed at
+			a rule-of-thirds intersection reads as dynamic — in motion, in relation to something, with
+			energy. Neither is universally correct. The frame should match the register of the content.
+		</p>
+	</section>
+
+	<!-- ═══ SECTION 2: COMPOSITIONAL GUIDES ═══ -->
+	<section id="guides" class="section">
+		<div class="section-header">
+			<span class="section-num">05.02</span>
+			<h2 class="section-title">Compositional Guides</h2>
+		</div>
+
+		<p>
+			Compositional guides are frameworks for distributing elements within a frame in ways the eye
+			finds natural or satisfying. They are not rules — they are descriptions of where attention
+			tends to go, so that you can choose to align with that tendency or deliberately break it.
+			Breaking a guide with intention creates tension; following it creates ease.
+		</p>
+		<p>
+			For faceless video, the most practically useful guides are:
+			<strong>Rule of Thirds</strong> (the frame divided into nine equal rectangles; intersections
+			attract the eye), <strong>Phi Grid</strong> (a version of thirds with slightly narrower outer
+			columns, derived from the golden ratio),
+			<strong>Centre Weight</strong> (a single dominant element at the frame centre, surrounded by
+			clear space), and <strong>Diagonal Flow</strong> (elements arranged along a diagonal axis to create
+			energy and movement).
+		</p>
+
+		<!-- DEMO: Composition Lab -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Composition Lab</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1rem">
+					Click the frame to place focal elements. Toggle guides to see how your placements relate
+					to compositional structures. The score panel evaluates your arrangement.
+				</p>
+
+				<!-- Guide toggles -->
+				<div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem">
+					<div
+						class="guide-pill on"
+						id="gp-thirds"
+						onclick={(e) => actions.toggleGuide('thirds')}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.toggleGuide('thirds');
+							}
+						}}
+					>
+						<div class="swatch" style="background: #4aafff44; border: 1px solid #4aafff88"></div>
+						Rule of Thirds
+					</div>
+					<div
+						class="guide-pill"
+						id="gp-phi"
+						onclick={(e) => actions.toggleGuide('phi')}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.toggleGuide('phi');
+							}
+						}}
+					>
+						<div class="swatch" style="background: #f5b94a44; border: 1px solid #f5b94a88"></div>
+						Phi Grid
+					</div>
+					<div
+						class="guide-pill"
+						id="gp-centre"
+						onclick={(e) => actions.toggleGuide('centre')}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.toggleGuide('centre');
+							}
+						}}
+					>
+						<div class="swatch" style="background: #3dd9a444; border: 1px solid #3dd9a488"></div>
+						Centre Lines
+					</div>
+					<div
+						class="guide-pill"
+						id="gp-diagonal"
+						onclick={(e) => actions.toggleGuide('diagonal')}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.toggleGuide('diagonal');
+							}
+						}}
+					>
+						<div class="swatch" style="background: #ff4f6844; border: 1px solid #ff4f6888"></div>
+						Diagonal Flow
+					</div>
+					<div
+						class="guide-pill"
+						id="gp-safezone"
+						onclick={(e) => actions.toggleGuide('safezone')}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.toggleGuide('safezone');
+							}
+						}}
+					>
+						<div class="swatch" style="background: #ffffff18; border: 1px solid #ffffff40"></div>
+						Safe Zone
+					</div>
+					<div
+						class="btn"
+						onclick={(e) => actions.clearElements()}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								actions.clearElements();
+							}
+						}}
+						style="margin-left: auto; padding: 4px 12px"
+					>
+						Clear
+					</div>
+				</div>
+
+				<div class="frame-canvas-wrap" style="max-width: 100%">
+					<canvas id="comp-canvas" aria-label="Comp Canvas Demonstration" role="region" tabindex="0"
+					></canvas>
+				</div>
+
+				<div class="comp-score-wrap" id="comp-scores">
+					<div class="comp-score-cell">
+						<div class="comp-score-val" id="cs-elements" style="color: var(--vs-blue)">0</div>
+						<div class="comp-score-lbl">Elements</div>
+					</div>
+					<div class="comp-score-cell">
+						<div class="comp-score-val" id="cs-thirds" style="color: var(--vs-amber)">—</div>
+						<div class="comp-score-lbl">Thirds Alignment</div>
+					</div>
+					<div class="comp-score-cell">
+						<div class="comp-score-val" id="cs-balance" style="color: var(--vs-mint)">—</div>
+						<div class="comp-score-lbl">Balance</div>
+					</div>
+					<div class="comp-score-cell">
+						<div class="comp-score-val" id="cs-grade" style="color: var(--vs-blue)">—</div>
+						<div class="comp-score-lbl">Grade</div>
+					</div>
+				</div>
+				<div
+					id="comp-feedback"
+					style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 40px;
+							"
+				>
+					Click the frame to place elements and evaluate your composition.
+				</div>
+			</div>
+		</div>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Guide</th>
+					<th>Effect</th>
+					<th>Best For</th>
+					<th>Avoid When</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Rule of Thirds</td>
+					<td>Dynamic, balanced tension</td>
+					<td>Most video frames — a reliable default</td>
+					<td>Intentional symmetry is the message</td>
+				</tr>
+				<tr>
+					<td>Phi Grid</td>
+					<td>Slightly more organic than thirds</td>
+					<td>Natural imagery, softer composition</td>
+					<td>Technical or geometric content</td>
+				</tr>
+				<tr>
+					<td>Centre Weight</td>
+					<td>Stable, authoritative, contained</td>
+					<td>Isolated objects, titles, diagrams</td>
+					<td>When energy or directionality is needed</td>
+				</tr>
+				<tr>
+					<td>Diagonal Flow</td>
+					<td>Energy, movement, instability</td>
+					<td>Action, change, contrast sequences</td>
+					<td>Calm, reflective, or stable content</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<!-- ═══ SECTION 3: VISUAL WEIGHT ═══ -->
+	<section id="visual-weight" class="section">
+		<div class="section-header">
+			<span class="section-num">05.03</span>
+			<h2 class="section-title">Visual Weight &amp; Balance</h2>
+		</div>
+
+		<p>
+			Visual weight is the degree to which an element attracts the viewer's eye relative to the
+			other elements in the frame. It is not the same as physical size — a small, high-contrast
+			element can outweigh a large, low-contrast one. Visual weight is determined by a combination
+			of properties: size, contrast against the background, color saturation and brightness,
+			complexity, isolation (the amount of empty space around an element), and position (lower
+			elements feel heavier; right-side elements can feel lighter due to reading direction).
+		</p>
+		<p>
+			Balance is the distribution of visual weight across the frame. A
+			<em>balanced</em> composition has roughly equal weight on both sides of the vertical centre —
+			though that balance does not require symmetry. A <em>weighted</em> composition has deliberate imbalance
+			— heavier on one side — which creates a sense of tension or directional pull that can serve narrative
+			purposes.
+		</p>
+
+		<!-- DEMO: Visual Weight Balance -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Visual Weight Calculator</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Adjust the properties of two elements to see how their visual weights compare. The balance
+					beam shows the resulting frame equilibrium.
+				</p>
+
+				<div class="balance-stage">
+					<canvas
+						id="balance-canvas"
+						aria-label="Balance Canvas Demonstration"
+						role="region"
+						tabindex="0"
+					></canvas>
+				</div>
+
+				<div class="weight-props">
+					<div class="weight-side">
+						<div class="weight-side-label" style="color: var(--vs-blue)">Left Element</div>
+						<div class="weight-row">
+							<label for="dummy">Size</label><input
+								type="range"
+								id="lw-size"
+								min="10"
+								max="80"
+								value="40"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="lw-size-v">40</span>
+						</div>
+						<div class="weight-row">
+							<label for="dummy">Contrast</label><input
+								type="range"
+								id="lw-contrast"
+								min="0"
+								max="100"
+								value="60"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="lw-contrast-v">60</span>
+						</div>
+						<div class="weight-row">
+							<label for="dummy">Saturation</label><input
+								type="range"
+								id="lw-sat"
+								min="0"
+								max="100"
+								value="70"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="lw-sat-v">70</span>
+						</div>
+						<div class="weight-row">
+							<label for="dummy">Isolation</label><input
+								type="range"
+								id="lw-iso"
+								min="0"
+								max="100"
+								value="50"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="lw-iso-v">50</span>
+						</div>
+					</div>
+					<div class="weight-side">
+						<div class="weight-side-label" style="color: var(--vs-amber)">Right Element</div>
+						<div class="weight-row">
+							<label for="dummy">Size</label><input
+								type="range"
+								id="rw-size"
+								min="10"
+								max="80"
+								value="55"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="rw-size-v">55</span>
+						</div>
+						<div class="weight-row">
+							<label for="dummy">Contrast</label><input
+								type="range"
+								id="rw-contrast"
+								min="0"
+								max="100"
+								value="40"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="rw-contrast-v">40</span>
+						</div>
+						<div class="weight-row">
+							<label for="dummy">Saturation</label><input
+								type="range"
+								id="rw-sat"
+								min="0"
+								max="100"
+								value="30"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="rw-sat-v">30</span>
+						</div>
+						<div class="weight-row">
+							<label for="dummy">Isolation</label><input
+								type="range"
+								id="rw-iso"
+								min="0"
+								max="100"
+								value="30"
+								oninput={() => {
+									actions.updateBalance();
+								}}
+							/><span class="weight-val" id="rw-iso-v">30</span>
+						</div>
+					</div>
+				</div>
+				<div id="balance-verdict"></div>
+			</div>
+		</div>
+
+		<div class="callout amber">
+			<div class="callout-label">The Weight Paradox</div>
+			Size is the most intuitive weight property, but it is frequently overridden by the others. A small,
+			saturated, isolated element in a high-contrast color will draw the eye before a large, muted, crowded
+			element in a low-contrast grey. This is why adding more text to a frame to "balance" it often produces
+			the opposite — the new text element, even if smaller, competes with the primary because it is isolated
+			and higher contrast.
+		</div>
+	</section>
+
+	<!-- ═══ SECTION 4: ISOLATION & NEGATIVE SPACE ═══ -->
+	<section id="isolation" class="section">
+		<div class="section-header">
+			<span class="section-num">05.04</span>
+			<h2 class="section-title">Isolation &amp; Negative Space</h2>
+		</div>
+
+		<p>
+			Negative space is the empty area in a frame — the region that contains no significant
+			elements. In most self-produced video, negative space is treated as a problem to be filled.
+			The instinct is to populate every part of the frame with something meaningful. The result is
+			frames where every element is competing, and nothing is primary.
+		</p>
+		<p>
+			The correct understanding is that negative space is <em>doing work</em>. It is amplifying the
+			elements it surrounds. The more empty space around an element, the higher that element's
+			perceived weight — because isolation signals importance. A single word on a dark frame is more
+			commanding than the same word surrounded by five other words. The surrounding emptiness is not
+			absence; it is emphasis.
+		</p>
+
+		<!-- DEMO: Isolation Lab -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Isolation Effect Lab</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Toggle competing elements on and off to see how isolation changes the perceived weight of
+					the primary element. Watch the weight meter update.
+				</p>
+
+				<div class="isolation-wrap">
+					<div class="isolation-pane" id="iso-pane-before">
+						<div class="isolation-label">Before</div>
+					</div>
+					<div class="isolation-pane" id="iso-pane-after">
+						<div class="isolation-label">After</div>
+					</div>
+				</div>
+
+				<div id="iso-toggle-wrap">
+					<span
+						style="
+									font-size: 11px;
+									color: var(--vs-muted);
+									letter-spacing: 0.08em;
+									text-transform: uppercase;
+								">Toggle competing elements:</span
+					>
+				</div>
+
+				<div
+					style="
+								margin-top: 1rem;
+								display: flex;
+								gap: 1rem;
+								align-items: center;
+								flex-wrap: wrap;
+							"
+				>
+					<div style="font-size: 11px; color: var(--vs-muted)">Primary element weight:</div>
+					<div
+						style="
+									flex: 1;
+									height: 8px;
+									background: var(--vs-border);
+									border-radius: 4px;
+									overflow: hidden;
+									min-width: 100px;
+								"
+					>
+						<div
+							id="iso-weight-fill"
+							style="
+										height: 100%;
+										background: var(--vs-blue);
+										border-radius: 4px;
+										transition: width 0.5s ease;
+										width: 30%;
+									"
+						></div>
+					</div>
+					<div
+						id="iso-weight-val"
+						style="
+									font-family: 'Syne', sans-serif;
+									font-size: 18px;
+									font-weight: 700;
+									color: var(--vs-blue);
+									min-width: 48px;
+								"
+					>
+						30%
+					</div>
+				</div>
+
+				<div id="iso-verdict" style="border-left-color: var(--vs-blue)">
+					Toggle the competing elements to see how each removal increases the primary element's
+					weight.
+				</div>
+			</div>
+		</div>
+
+		<p>
+			In practice, the isolation principle guides two decisions: first, how much to strip out of a
+			frame before adding text or a graphic; and second, how much padding and space to give a text
+			element within the frame. A headline that sits close to the frame edge or to another element
+			loses the isolation that makes it primary. Generous space — on all sides — is what gives it
+			authority.
+		</p>
+
+		<div class="callout mint">
+			<div class="callout-label">The Empty Frame Test</div>
+			Before adding any element to a frame, ask: does this frame work with less? Remove elements one at
+			a time and observe what happens to the primary. If removing a secondary element makes the primary
+			stronger, the secondary was a net negative. Keep removing until the next removal weakens the primary
+			— that is the minimum viable frame.
+		</div>
+	</section>
+
+	<!-- ═══ SECTION 5: LEADING LINES ═══ -->
+	<section id="leading-lines" class="section">
+		<div class="section-header">
+			<span class="section-num">05.05</span>
+			<h2 class="section-title">Leading Lines</h2>
+		</div>
+
+		<p>
+			Leading lines are compositional elements — real or implied — that direct the viewer's eye
+			through the frame toward a specific point. They can be literal lines: a road, a fence, an
+			architectural edge. They can be implied lines: a row of objects, the direction of a gaze, the
+			trajectory of a motion blur. In graphic frames, they can be borders, arrows, or the edges of
+			color blocks.
+		</p>
+		<p>
+			Leading lines matter in faceless video because many frames combine a background visual
+			(footage or image) with foreground graphic elements (text, diagrams, labels). The lines in the
+			background visual will direct the viewer's eye whether or not that is intended. A background
+			with strong converging lines will pull attention to a vanishing point — which may or may not
+			align with where the text is placed.
+		</p>
+
+		<!-- DEMO: Leading Lines Explorer -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Leading Lines Explorer</span>
+				<span class="demo-badge interactive">INTERACTIVE</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Click each frame to see how different line arrangements direct the eye — and where the
+					text element should sit to either align with or counterpoint the line direction.
+				</p>
+				<div class="llines-grid" id="llines-grid"></div>
+				<div class="llines-detail" id="llines-detail">
+					Select a frame above to analyse its leading line structure.
+				</div>
+			</div>
+		</div>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Line Type</th>
+					<th>Eye Movement</th>
+					<th>Mood / Tone</th>
+					<th>Video Use</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Converging (vanishing point)</td>
+					<td>Pulled toward horizon or depth</td>
+					<td>Depth, progress, journey</td>
+					<td>Background footage for forward-motion narratives</td>
+				</tr>
+				<tr>
+					<td>Horizontal</td>
+					<td>Left to right — reading direction</td>
+					<td>Calm, stable, expansive</td>
+					<td>Wide establishing frames, rest moments</td>
+				</tr>
+				<tr>
+					<td>Vertical</td>
+					<td>Up or down, hierarchical</td>
+					<td>Height, aspiration, authority</td>
+					<td>Title frames, structural explanations</td>
+				</tr>
+				<tr>
+					<td>Diagonal (↗)</td>
+					<td>Bottom-left to top-right — upward</td>
+					<td>Growth, increase, optimism</td>
+					<td>Data growth, improvement sequences</td>
+				</tr>
+				<tr>
+					<td>Diagonal (↘)</td>
+					<td>Top-left to bottom-right — descent</td>
+					<td>Decline, weight, resolution</td>
+					<td>Problem framing, endings, heaviness</td>
+				</tr>
+				<tr>
+					<td>Curved / arc</td>
+					<td>Follows the arc, returns to start</td>
+					<td>Flow, cycle, connection</td>
+					<td>Process diagrams, cyclical content</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<!-- ═══ SECTION 6: HIERARCHY ACROSS MOTION ═══ -->
+	<section id="motion-hierarchy" class="section">
+		<div class="section-header">
+			<span class="section-num">05.06</span>
+			<h2 class="section-title">Hierarchy Across Moving and Static Frames</h2>
+		</div>
+
+		<p>
+			When a frame contains both moving and static elements, motion always wins the hierarchy
+			contest. The human visual system has a dedicated pathway for detecting motion — it is faster
+			and more primitive than the system that processes static form. A moving element will capture
+			attention before a larger, brighter, more prominent static element. This is not a preference;
+			it is hardware.
+		</p>
+		<p>
+			In faceless video, this creates a specific challenge: background footage is almost always in
+			motion, and the foreground graphic layer (text, diagrams) is almost always static. The
+			background will constantly compete for the eye against the content that is supposed to be
+			primary. There are three strategies for managing this.
+		</p>
+
+		<!-- DEMO: Motion Hierarchy Simulator -->
+		<div class="demo-box">
+			<div class="demo-header">
+				<span>Interactive · Motion Hierarchy Simulator</span>
+				<span class="demo-badge animated">ANIMATED</span>
+			</div>
+			<div class="demo-body">
+				<p style="font-size: 12px; color: var(--vs-muted); margin-bottom: 1.25rem">
+					Select a strategy for managing the motion/static hierarchy conflict. Observe how each
+					approach handles the competition between a moving background and a static text element.
+				</p>
+
+				<div class="btn-row" id="mh-btns">
+					<button class="btn active" onclick={(e) => actions.setMHMode('unmanaged')}
+						>Unmanaged</button
+					>
+					<button class="btn" onclick={(e) => actions.setMHMode('scrim')}>Dark Scrim</button>
+					<button class="btn" onclick={(e) => actions.setMHMode('slow')}
+						>Slow / Desaturated BG</button
+					>
+					<button class="btn mint" onclick={(e) => actions.setMHMode('blur')}
+						>Background Blur</button
+					>
+				</div>
+
+				<div class="frame-canvas-wrap" style="max-width: 560px; margin: 0 auto">
+					<canvas id="mh-canvas" aria-label="Mh Canvas Demonstration" role="region" tabindex="0"
+					></canvas>
+				</div>
+
+				<div
+					id="mh-desc"
+					style="
+								margin-top: 0.75rem;
+								padding: 0.75rem 1rem;
+								border-left: 2px solid var(--vs-border2);
+								font-size: 12px;
+								color: var(--vs-text);
+								line-height: 1.7;
+								background: var(--vs-raised);
+								min-height: 52px;
+							"
+				></div>
+
+				<div
+					style="
+								margin-top: 1.25rem;
+								display: grid;
+								grid-template-columns: 1fr 1fr;
+								gap: 1rem;
+								font-size: 11px;
+							"
+				>
+					<div
+						style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+					>
+						<div
+							style="
+										color: var(--vs-amber);
+										font-size: 9px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.4rem;
+									"
+						>
+							When motion wins
+						</div>
+						<div style="color: var(--vs-text); line-height: 1.7">
+							The viewer watches the background instead of reading the text. The graphic layer
+							becomes invisible. Common with fast-cut urban b-roll or anything with frequent
+							movement across the full frame.
+						</div>
+					</div>
+					<div
+						style="
+									border: 1px solid var(--vs-border);
+									padding: 0.75rem;
+									background: var(--vs-raised);
+								"
+					>
+						<div
+							style="
+										color: var(--vs-mint);
+										font-size: 9px;
+										letter-spacing: 0.1em;
+										text-transform: uppercase;
+										margin-bottom: 0.4rem;
+									"
+						>
+							When graphics win
+						</div>
+						<div style="color: var(--vs-text); line-height: 1.7">
+							The background is subdued enough that the eye goes to text first. Motion is felt as
+							atmosphere. The graphic layer communicates. Requires active management of the
+							background's visual intensity.
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<p>
+			The first strategy is the <strong>dark scrim</strong> — a semi-transparent dark layer over the
+			background footage that reduces its contrast and motion visibility without obscuring it
+			entirely. The second is using
+			<strong>slow-moving, desaturated background footage</strong> that provides texture without
+			competing movement. The third is <strong>background blur or defocus</strong>, which preserves
+			motion cues while removing the sharp detail that attracts the eye.
+		</p>
+
+		<div class="callout red">
+			<div class="callout-label">The Motion Budget</div>
+			At any given moment in your video, you have a fixed budget of motion-driven attention. If the background
+			is consuming 80% of that budget, the animated text entering the frame has only 20% left — which
+			is not enough to be primary. Manage the background's motion intensity actively, not as an afterthought.
+		</div>
+	</section>
+
+	<!-- PRACTICAL -->
+	<section id="practical" class="section">
+		<div class="section-header">
+			<span class="section-num">05.07</span>
+			<h2 class="section-title">Practical Work</h2>
+		</div>
+
+		<div class="callout">
+			<div class="callout-label">Exercise A · Recompose Three Frames</div>
+			Take three screenshots from any video — your own or a reference video. For each, draw the reading
+			path you think the creator intended and the path you actually followed. Identify what compositional
+			element caused the two to diverge, if they did. Then sketch a recomposition: where would you move
+			or resize the primary element to align the intended and actual reading paths?
+		</div>
+
+		<div class="callout amber">
+			<div class="callout-label">Exercise B · Weight Analysis</div>
+			Select five frames from educational videos with on-screen text. For each frame, identify the highest-weight
+			element (the one your eye lands on first) and the intended primary element. If they differ, identify
+			which weight property — size, contrast, saturation, isolation — is responsible for the mismatch.
+			Write one sentence per frame.
+		</div>
+
+		<div class="callout blue">
+			<div class="callout-label">Exercise C · Three Variations</div>
+			Design three versions of the same text-on-frame composition: neutral (subject centred, no particular
+			energy), dynamic (subject placed to exploit a leading line or rule-of-thirds tension), and focused
+			(subject isolated with maximum negative space). Use any graphics software or even rough sketches.
+			The constraint forces the decision-making that deliberate composition requires.
+		</div>
+
+		<div style="margin-top: 2rem">
+			<div
+				style="
+							font-size: 10px;
+							letter-spacing: 0.15em;
+							text-transform: uppercase;
+							color: var(--vs-muted);
+							margin-bottom: 1rem;
+						"
+			>
+				Key terms from this module
+			</div>
+			<div class="two-col">
+				<div class="stats-panel">
+					<div class="stat-row">
+						<span class="stat-label">Reading path</span><span class="stat-val"
+							>sequence of eye movement</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Visual weight</span><span class="stat-val"
+							>attention-pull strength</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Negative space</span><span class="stat-val"
+							>empty = amplification</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Leading lines</span><span class="stat-val"
+							>real or implied direction</span
+						>
+					</div>
+				</div>
+				<div class="stats-panel">
+					<div class="stat-row">
+						<span class="stat-label">Rule of Thirds</span><span class="stat-val"
+							>dynamic intersection points</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Isolation effect</span><span class="stat-val"
+							>removal increases weight</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Motion budget</span><span class="stat-val"
+							>finite attention per frame</span
+						>
+					</div>
+					<div class="stat-row">
+						<span class="stat-label">Dark scrim</span><span class="stat-val"
+							>background hierarchy fix</span
+						>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<hr class="divider" />
+
+	<section id="quiz" class="quiz-section">
+		<div class="quiz-header">Module 05 — Check Your Understanding</div>
+		<div class="quiz-sub">4 questions · No time limit</div>
+
+		<div class="question" id="q1">
+			<div class="q-text">
+				<span class="q-num">01.</span>A small text label in a high-contrast white color appears
+				alongside a large grey rectangle in the same frame. Which element is likely to attract the
+				eye first, and why?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
+				>
+					The large grey rectangle — size is always the dominant factor in visual weight
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q1', e.currentTarget, true)}
+				>
+					The small white text — contrast against the background overrides size; the high-contrast
+					element commands attention before the larger, low-contrast one
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
+				>
+					Neither — they will be processed simultaneously because both are static
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q1', e.currentTarget, false)}
+				>
+					The grey rectangle — lower contrast is easier to process, so the eye goes there first to
+					establish context
+				</button>
+			</div>
+			<div class="feedback" id="fb-q1"></div>
+		</div>
+
+		<div class="question" id="q2">
+			<div class="q-text">
+				<span class="q-num">02.</span>A creator places a headline text element over fast-moving
+				urban b-roll with no treatment applied. The analytics show viewers are not reading the text.
+				What is the most likely cause?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
+				>
+					The text font is too small for the resolution being used
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
+				>
+					The text appears too early before the narration has established context
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q2', e.currentTarget, true)}
+				>
+					The moving background is consuming most of the viewer's motion-detection attention budget,
+					leaving the static text without enough attention to register as primary
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q2', e.currentTarget, false)}
+				>
+					The urban footage is thematically unrelated to the text content, confusing the viewer
+				</button>
+			</div>
+			<div class="feedback" id="fb-q2"></div>
+		</div>
+
+		<div class="question" id="q3">
+			<div class="q-text">
+				<span class="q-num">03.</span>In the context of this module, what is negative space doing in
+				a well-composed frame?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
+				>
+					Filling gaps left by content that could not be sourced, maintaining visual continuity
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
+				>
+					Providing visual rest between dense sections so the viewer can recover cognitive capacity
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q3', e.currentTarget, true)}
+				>
+					Amplifying the elements it surrounds — the empty space around an element increases that
+					element's perceived weight and signals its importance through isolation
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q3', e.currentTarget, false)}
+				>
+					Reducing the total information load in the frame so the narration can carry more weight
+				</button>
+			</div>
+			<div class="feedback" id="fb-q3"></div>
+		</div>
+
+		<div class="question" id="q4">
+			<div class="q-text">
+				<span class="q-num">04.</span>A background shot contains strong converging lines leading to
+				a vanishing point in the upper-right of the frame. Where should the primary text element be
+				placed to work with — rather than against — this leading line structure?
+			</div>
+			<div class="options">
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
+				>
+					Lower-left — as far from the vanishing point as possible to create maximum tension
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
+				>
+					Dead centre — to cancel out the directional pull and create neutrality
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="true"
+					onclick={(e) => actions.answer('q4', e.currentTarget, true)}
+				>
+					At or near the vanishing point in the upper-right — the lines are already directing the
+					eye there; placing the primary element at that destination works with the composition's
+					natural reading path
+				</button>
+				<button
+					type="button"
+					class="option"
+					data-correct="false"
+					onclick={(e) => actions.answer('q4', e.currentTarget, false)}
+				>
+					Along the diagonal itself — so the text appears to be part of the line structure
+				</button>
+			</div>
+			<div class="feedback" id="fb-q4"></div>
+		</div>
+
+		<div class="quiz-score" id="quiz-score">
+			<div class="score-num" id="score-display">—</div>
+			<div class="score-label">questions correct out of 4</div>
+		</div>
+	</section>
+
+	<div class="nav-links">
+		<a href="./04" class="prev-link">← Module 04: Images, Diagrams &amp; B-Roll</a>
+		<a href="./06" class="next-module">
+			<div>
+				<div class="next-label">Next Module</div>
+				<div class="next-title">Motion Graphics for Narrative Support</div>
+			</div>
+			<div class="next-arrow">→</div>
+		</a>
+	</div>
+</div>
+
+<style>
+	.page-wrapper {
+		background: var(--vs-bg);
+		color: var(--vs-text);
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 14px;
+		line-height: 1.8;
+	}
+
+	.page-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: 0 2rem 6rem;
+	}
+	.two-col {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+	}
+	:global(.three-col) {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 640px) {
+		.two-col,
+		:global(.three-col) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.course-header {
+		border-bottom: 1px solid var(--vs-border);
+		padding: 2rem 0 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.course-label {
+		font-size: 11px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	.course-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 13px;
+		color: var(--vs-muted);
+		font-weight: 400;
+	}
+
+	.module-hero {
+		padding: 5rem 0 3.5rem;
+		border-bottom: 1px solid var(--vs-border);
+		position: relative;
+		overflow: hidden;
+	}
+	.module-hero::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 2px,
+			rgba(74, 175, 255, 0.014) 2px,
+			rgba(74, 175, 255, 0.014) 4px
+		);
+	}
+	.module-number {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(80px, 15vw, 140px);
+		font-weight: 800;
+		line-height: 1;
+		color: transparent;
+		-webkit-text-stroke: 1px var(--vs-border2);
+		position: absolute;
+		right: -10px;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none;
+		user-select: none;
+	}
+	.module-tag {
+		display: inline-block;
+		font-size: 10px;
+		letter-spacing: 0.25em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		border: 1px solid var(--vs-blue);
+		padding: 3px 10px;
+		margin-bottom: 1.5rem;
+	}
+	.module-title {
+		font-family: 'Syne', sans-serif;
+		font-size: clamp(28px, 5vw, 48px);
+		font-weight: 800;
+		line-height: 1.1;
+		color: #fff;
+		max-width: 600px;
+	}
+	.module-title span {
+		color: var(--vs-blue);
+	}
+
+	.toc {
+		margin: 3rem 0;
+		padding: 1.5rem;
+		border: 1px solid var(--vs-border);
+		background: var(--vs-surface);
+	}
+	.toc-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+		margin-bottom: 1rem;
+	}
+	.toc-list {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.toc-list a {
+		font-size: 12px;
+		color: var(--vs-muted);
+		text-decoration: none;
+		border: 1px solid var(--vs-border);
+		padding: 4px 10px;
+		transition: all 0.15s;
+	}
+	.toc-list a:hover {
+		color: var(--vs-blue);
+		border-color: var(--vs-blue);
+	}
+
+	.objectives {
+		margin: 2.5rem 0;
+		padding: 1.5rem 2rem;
+		border-left: 2px solid var(--vs-blue);
+		background: var(--vs-surface);
+	}
+	.objectives-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		margin-bottom: 1rem;
+	}
+	.objectives ul {
+		list-style: none;
+	}
+	.objectives li {
+		padding: 0.2rem 0;
+		padding-left: 1.2rem;
+		position: relative;
+	}
+	.objectives li::before {
+		content: '→';
+		position: absolute;
+		left: 0;
+		color: var(--vs-amber);
+	}
+
+	.section {
+		margin: 4rem 0;
+	}
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--vs-border);
+	}
+	.section-num {
+		font-size: 11px;
+		color: var(--vs-amber);
+		letter-spacing: 0.1em;
+		font-weight: 600;
+	}
+	.section-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 22px;
+		font-weight: 700;
+		color: #fff;
+	}
+
+	p {
+		margin-bottom: 1.2rem;
+		color: var(--vs-text);
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	strong {
+		color: var(--vs-blue);
+		font-weight: 600;
+	}
+	em {
+		color: #fff;
+		font-style: normal;
+		font-weight: 500;
+	}
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+	:global(code) {
+		background: #040710;
+		border: 1px solid var(--vs-border);
+		padding: 1px 6px;
+		font-size: 12px;
+		color: var(--vs-mint);
+		font-family: 'IBM Plex Mono', monospace;
+	}
+
+	.callout {
+		margin: 1.5rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 2px solid var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+		font-size: 13px;
+	}
+	.callout.amber {
+		border-color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 5%, var(--vs-surface));
+	}
+	:global(.callout.red) {
+		border-color: var(--vs-red);
+		background: color-mix(in srgb, var(--vs-red) 5%, var(--vs-surface));
+	}
+	.callout.mint {
+		border-color: var(--vs-mint);
+		background: color-mix(in srgb, var(--vs-mint) 5%, var(--vs-surface));
+	}
+	.callout-label {
+		font-size: 10px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--vs-blue);
+		margin-bottom: 0.4rem;
+		font-weight: 600;
+	}
+	.callout.amber .callout-label {
+		color: var(--vs-amber);
+	}
+	:global(.callout.red) .callout-label {
+		color: var(--vs-red);
+	}
+	.callout.mint .callout-label {
+		color: var(--vs-mint);
+	}
+
+	.demo-box {
+		background: var(--vs-surface);
+		border: 1px solid var(--vs-border);
+		margin: 2rem 0;
+	}
+	.demo-header {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--vs-border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.demo-header > span {
+		font-size: 11px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	.demo-badge {
+		font-size: 10px;
+		padding: 2px 8px;
+		border: 1px solid;
+	}
+	.demo-badge.interactive {
+		color: var(--vs-blue);
+		border-color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+	}
+	:global(.demo-badge.animated) {
+		color: var(--vs-amber);
+		border-color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+	}
+	.demo-body {
+		padding: 1.5rem;
+	}
+
+	:global(.btn) {
+		background: transparent;
+		border: 1px solid var(--vs-border2);
+		color: var(--vs-text);
+		padding: 6px 16px;
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 12px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	:global(.btn:hover) {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+	}
+	:global(.btn.active) {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 10%, transparent);
+	}
+	:global(.btn.amber:hover) {
+		border-color: var(--vs-amber);
+		color: var(--vs-amber);
+	}
+	:global(.btn.amber.active) {
+		border-color: var(--vs-amber);
+		color: var(--vs-amber);
+		background: color-mix(in srgb, var(--vs-amber) 10%, transparent);
+	}
+	:global(.btn.mint:hover) {
+		border-color: var(--vs-mint);
+		color: var(--vs-mint);
+	}
+	:global(.btn.mint.active) {
+		border-color: var(--vs-mint);
+		color: var(--vs-mint);
+		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+	}
+	:global(.btn.red:hover) {
+		border-color: var(--vs-red);
+		color: var(--vs-red);
+	}
+	:global(.btn.red.active) {
+		border-color: var(--vs-red);
+		color: var(--vs-red);
+		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+	}
+	:global(.btn-row) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1.5rem 0;
+		font-size: 12px;
+	}
+	th {
+		background: var(--vs-raised);
+		color: var(--vs-blue);
+		text-align: left;
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--vs-border);
+		font-weight: 600;
+		letter-spacing: 0.05em;
+	}
+	td {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--vs-border);
+		color: var(--vs-text);
+	}
+	tr:nth-child(even) td {
+		background: color-mix(in srgb, var(--vs-raised) 50%, transparent);
+	}
+
+	.divider {
+		border: none;
+		border-top: 1px solid var(--vs-border);
+		margin: 3rem 0;
+	}
+	.stats-panel {
+		background: #040710;
+		border: 1px solid var(--vs-border);
+		padding: 1rem;
+		font-size: 12px;
+	}
+	.stat-row {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.2rem 0;
+		border-bottom: 1px solid var(--vs-border);
+	}
+	.stat-row:last-child {
+		border-bottom: none;
+	}
+	.stat-label {
+		color: var(--vs-muted);
+	}
+	.stat-val {
+		color: var(--vs-blue);
+		font-weight: 600;
+	}
+
+	.progress-bar-wrap {
+		height: 3px;
+		background: var(--vs-border);
+		width: 100%;
+		margin: 2rem 0 0;
+	}
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--vs-blue);
+		width: 0;
+		transition: width 0.4s ease;
+	}
+
+	.quiz-section {
+		margin: 4rem 0;
+		padding: 2rem;
+		border: 1px solid var(--vs-border);
+		background: var(--vs-surface);
+	}
+	.quiz-header {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-bottom: 0.5rem;
+	}
+	.quiz-sub {
+		font-size: 12px;
+		color: var(--vs-muted);
+		margin-bottom: 2rem;
+	}
+	:global(.question) {
+		margin: 2rem 0;
+	}
+	:global(.q-text) {
+		font-size: 13px;
+		color: #fff;
+		margin-bottom: 1rem;
+	}
+	:global(.q-num) {
+		color: var(--vs-amber);
+		margin-right: 0.5rem;
+	}
+	:global(.options) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	:global(.option) {
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--vs-border);
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.15s;
+		user-select: none;
+		font-family: 'IBM Plex Mono', monospace;
+	}
+	:global(.option:hover) {
+		border-color: var(--vs-border2);
+		background: var(--vs-raised);
+	}
+	:global(.option.correct) {
+		border-color: var(--vs-mint);
+		background: color-mix(in srgb, var(--vs-mint) 10%, transparent);
+		color: var(--vs-mint);
+	}
+	:global(.option.wrong) {
+		border-color: var(--vs-red);
+		background: color-mix(in srgb, var(--vs-red) 10%, transparent);
+		color: var(--vs-red);
+	}
+	:global(.option.disabled) {
+		pointer-events: none;
+	}
+	:global(.feedback) {
+		font-size: 12px;
+		margin-top: 0.75rem;
+		min-height: 1.5em;
+		color: var(--vs-muted);
+	}
+	:global(.feedback.ok) {
+		color: var(--vs-mint);
+	}
+	:global(.feedback.bad) {
+		color: var(--vs-red);
+	}
+	.quiz-score {
+		margin-top: 2rem;
+		padding: 1.5rem;
+		border: 1px solid var(--vs-border);
+		text-align: center;
+		display: none;
+	}
+	.score-num {
+		font-family: 'Syne', sans-serif;
+		font-size: 36px;
+		font-weight: 800;
+		color: var(--vs-blue);
+	}
+	.score-label {
+		font-size: 12px;
+		color: var(--vs-muted);
+		margin-top: 0.25rem;
+	}
+
+	.nav-links {
+		display: flex;
+		justify-content: space-between;
+		align-items: stretch;
+		margin-top: 4rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	:global(.prev-link) {
+		font-size: 12px;
+		color: var(--vs-muted);
+		text-decoration: none;
+		border: 1px solid var(--vs-border);
+		padding: 0.75rem 1.25rem;
+		transition: all 0.2s;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	:global(.prev-link:hover) {
+		border-color: var(--vs-mint);
+		color: var(--vs-mint);
+	}
+	.next-module {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.5rem 2rem;
+		border: 1px solid var(--vs-border);
+		text-decoration: none;
+		transition: all 0.2s;
+		background: var(--vs-surface);
+		flex: 1;
+	}
+	.next-module:hover {
+		border-color: var(--vs-amber);
+	}
+	.next-label {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	.next-title {
+		font-family: 'Syne', sans-serif;
+		font-size: 18px;
+		font-weight: 700;
+		color: #fff;
+		margin-top: 0.25rem;
+	}
+	.next-arrow {
+		font-size: 28px;
+		color: var(--vs-amber);
+	}
+
+	/* ══════════════════════════════
+     MODULE-SPECIFIC COMPONENTS
+  ══════════════════════════════ */
+
+	/* Frame canvas shared style */
+	.frame-canvas-wrap {
+		aspect-ratio: 16/9;
+		position: relative;
+		background: #000;
+		border: 1px solid var(--vs-border2);
+		overflow: hidden;
+		user-select: none;
+	}
+
+	/* ── COMPOSITION LAB ── */
+	#comp-canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+		cursor: crosshair;
+	}
+
+	.comp-score-wrap {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr 1fr;
+		gap: 1px;
+		background: var(--vs-border);
+		margin-top: 0.75rem;
+	}
+	.comp-score-cell {
+		background: var(--vs-raised);
+		padding: 0.6rem 0.75rem;
+		text-align: center;
+	}
+	.comp-score-val {
+		font-family: 'Syne', sans-serif;
+		font-size: 22px;
+		font-weight: 700;
+		line-height: 1;
+	}
+	.comp-score-lbl {
+		font-size: 9px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+		margin-top: 3px;
+	}
+
+	/* Guide toggle pills */
+	.guide-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		border: 1px solid var(--vs-border2);
+		font-size: 11px;
+		cursor: pointer;
+		transition: all 0.15s;
+		color: var(--vs-muted);
+		user-select: none;
+	}
+	.guide-pill.on {
+		border-color: var(--vs-blue);
+		color: var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 8%, transparent);
+	}
+	.guide-pill .swatch {
+		width: 10px;
+		height: 10px;
+		border-radius: 1px;
+	}
+
+	/* ── WEIGHT BALANCE ── */
+	.balance-stage {
+		height: 180px;
+		position: relative;
+		background: #040710;
+		border: 1px solid var(--vs-border);
+		overflow: hidden;
+	}
+	#balance-canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.weight-props {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+	.weight-side {
+		border: 1px solid var(--vs-border);
+		padding: 1rem;
+		background: var(--vs-raised);
+	}
+	.weight-side-label {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		margin-bottom: 0.75rem;
+		font-weight: 600;
+		padding-bottom: 0.4rem;
+		border-bottom: 1px solid var(--vs-border);
+	}
+	.weight-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.4rem 0;
+	}
+	.weight-row label {
+		font-size: 11px;
+		min-width: 80px;
+		color: var(--vs-muted);
+	}
+	.weight-row :global(input[type='range']) {
+		flex: 1;
+		-webkit-appearance: none;
+		height: 3px;
+		background: var(--vs-border2);
+		outline: none;
+	}
+	.weight-row :global(input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: var(--vs-blue);
+		cursor: pointer;
+	}
+	.weight-val {
+		font-size: 11px;
+		color: var(--vs-blue);
+		min-width: 28px;
+		text-align: right;
+		font-weight: 600;
+	}
+	#balance-verdict {
+		margin-top: 0.75rem;
+		padding: 0.6rem 1rem;
+		border-left: 2px solid var(--vs-border2);
+		font-size: 12px;
+		color: var(--vs-text);
+		line-height: 1.7;
+		background: var(--vs-raised);
+		min-height: 40px;
+	}
+
+	/* ── FRAMING EXPLORER ── */
+	.framing-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1px;
+		background: var(--vs-border);
+	}
+	@media (max-width: 600px) {
+		.framing-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	.framing-cell {
+		background: var(--vs-raised);
+		cursor: pointer;
+		transition: all 0.2s;
+		border: 2px solid transparent;
+		position: relative;
+	}
+	.framing-cell:hover {
+		border-color: var(--vs-border2);
+	}
+	.framing-cell.selected {
+		border-color: var(--vs-blue);
+	}
+	.framing-cell-label {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 4px 8px;
+		background: rgba(0, 0, 0, 0.75);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+		text-align: center;
+		transition: color 0.2s;
+	}
+	.framing-cell.selected .framing-cell-label {
+		color: var(--vs-blue);
+	}
+	.framing-detail {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-left: 2px solid var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+		font-size: 12px;
+		color: var(--vs-text);
+		line-height: 1.7;
+		min-height: 56px;
+	}
+	.framing-detail strong {
+		color: var(--vs-blue);
+	}
+
+	/* ── ISOLATION LAB ── */
+	.isolation-wrap {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1px;
+		background: var(--vs-border);
+	}
+	@media (max-width: 560px) {
+		.isolation-wrap {
+			grid-template-columns: 1fr;
+		}
+	}
+	.isolation-pane {
+		aspect-ratio: 16/9;
+		position: relative;
+		background: #040710;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+	.isolation-label {
+		position: absolute;
+		top: 8px;
+		left: 10px;
+		font-size: 9px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--vs-muted);
+	}
+	.iso-element {
+		position: absolute;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: 'Syne', sans-serif;
+		font-weight: 700;
+		transition: all 0.4s ease;
+		cursor: default;
+	}
+	#iso-toggle-wrap {
+		margin-top: 1rem;
+		display: flex;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+	#iso-verdict {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-left: 2px solid var(--vs-border2);
+		font-size: 12px;
+		color: var(--vs-text);
+		line-height: 1.7;
+		background: var(--vs-raised);
+	}
+
+	/* ── LEADING LINES ── */
+	.llines-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1px;
+		background: var(--vs-border);
+	}
+	@media (max-width: 560px) {
+		.llines-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	.lline-cell {
+		aspect-ratio: 16/9;
+		position: relative;
+		background: #040710;
+		cursor: pointer;
+		transition: border-color 0.2s;
+		border: 2px solid transparent;
+		overflow: hidden;
+	}
+	.lline-cell:hover {
+		border-color: var(--vs-border2);
+	}
+	.lline-cell.selected {
+		border-color: var(--vs-blue);
+	}
+	.lline-label {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 4px 8px;
+		background: rgba(0, 0, 0, 0.8);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		text-align: center;
+		color: var(--vs-muted);
+	}
+	.lline-cell.selected .lline-label {
+		color: var(--vs-blue);
+	}
+	.llines-detail {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-left: 2px solid var(--vs-blue);
+		background: color-mix(in srgb, var(--vs-blue) 5%, var(--vs-surface));
+		font-size: 12px;
+		color: var(--vs-text);
+		line-height: 1.7;
+		min-height: 52px;
+	}
+	.llines-detail strong {
+		color: var(--vs-blue);
+	}
+
+	.btn:focus,
+	.btn:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
+	}
+</style>

@@ -5,6 +5,10 @@
 	import Module04 from '$lib/modules/graphic-design/Module04.svelte';
 	import Module05 from '$lib/modules/graphic-design/Module05.svelte';
 	import Module06 from '$lib/modules/graphic-design/Module06.svelte';
+	import Module07 from '$lib/modules/graphic-design/Module07.svelte';
+	import Module08 from '$lib/modules/graphic-design/Module08.svelte';
+	import Module09 from '$lib/modules/graphic-design/Module09.svelte';
+	import Module10 from '$lib/modules/graphic-design/Module10.svelte';
 	import ScrollProgress from '$lib/components/ScrollProgress.svelte';
 	import type { PageData } from './$types';
 
@@ -47,6 +51,14 @@
 		<Module05 />
 	{:else if mod.id === '06'}
 		<Module06 />
+	{:else if mod.id === '07'}
+		<Module07 />
+	{:else if mod.id === '08'}
+		<Module08 />
+	{:else if mod.id === '09'}
+		<Module09 />
+	{:else if mod.id === '10'}
+		<Module10 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--gd-muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

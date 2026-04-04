@@ -2,6 +2,11 @@
 	import Module01 from '$lib/modules/visual-storytelling/Module01.svelte';
 	import Module02 from '$lib/modules/visual-storytelling/Module02.svelte';
 	import Module03 from '$lib/modules/visual-storytelling/Module03.svelte';
+	import Module04 from '$lib/modules/visual-storytelling/Module04.svelte';
+	import Module05 from '$lib/modules/visual-storytelling/Module05.svelte';
+	import Module06 from '$lib/modules/visual-storytelling/Module06.svelte';
+	import Module07 from '$lib/modules/visual-storytelling/Module07.svelte';
+	import Module08 from '$lib/modules/visual-storytelling/Module08.svelte';
 	import ScrollProgress from '$lib/components/ScrollProgress.svelte';
 	import type { PageData } from './$types';
 
@@ -38,6 +43,16 @@
 		<Module02 />
 	{:else if mod.id === '03'}
 		<Module03 />
+	{:else if mod.id === '04'}
+		<Module04 />
+	{:else if mod.id === '05'}
+		<Module05 />
+	{:else if mod.id === '06'}
+		<Module06 />
+	{:else if mod.id === '07'}
+		<Module07 />
+	{:else if mod.id === '08'}
+		<Module08 />
 	{:else}
 		<div style="padding:4rem 0;text-align:center;color:var(--vs-muted);">
 			<div style="font-size:48px;margin-bottom:1rem;">🚧</div>

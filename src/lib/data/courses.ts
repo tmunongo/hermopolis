@@ -346,7 +346,7 @@ export const graphicDesignModules: Module[] = [
 		number: 7,
 		title: 'Layout for Digital Platforms',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-violet',
 		description:
 			'Design for YouTube and websites. Thumbnails, banners, spacing systems, grids, and visual rhythm across screen sizes.'
@@ -356,7 +356,7 @@ export const graphicDesignModules: Module[] = [
 		number: 8,
 		title: 'Designing Story-Driven Visuals',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-sky',
 		description:
 			'Use visuals to explain concepts clearly. Visual analogies, sequential design, and simplifying complex ideas into clear graphics.'
@@ -366,7 +366,7 @@ export const graphicDesignModules: Module[] = [
 		number: 9,
 		title: 'Motion as a Design Tool',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-amber',
 		description:
 			'Use motion to reinforce meaning. Anticipation, easing, and the relationship between static design and animated design.'
@@ -376,7 +376,7 @@ export const graphicDesignModules: Module[] = [
 		number: 10,
 		title: 'Building Final Assets & Style Guide',
 		subtitle: 'Capstone Project',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--gd-sage',
 		description:
 			'Finalize your brand system. Logo, thumbnail templates, title cards, diagram sets, and a complete website layout kit.'
@@ -428,7 +428,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 4,
 		title: 'Using Images, Diagrams & B-Roll Intentionally',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-red',
 		description:
 			'Choose visuals that support the narrative rather than distract from it. Build diagrammatic clarity for educational storytelling.'
@@ -438,7 +438,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 5,
 		title: 'Composition & Visual Hierarchy in Video Frames',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-blue',
 		description:
 			"Plan frames that guide the viewer's eye purposefully. Use composition, balance, contrast, and isolation to support meaning."
@@ -448,7 +448,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 6,
 		title: 'Motion Graphics for Narrative Support',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-amber',
 		description:
 			'Use movement to explain concepts, not merely decorate. Direct attention with motion: reveal, highlight, transform.'
@@ -458,7 +458,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 7,
 		title: 'Audio as a Narrative Anchor',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-mint',
 		description:
 			'Use narration and sound design to reinforce visual meaning. Align audio beats with visual beats for deliberate rhythm.'
@@ -468,7 +468,7 @@ export const visualStorytellingModules: Module[] = [
 		number: 8,
 		title: 'Editing Techniques for Clarity & Engagement',
 		subtitle: 'Theory + Practice',
-		status: 'coming-soon',
+		status: 'available',
 		accentVar: '--vs-red',
 		description:
 			'Make purposeful cuts, transitions, and timing adjustments. Remove redundancy and build momentum that sustains viewer interest.'
